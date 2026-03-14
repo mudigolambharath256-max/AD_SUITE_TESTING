@@ -1,0 +1,80 @@
+# ============================================================================
+# CMGMT-036: LAPS Passwords Expiring Soon
+# ============================================================================
+# Multi-Engine Implementation
+# ============================================================================
+
+[CmdletBinding()]
+param([Parameter()][string]$SearchBase, [Parameter()][string]$ExportPath)
+
+Write-Host "=== CMGMT-036: LAPS Passwords Expiring Soon ===" -ForegroundColor Cyan
+
+$useADModule = $false
+try {
+    Import-Module ActiveDirectory -ErrorAction Stop
+    $useADModule = $true
+    Write-Host "[Method] PowerShell AD Module" -ForegroundColor Green
+} catch {
+    Write-Host "[Method] ADSI Fallback" -ForegroundColor Yellow
+}
+
+if ($useADModule) {
+    $domain = Get-ADDomain
+    if (-not $SearchBase) { $SearchBase = $domain.DistinguishedName }
+    $results = Get-ADObject -LDAPFilter '(&(objectCategory=computer)(ms-Mcs-AdmPwd=*))' -Properties name,distinguishedName -SearchBase $SearchBase -SearchScope Subtree -ResultSetSize $null
+} else {
+    $root = [ADSI]'LDAP://RootDSE'
+    $searcher = New-Object System.DirectoryServices.DirectorySearcher
+    $searcher.SearchRoot = [ADSI]"LDAP://$($root.defaultNamingContext)"
+    $searcher.Filter = '(&(objectCategory=computer)(ms-Mcs-AdmPwd=*))'
+    $searcher.PageSize = 1000
+    $results = $searcher.FindAll()
+    $searcher.Dispose()
+}
+
+Write-Host "Found $($results.Count) objects" -ForegroundColor Cyan
+return $results
+
+# ── BloodHound Export ─────────────────────────────────────────────────────────
+# Added by Kiro automation — DO NOT modify lines above this section
+try {
+    $bhSession = if ($env:ADSUITE_SESSION_ID) { $env:ADSUITE_SESSION_ID } else { [guid]::NewGuid().ToString('N') }
+    $bhRoot    = if ($env:ADSUITE_OUTPUT_ROOT) { $env:ADSUITE_OUTPUT_ROOT } else { Join-Path $env:TEMP 'ADSuite_Sessions' }
+    $bhDir     = Join-Path $bhRoot "$bhSession\bloodhound"
+    if (-not (Test-Path $bhDir)) { New-Item -ItemType Directory -Path $bhDir -Force -ErrorAction Stop | Out-Null }
+
+    $bhNodes = [System.Collections.Generic.List[hashtable]]::new()
+
+    foreach ($r in $uniqueResults) {
+        $dn   = if ($r.DistinguishedName) { $r.DistinguishedName } else { '' }
+        $name = if ($r.Name) { $r.Name } else { if ($r.PSObject.Properties['CheckName']) { $r.CheckName } else { 'UNKNOWN' } }
+        $dom  = (($dn -split ',') | Where-Object{$_ -match '^DC='} | ForEach-Object{$_ -replace '^DC=',''}) -join '.' | ForEach-Object{$_.ToUpper()}
+        $oid  = if ($dn) { $dn.ToUpper() } else { [guid]::NewGuid().ToString() }
+
+        $bhNodes.Add(@{
+            ObjectIdentifier = $oid
+            Properties       = @{
+                name              = if ($dom) { "$($name.ToUpper())@$dom" } else { $name.ToUpper() }
+                domain            = $dom
+                distinguishedname = $dn.ToUpper()
+                enabled           = $true
+                adSuiteCheckId    = 'CMGMT-036'
+                adSuiteCheckName  = 'LAPS_Passwords_Expiring_Soon'
+                adSuiteMEDIUM   = 'MEDIUM'
+                adSuiteComputer_Management   = 'Computer_Management'
+                adSuiteFlag       = $true
+            }
+            Aces      = @()
+            IsDeleted = $false
+            IsACLProtected = $false
+        })
+    }
+
+    $bhTs   = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $bhFile = Join-Path $bhDir "CMGMT-036_$bhTs.json"
+    @{
+        data = $bhNodes.ToArray()
+        meta = @{ type = 'computers'; count = $bhNodes.Count; version = 5; methods = 0 }
+    } | ConvertTo-Json -Depth 10 -Compress | Out-File -FilePath $bhFile -Encoding UTF8 -Force
+} catch { }
+# ── End BloodHound Export ─────────────────────────────────────────────────────

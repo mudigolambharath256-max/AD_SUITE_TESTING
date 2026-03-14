@@ -1,0 +1,149 @@
+# ============================================================================
+# ACC-044: Admin SDHolder Template
+# ============================================================================
+# Category: Access_Control
+# Method: PowerShell ActiveDirectory Module
+# Description: Uses Get-ADObject cmdlet for querying Active Directory
+# Requirements: ActiveDirectory PowerShell module must be installed
+# ============================================================================
+# USAGE:
+#   .\powershell.ps1
+#
+# PARAMETERS:
+#   -SearchBase <String>  : Optional OU to limit search scope
+#   -ExportPath <String>  : Optional CSV export path
+#
+# OUTPUT:
+#   Returns AD objects matching the security check criteria
+# ============================================================================
+
+[CmdletBinding()]
+param(
+    [Parameter()]
+    [string]$SearchBase,
+
+    [Parameter()]
+    [string]$ExportPath
+)
+
+# Import ActiveDirectory module
+try {
+    Import-Module ActiveDirectory -ErrorAction Stop
+    Write-Host "ActiveDirectory module loaded successfully" -ForegroundColor Green
+} catch {
+    Write-Error "Failed to load ActiveDirectory module: $_"
+    exit 1
+}
+
+# Get domain information
+try {
+    $domain = Get-ADDomain -ErrorAction Stop
+    $domainDN = $domain.DistinguishedName
+    $domainName = $domain.DNSRoot
+
+    Write-Host "Connected to domain: $domainName" -ForegroundColor Cyan
+} catch {
+    Write-Error "Failed to connect to domain: $_"
+    exit 1
+}
+
+# Set search base if not provided
+if (-not $SearchBase) {
+    $SearchBase = $domainDN
+    Write-Host "Using default search base: $SearchBase" -ForegroundColor Gray
+}
+
+# Define LDAP filter for the check
+$ldapFilter = '(&(objectCategory=person)(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=524288)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
+
+# Define properties to retrieve
+$properties = @('name', 'distinguishedName', 'objectClass', 'whenCreated', 'whenChanged', 'objectSid')
+
+Write-Host "Executing security check: Admin SDHolder Template" -ForegroundColor Yellow
+Write-Host "Check ID: ACC-029" -ForegroundColor Gray
+
+# Execute AD query
+try {
+    $results = Get-ADObject -LDAPFilter $ldapFilter `
+                            -Properties $properties `
+                            -SearchBase $SearchBase `
+                            -SearchScope Subtree `
+                            -ResultSetSize $null `
+                            -ErrorAction Stop
+
+    Write-Host "Found $($results.Count) objects" -ForegroundColor Cyan
+} catch {
+    Write-Error "Query failed: $_"
+    exit 1
+}
+
+# Process and format results
+$output = $results | Select-Object `
+    @{N='CheckID'; E={'ACC-044'}}, `
+    @{N='CheckName'; E={'Admin SDHolder Template'}}, `
+    @{N='Domain'; E={$domainName}}, `
+    name, `
+    distinguishedName, `
+    objectClass, `
+    whenCreated, `
+    whenChanged
+
+# Display results
+if ($output.Count -gt 0) {
+    Write-Host "`n=== Results ===" -ForegroundColor Yellow
+    $output | Format-Table -AutoSize
+
+    # Export if path provided
+
+} else {
+    Write-Host "`nNo objects found matching criteria" -ForegroundColor Gray
+}
+
+# Return results
+return $output
+
+
+
+# ── BloodHound Export ─────────────────────────────────────────────────────────
+# Added by Kiro automation — DO NOT modify lines above this section
+try {
+    $bhSession = if ($env:ADSUITE_SESSION_ID) { $env:ADSUITE_SESSION_ID } else { [guid]::NewGuid().ToString('N') }
+    $bhRoot    = if ($env:ADSUITE_OUTPUT_ROOT) { $env:ADSUITE_OUTPUT_ROOT } else { Join-Path $env:TEMP 'ADSuite_Sessions' }
+    $bhDir     = Join-Path $bhRoot "$bhSession\bloodhound"
+    if (-not (Test-Path $bhDir)) { New-Item -ItemType Directory -Path $bhDir -Force -ErrorAction Stop | Out-Null }
+
+    $bhNodes = [System.Collections.Generic.List[hashtable]]::new()
+
+    foreach ($r in $output) {
+        $dn   = if ($r.DistinguishedName) { $r.DistinguishedName } else { '' }
+        $name = if ($r.Name) { $r.Name } else { 'UNKNOWN' }
+        $dom  = (($dn -split ',') | Where-Object{$_ -match '^DC='} | ForEach-Object{$_ -replace '^DC=',''}) -join '.' | ForEach-Object{$_.ToUpper()}
+        $oid  = if ($dn) { $dn.ToUpper() } else { [guid]::NewGuid().ToString() }
+
+        $bhNodes.Add(@{
+            ObjectIdentifier = $oid
+            Properties       = @{
+                name              = if ($dom) { "$($name.ToUpper())@$dom" } else { $name.ToUpper() }
+                domain            = $dom
+                distinguishedname = $dn.ToUpper()
+                enabled           = $true
+                adSuiteCheckId    = 'C:\Users\acer\Downloads\AD_suiteXXX\Access_Control\ACC-044_Admin_SDHolder_Template\powershell.ps1'
+                adSuiteCheckName  = 'Admin_SDHolder_Template'
+                adSuiteHIGH   = 'HIGH'
+                adSuiteAccess_Control   = 'Access_Control'
+                adSuiteFlag       = $true
+            }
+            Aces      = @()
+            IsDeleted = $false
+            IsACLProtected = $false
+        })
+    }
+
+    $bhTs   = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $bhFile = Join-Path $bhDir "C:\Users\acer\Downloads\AD_suiteXXX\Access_Control\ACC-044_Admin_SDHolder_Template\powershell.ps1_$bhTs.json"
+    @{
+        data = $bhNodes.ToArray()
+        meta = @{ type = 'users'; count = $bhNodes.Count; version = 5; methods = 0 }
+    } | ConvertTo-Json -Depth 10 -Compress | Out-File -FilePath $bhFile -Encoding UTF8 -Force
+} catch { }
+# ── End BloodHound Export ─────────────────────────────────────────────────────

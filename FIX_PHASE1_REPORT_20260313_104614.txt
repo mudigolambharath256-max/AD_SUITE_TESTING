@@ -1,0 +1,16 @@
+=== Phase 1 Fix Report ===
+Date: 2026-03-13 10:46:14
+Mode: DRY RUN
+
+Files Processed: 762
+Files Backed Up: 0
+
+A1 Fixes (FindAll stored):
+  Success: 0
+  Failed: 0
+
+A2 Fixes (objectSid added):
+  Success: 756
+  Failed: 0
+
+Backup Location: backups_20260313_104610

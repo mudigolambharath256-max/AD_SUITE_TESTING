@@ -1,0 +1,92 @@
+{
+  "criteria": {
+    "B4_FILETIME_raw": {
+      "warn": 35,
+      "pass": 727,
+      "fail": 0
+    },
+    "B8_AddType_guard": {
+      "warn": 0,
+      "pass": 0,
+      "fail": 739
+    },
+    "B7_SearchRoot_explicit": {
+      "warn": 0,
+      "pass": 452,
+      "fail": 310
+    },
+    "A1_FindAll_stored": {
+      "warn": 0,
+      "pass": 750,
+      "fail": 12
+    },
+    "B1_SID_in_ps1_props": {
+      "warn": 755,
+      "pass": 1,
+      "fail": 0
+    },
+    "A4_uniqueResults_exists": {
+      "warn": 0,
+      "pass": 312,
+      "fail": 427
+    },
+    "totalFiles": 2257,
+    "totalChecks": 774,
+    "B12_objectGUID": {
+      "count": 0
+    },
+    "B11_objectClass_computer": {
+      "warn": 175,
+      "pass": 0,
+      "exempt": 0,
+      "fail": 0
+    },
+    "B5_min_PSCustomObject": {
+      "warn": 424,
+      "pass": 338,
+      "fail": 0
+    },
+    "B10_SearchBase": {
+      "warn": 0,
+      "pass": 435,
+      "fail": 321
+    },
+    "B3_FormatTable": {
+      "count": 550
+    },
+    "A5_no_existing_BH_export": {
+      "warn": 0,
+      "pass": 762,
+      "fail": 0
+    },
+    "B9_public_class_Run": {
+      "warn": 0,
+      "pass": 6,
+      "fail": 733
+    },
+    "B2_samAccountName": {
+      "warn": 762,
+      "pass": 0,
+      "fail": 0
+    },
+    "A2_objectSid_in_props": {
+      "warn": 0,
+      "pass": 0,
+      "fail": 762
+    },
+    "A3_DN_in_output": {
+      "warn": 0,
+      "pass": 754,
+      "fail": 8
+    }
+  },
+  "readyForExportAppend": false,
+  "criticalBlockerCount": 774,
+  "totalFiles": 2257,
+  "criticalBlockers": [
+    "A1_FindAll_stored",
+    "A2_objectSid_in_props"
+  ],
+  "auditDate": "2026-03-13T10:49:13",
+  "totalChecks": 774
+}
