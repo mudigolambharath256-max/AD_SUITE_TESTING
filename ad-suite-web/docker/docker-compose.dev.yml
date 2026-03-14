@@ -1,0 +1,35 @@
+# Development override — mounts source code live, enables hot reload
+#
+# Usage (from git root):
+#   docker-compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up
+#
+# This mounts frontend/src and backend/ as live volumes so code changes
+# are reflected without rebuilding the image.
+
+version: '3.8'
+
+services:
+  ad-suite:
+    build:
+      target: frontend-builder    # override: re-run both stages for dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      # Live mount backend source (nodemon watches for changes)
+      - ../backend:/app/backend
+      # Live mount frontend source (vite dev server watches for changes)
+      - ../frontend:/app/frontend
+      # Keep node_modules from the image (do not mount over them)
+      - /app/backend/node_modules
+      - /app/frontend/node_modules
+      - ad-suite-data:C:/app/data
+      - ad-suite-reports:C:/app/reports
+    command: >
+      powershell -Command
+        "cd C:\app\backend;
+         npm install -g nodemon;
+         Start-Job { cd C:\app\frontend; npm run dev -- --host 0.0.0.0 --port 5173 };
+         nodemon server.js"
+    ports:
+      - "3001:3001"
+      - "5173:5173"    # Vite dev server

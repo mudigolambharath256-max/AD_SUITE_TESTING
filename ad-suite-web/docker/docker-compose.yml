@@ -1,0 +1,83 @@
+# AD Security Suite — Docker Compose (Windows Containers)
+#
+# REQUIREMENTS:
+#   - Docker Desktop for Windows with Windows containers mode enabled
+#   - Host machine MUST be domain-joined for AD script execution
+#   - Run from the git root: docker-compose -f docker/docker-compose.yml up
+#
+# DOMAIN ACCESS:
+#   The container inherits the host's network and can reach domain controllers.
+#   AD scripts run as the container's process user. For best results, run the
+#   container with a service account that has AD read access.
+#
+# Usage:
+#   docker-compose -f docker/docker-compose.yml up -d
+#   Open browser: http://localhost:3001
+#   Stop:         docker-compose -f docker/docker-compose.yml down
+
+version: '3.8'
+
+services:
+  ad-suite:
+    build:
+      context: ../..
+      dockerfile: ad-suite-web/docker/Dockerfile
+    image: ad-security-suite:latest
+    container_name: ad-suite
+
+    # ── Port mapping ──────────────────────────────────────────────────────
+    ports:
+      - "${APP_PORT:-3001}:3001"
+
+    # ── Persistent volumes ─────────────────────────────────────────────────
+    # SQLite database and scan reports persist across container restarts
+    volumes:
+      - ad-suite-data:C:/app/data
+      - ad-suite-reports:C:/app/reports
+      # Optional: mount host suite folders instead of using the baked-in copy
+      # This lets you update scripts without rebuilding the image
+      # Uncomment and adjust paths as needed:
+      # - ../../Access_Control:C:/app/AD-Suite-scripts-main/Access_Control:ro
+      # - ../../Authentication:C:/app/AD-Suite-scripts-main/Authentication:ro
+      # (add more categories as needed)
+
+    # ── Environment variables ──────────────────────────────────────────────
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - SUITE_ROOT_PATH=C:\app\AD-Suite-scripts-main
+      - DB_PATH=C:\app\data\database.db
+      - REPORTS_PATH=C:\app\reports
+      # Set your domain info here or in .env file:
+      - DEFAULT_DOMAIN=${DEFAULT_DOMAIN:-}
+      - DEFAULT_DC_IP=${DEFAULT_DC_IP:-}
+
+    # ── Use host network mode for AD access ───────────────────────────────
+    # host network mode gives the container direct access to the host's
+    # network interfaces and Kerberos tickets — needed for ADSI/LDAP queries
+    # NOTE: With host networking, the port mapping above is ignored.
+    #       Access the app at http://localhost:3001 directly.
+    network_mode: host
+
+    # ── Resource limits ────────────────────────────────────────────────────
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+
+    # ── Restart policy ─────────────────────────────────────────────────────
+    restart: unless-stopped
+
+    # ── Logging ────────────────────────────────────────────────────────────
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+volumes:
+  ad-suite-data:
+    name: ad-suite-data
+  ad-suite-reports:
+    name: ad-suite-reports
