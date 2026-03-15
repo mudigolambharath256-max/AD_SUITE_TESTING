@@ -3,7 +3,7 @@
 
 const testAttackPathAnalysis = async () => {
     console.log('🎯 Testing Attack Path Analysis Functionality');
-    console.log('=' .repeat(50));
+    console.log('='.repeat(50));
 
     // Test 1: Backend LLM Endpoint
     console.log('\n1. Testing Backend LLM Endpoint...');
@@ -15,7 +15,7 @@ const testAttackPathAnalysis = async () => {
                 findings: [
                     {
                         checkId: "AUTH-001",
-                        category: "Authentication", 
+                        category: "Authentication",
                         checkName: "Accounts Without Kerberos Pre-Auth",
                         severity: "HIGH",
                         riskScore: 8,
@@ -25,7 +25,7 @@ const testAttackPathAnalysis = async () => {
                     }
                 ],
                 provider: "openai",
-                apiKey: "sk-test-key",
+                apiKey: "your-api-key-here",
                 model: "gpt-4"
             })
         });
