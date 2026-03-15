@@ -1,0 +1,1 @@
+{"findings": [{"test": "data"}], "provider": "openai", "apiKey": "test", "model": "gpt-4"}

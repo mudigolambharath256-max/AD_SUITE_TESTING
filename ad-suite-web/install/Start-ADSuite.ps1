@@ -21,10 +21,10 @@ if (Test-Path $envFile) {
     }
 }
 
-$port        = $env:APP_PORT ?? '3001'
+$port        = if ($env:APP_PORT) { $env:APP_PORT } else { '3001' }
 $backendDir  = Join-Path $ScriptRoot 'backend'
 $frontendDir = Join-Path $ScriptRoot 'frontend'
-$nodeEnv     = $env:NODE_ENV ?? 'development'
+$nodeEnv     = if ($env:NODE_ENV) { $env:NODE_ENV } else { 'development' }
 
 Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan

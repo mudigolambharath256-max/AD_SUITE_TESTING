@@ -40,6 +40,17 @@ const AttackPath = () => {
     setEdgesState(edges);
   }, [nodes, edges, setNodesState, setEdgesState]);
 
+  // Update model when provider changes
+  React.useEffect(() => {
+    if (llmProvider === 'openai') {
+      setModel('gpt-4o-mini');
+    } else if (llmProvider === 'anthropic') {
+      setModel('claude-3-sonnet-20240229');
+    } else if (llmProvider === 'ollama') {
+      setModel('llama3');
+    }
+  }, [llmProvider]);
+
   const loadRecentScans = async () => {
     try {
       const scans = await getRecentScans(10);
@@ -119,12 +130,174 @@ const AttackPath = () => {
     }
   };
 
-  const handleFileUpload = (event) => {
+  const loadGOADSample = () => {
+    const goadData = [
+      {
+        "checkId": "AUTH-001",
+        "category": "Authentication",
+        "checkName": "Accounts Without Kerberos Pre-Auth",
+        "severity": "HIGH",
+        "riskScore": 8,
+        "mitre": "T1558.003",
+        "name": "sansa.stark",
+        "distinguishedName": "CN=sansa.stark,OU=Stark,OU=Users,DC=sevenkingdoms,DC=local",
+        "detailsJson": "{\"userAccountControl\": 4194304, \"description\": \"Stark family member\"}",
+        "description": "Account sansa.stark does not require Kerberos pre-authentication, making it vulnerable to ASREPRoasting attacks"
+      },
+      {
+        "checkId": "USR-002",
+        "category": "Users_Accounts",
+        "checkName": "Accounts Vulnerable to Kerberoasting",
+        "severity": "HIGH",
+        "riskScore": 8,
+        "mitre": "T1558.004",
+        "name": "tyrion.lannister",
+        "distinguishedName": "CN=tyrion.lannister,OU=Lannister,OU=Users,DC=sevenkingdoms,DC=local",
+        "detailsJson": "{\"servicePrincipalName\": \"HTTP/winterfell.sevenkingdoms.local\", \"userAccountControl\": 512}",
+        "description": "Account tyrion.lannister has SPN and is vulnerable to Kerberoasting attacks"
+      },
+      {
+        "checkId": "USR-019",
+        "category": "Users_Accounts",
+        "checkName": "Domain Admins Members",
+        "severity": "CRITICAL",
+        "riskScore": 10,
+        "mitre": "T1069.002",
+        "name": "eddard.stark",
+        "distinguishedName": "CN=eddard.stark,OU=Domain Admins,DC=sevenkingdoms,DC=local",
+        "detailsJson": "{\"memberOf\": [\"CN=Domain Admins,CN=Users,DC=sevenkingdoms,DC=local\", \"CN=Enterprise Admins,CN=Users,DC=sevenkingdoms,DC=local\"]}",
+        "description": "eddard.stark is a member of Domain Admins and Enterprise Admins groups"
+      },
+      {
+        "checkId": "ACC-001",
+        "category": "Access_Control",
+        "checkName": "Unconstrained Delegation Configuration",
+        "severity": "HIGH",
+        "riskScore": 8,
+        "mitre": "T1208",
+        "name": "winterfell-server",
+        "distinguishedName": "CN=winterfell-server,OU=Servers,DC=sevenkingdoms,DC=local",
+        "detailsJson": "{\"userAccountControl\": 528384, \"trustedForDelegation\": true}",
+        "description": "winterfell-server has unconstrained delegation enabled"
+      }
+    ];
+
+    setFindings(goadData);
+    setUploadedFile({ name: 'goad-sample.json' });
+    setError(null);
+    console.log('Loaded GOAD sample data with', goadData.length, 'findings');
+  };
+
+  const loadAdvancedSample = () => {
+    const advancedData = [
+      {
+        "checkId": "AUTH-001",
+        "category": "Authentication",
+        "checkName": "Accounts Without Kerberos Pre-Auth",
+        "severity": "HIGH",
+        "riskScore": 8,
+        "mitre": "T1558.003",
+        "name": "j.doe",
+        "distinguishedName": "CN=j.doe,OU=Users,DC=contoso,DC=local",
+        "detailsJson": "{\"userAccountControl\": 4194304, \"department\": \"Sales\"}",
+        "description": "Account j.doe vulnerable to ASREPRoasting - no Kerberos pre-auth required"
+      },
+      {
+        "checkId": "USR-002",
+        "category": "Users_Accounts",
+        "checkName": "Accounts Vulnerable to Kerberoasting",
+        "severity": "HIGH",
+        "riskScore": 8,
+        "mitre": "T1558.004",
+        "name": "sql.service",
+        "distinguishedName": "CN=sql.service,OU=Service Accounts,DC=contoso,DC=local",
+        "detailsJson": "{\"servicePrincipalName\": \"MSSQLSvc/sql01.contoso.local:1433\", \"userAccountControl\": 512}",
+        "description": "Service account sql.service has SPN - vulnerable to Kerberoasting"
+      },
+      {
+        "checkId": "USR-019",
+        "category": "Users_Accounts",
+        "checkName": "Domain Admins Members",
+        "severity": "CRITICAL",
+        "riskScore": 10,
+        "mitre": "T1069.002",
+        "name": "admin.admin",
+        "distinguishedName": "CN=admin.admin,OU=Domain Admins,DC=contoso,DC=local",
+        "detailsJson": "{\"memberOf\": [\"CN=Domain Admins,CN=Users,DC=contoso,DC=local\", \"CN=Enterprise Admins,CN=Users,DC=contoso,DC=local\", \"CN=Schema Admins,CN=Users,DC=contoso,DC=local\"]}",
+        "description": "admin.admin is member of Domain Admins, Enterprise Admins, and Schema Admins"
+      },
+      {
+        "checkId": "ACC-001",
+        "category": "Access_Control",
+        "checkName": "Unconstrained Delegation Configuration",
+        "severity": "HIGH",
+        "riskScore": 8,
+        "mitre": "T1208",
+        "name": "web01",
+        "distinguishedName": "CN=web01,OU=Web Servers,DC=contoso,DC=local",
+        "detailsJson": "{\"userAccountControl\": 528384, \"trustedForDelegation\": true, \"operatingSystem\": \"Windows Server 2016\"}",
+        "description": "Web server web01 has unconstrained delegation - can be used for ticket theft"
+      },
+      {
+        "checkId": "DC-001",
+        "category": "Domain_Controllers",
+        "checkName": "DC Sync Privileges",
+        "severity": "CRITICAL",
+        "riskScore": 10,
+        "mitre": "T1003.006",
+        "name": "backup.admin",
+        "distinguishedName": "CN=backup.admin,OU=IT Admins,OU=Users,DC=contoso,DC=local",
+        "detailsJson": "{\"extendedRights\": [\"1131f6aa-9c07-11d1-f79f-00c04fc2dcd2\"], \"memberOf\": [\"CN=Backup Operators,OU=Groups,DC=contoso,DC=local\"]}",
+        "description": "backup.admin has DCSync rights - can extract all domain credentials"
+      }
+    ];
+
+    setFindings(advancedData);
+    setUploadedFile({ name: 'advanced-sample.json' });
+    setError(null);
+    console.log('Loaded advanced sample data with', advancedData.length, 'findings');
+  };
+
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
       setUploadedFile(file);
-      // In production, parse the uploaded file
-      setError('File upload not implemented in demo');
+      setError(null);
+
+      try {
+        const text = await file.text();
+        let data;
+
+        if (file.name.endsWith('.json')) {
+          const jsonContent = JSON.parse(text);
+          // Handle both formats: direct findings array or wrapped in scanInfo
+          data = jsonContent.findings || jsonContent;
+        } else if (file.name.endsWith('.csv')) {
+          // Parse CSV
+          const lines = text.split('\n').filter(line => line.trim());
+          const headers = lines[0].split(',').map(h => h.trim());
+
+          data = lines.slice(1).map(line => {
+            const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+            const obj = {};
+            headers.forEach((header, index) => {
+              obj[header] = values[index];
+            });
+            return obj;
+          });
+        }
+
+        if (Array.isArray(data) && data.length > 0) {
+          setFindings(data);
+          setError(null);
+          console.log(`Loaded ${data.length} findings from ${file.name}`);
+        } else {
+          setError('No valid findings found in file');
+        }
+      } catch (error) {
+        console.error('File parsing error:', error);
+        setError(`Failed to parse file: ${error.message}`);
+      }
     }
   };
 
@@ -253,19 +426,36 @@ const AttackPath = () => {
             )}
 
             {dataSource === 'upload' && (
-              <div className="upload-zone" onClick={() => document.getElementById('file-upload').click()}>
-                <Upload className="w-8 h-8 mx-auto mb-2 text-text-muted" />
-                <p className="text-sm text-text-secondary">
-                  {uploadedFile ? uploadedFile.name : 'Click to upload or drag and drop'}
-                </p>
-                <p className="text-xs text-text-muted mt-1">JSON or CSV files</p>
-                <input
-                  id="file-upload"
-                  type="file"
-                  accept=".json,.csv"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
+              <div className="space-y-4">
+                <div className="upload-zone" onClick={() => document.getElementById('file-upload').click()}>
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-text-muted" />
+                  <p className="text-sm text-text-secondary">
+                    {uploadedFile ? uploadedFile.name : 'Click to upload or drag and drop'}
+                  </p>
+                  <p className="text-xs text-text-muted mt-1">JSON or CSV files</p>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept=".json,.csv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={loadGOADSample}
+                    className="btn-secondary text-sm flex-1"
+                  >
+                    🎭 Load GOAD Sample
+                  </button>
+                  <button
+                    onClick={loadAdvancedSample}
+                    className="btn-secondary text-sm flex-1"
+                  >
+                    🏢 Load Advanced Sample
+                  </button>
+                </div>
               </div>
             )}
 

@@ -2,7 +2,7 @@
   "findings": [
     {
       "checkId": "AUTH-001",
-      "category": "Authentication", 
+      "category": "Authentication",
       "checkName": "Accounts Without Kerberos Pre-Auth",
       "severity": "HIGH",
       "riskScore": 8,
@@ -12,7 +12,7 @@
       "detailsJson": "{\"userAccountControl\": 4194304}"
     },
     {
-      "checkId": "USR-019", 
+      "checkId": "USR-019",
       "category": "Users_Accounts",
       "checkName": "Domain Admins Members",
       "severity": "CRITICAL",
@@ -24,6 +24,6 @@
     }
   ],
   "provider": "openai",
-  "apiKey": "sk-test-key-placeholder",
+  "apiKey": "your-api-key-here",
   "model": "gpt-4"
 }

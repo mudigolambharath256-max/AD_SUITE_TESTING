@@ -1,0 +1,155 @@
+{
+  "scanInfo": {
+    "scanId": "advanced-attack-scenario-001",
+    "timestamp": "2026-03-15T08:45:00Z",
+    "engine": "powershell",
+    "domain": "contoso.local",
+    "server": "dc01.contoso.local"
+  },
+  "findings": [
+    {
+      "checkId": "AUTH-001",
+      "category": "Authentication",
+      "checkName": "Accounts Without Kerberos Pre-Auth",
+      "severity": "HIGH",
+      "riskScore": 8,
+      "mitre": "T1558.003",
+      "name": "j.doe",
+      "distinguishedName": "CN=j.doe,OU=Users,DC=contoso,DC=local",
+      "detailsJson": "{\"userAccountControl\": 4194304, \"department\": \"Sales\"}",
+      "description": "Account j.doe vulnerable to ASREPRoasting - no Kerberos pre-auth required"
+    },
+    {
+      "checkId": "USR-002",
+      "category": "Users_Accounts",
+      "checkName": "Accounts Vulnerable to Kerberoasting",
+      "severity": "HIGH",
+      "riskScore": 8,
+      "mitre": "T1558.004",
+      "name": "sql.service",
+      "distinguishedName": "CN=sql.service,OU=Service Accounts,DC=contoso,DC=local",
+      "detailsJson": "{\"servicePrincipalName\": \"MSSQLSvc/sql01.contoso.local:1433\", \"userAccountControl\": 512}",
+      "description": "Service account sql.service has SPN - vulnerable to Kerberoasting"
+    },
+    {
+      "checkId": "USR-019",
+      "category": "Users_Accounts",
+      "checkName": "Domain Admins Members",
+      "severity": "CRITICAL",
+      "riskScore": 10,
+      "mitre": "T1069.002",
+      "name": "admin.admin",
+      "distinguishedName": "CN=admin.admin,OU=Domain Admins,DC=contoso,DC=local",
+      "detailsJson": "{\"memberOf\": [\"CN=Domain Admins,CN=Users,DC=contoso,DC=local\", \"CN=Enterprise Admins,CN=Users,DC=contoso,DC=local\", \"CN=Schema Admins,CN=Users,DC=contoso,DC=local\"]}",
+      "description": "admin.admin is member of Domain Admins, Enterprise Admins, and Schema Admins"
+    },
+    {
+      "checkId": "ACC-001",
+      "category": "Access_Control",
+      "checkName": "Unconstrained Delegation Configuration",
+      "severity": "HIGH",
+      "riskScore": 8,
+      "mitre": "T1208",
+      "name": "web01",
+      "distinguishedName": "CN=web01,OU=Web Servers,DC=contoso,DC=local",
+      "detailsJson": "{\"userAccountControl\": 528384, \"trustedForDelegation\": true, \"operatingSystem\": \"Windows Server 2016\"}",
+      "description": "Web server web01 has unconstrained delegation - can be used for ticket theft"
+    },
+    {
+      "checkId": "DC-001",
+      "category": "Domain_Controllers",
+      "checkName": "DC Sync Privileges",
+      "severity": "CRITICAL",
+      "riskScore": 10,
+      "mitre": "T1003.006",
+      "name": "backup.admin",
+      "distinguishedName": "CN=backup.admin,OU=IT Admins,OU=Users,DC=contoso,DC=local",
+      "detailsJson": "{\"extendedRights\": [\"1131f6aa-9c07-11d1-f79f-00c04fc2dcd2\"], \"memberOf\": [\"CN=Backup Operators,OU=Groups,DC=contoso,DC=local\"]}",
+      "description": "backup.admin has DCSync rights - can extract all domain credentials"
+    },
+    {
+      "checkId": "GRP-001",
+      "category": "Group_Management",
+      "checkName": "High Privilege Group Members",
+      "severity": "MEDIUM",
+      "riskScore": 6,
+      "mitre": "T1069.002",
+      "name": "helpdesk.user",
+      "distinguishedName": "CN=helpdesk.user,OU=Helpdesk,OU=Users,DC=contoso,DC=local",
+      "detailsJson": "{\"memberOf\": [\"CN=Helpdesk Admins,OU=Groups,DC=contoso,DC=local\", \"CN=Remote Desktop Users,OU=Groups,DC=contoso,DC=local\"]}",
+      "description": "helpdesk.user has elevated privileges in Helpdesk Admins group"
+    },
+    {
+      "checkId": "SVC-001",
+      "category": "Service_Accounts",
+      "checkName": "Service Accounts with Weak Passwords",
+      "severity": "HIGH",
+      "riskScore": 8,
+      "mitre": "T1078.003",
+      "name": "iis.service",
+      "distinguishedName": "CN=iis.service,OU=Service Accounts,DC=contoso,DC=local",
+      "detailsJson": "{\"servicePrincipalName\": \"HTTP/web01.contoso.local\", \"userAccountControl\": 66048, \"description\": \"IIS Application Pool Identity\"}",
+      "description": "IIS service account may have weak password pattern"
+    },
+    {
+      "checkId": "PRV-001",
+      "category": "Privileged_Access",
+      "checkName": "Local Admin Rights on Domain Controllers",
+      "severity": "CRITICAL",
+      "riskScore": 10,
+      "mitre": "T1068.002",
+      "name": "it.support",
+      "distinguishedName": "CN=it.support,OU=IT Support,OU=Users,DC=contoso,DC=local",
+      "detailsJson": "{\"localAdminRights\": [\"dc01.contoso.local\", \"dc02.contoso.local\"]}",
+      "description": "it.support has local admin rights on both domain controllers"
+    },
+    {
+      "checkId": "NET-001",
+      "category": "Network_Security",
+      "checkName": "SMB Signing Not Required",
+      "severity": "MEDIUM",
+      "riskScore": 5,
+      "mitre": "T1021.002",
+      "name": "fileserver01",
+      "distinguishedName": "CN=fileserver01,OU=File Servers,DC=contoso,DC=local",
+      "detailsJson": "{\"smbSigning\": \"Disabled\", \"operatingSystem\": \"Windows Server 2019\", \"shares\": [\"\\\\\\fileserver01\\\\data\", \"\\\\\\fileserver01\\\\backup\"]}",
+      "description": "File server has SMB signing disabled - vulnerable to SMB relay attacks"
+    },
+    {
+      "checkId": "AUTH-015",
+      "category": "Authentication",
+      "checkName": "Accounts with Never Expiring Passwords",
+      "severity": "LOW",
+      "riskScore": 3,
+      "mitre": "T1098.003",
+      "name": "service.account",
+      "distinguishedName": "CN=service.account,OU=Service Accounts,DC=contoso,DC=local",
+      "detailsJson": "{\"userAccountControl\": 66048, \"pwdLastSet\": 0}",
+      "description": "Service account has password set to never expire"
+    },
+    {
+      "checkId": "COM-001",
+      "category": "Compliance",
+      "checkName": "Inactive Accounts 90 Days",
+      "severity": "LOW",
+      "riskScore": 2,
+      "mitre": "T1078.003",
+      "name": "former.employee",
+      "distinguishedName": "CN=former.employee,OU=Former Employees,OU=Users,DC=contoso,DC=local",
+      "detailsJson": "{\"lastLogon\": \"2025-12-01T00:00:00Z\", \"userAccountControl\": 514}",
+      "description": "Account former.employee disabled but not deleted - potential security risk"
+    },
+    {
+      "checkId": "TRST-001",
+      "category": "Trust_Relationships",
+      "checkName": "Cross-Domain Trust Relationships",
+      "severity": "MEDIUM",
+      "riskScore": 6,
+      "mitre": "T1208",
+      "name": "child.contoso.local",
+      "distinguishedName": "CN=child.contoso.local,OU=Domains,DC=contoso,DC=local",
+      "detailsJson": "{\"trustDirection\": \"Parent-Child\", \"trustType\": \"ParentChild\", \"transitive\": true}",
+      "description": "Child domain trust relationship - potential lateral movement path"
+    }
+  ]
+}
