@@ -1,0 +1,5 @@
+{
+  "suiteRoot": "C:\\Users\\acer\\Downloads\\AD_suiteXXX",
+  "checkIds": ["AUTH-001"],
+  "engine": "adsi"
+}

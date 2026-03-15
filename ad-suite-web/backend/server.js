@@ -286,28 +286,33 @@ async function callOpenAIAPI(findings, apiKey, model = 'gpt-4') {
 
   const userPrompt = JSON.stringify(findings, null, 2);
 
-  const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-    model: model,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ],
-    max_tokens: 4000
-  }, {
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    }
-  });
+  try {
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      max_tokens: 4000
+    }, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-  const narrative = response.data.choices[0].message.content;
-  const graphData = parseGraphFromResponse(narrative);
+    const narrative = response.data.choices[0].message.content;
+    const graphData = parseGraphFromResponse(narrative);
 
-  return {
-    narrative,
-    nodes: graphData.nodes,
-    edges: graphData.edges
-  };
+    return {
+      narrative,
+      nodes: graphData.nodes,
+      edges: graphData.edges
+    };
+  } catch (error) {
+    console.error('OpenAI API Error:', error.response?.data || error.message);
+    throw new Error(`OpenAI API Error: ${error.response?.data?.error?.message || error.message}`);
+  }
 }
 
 async function callOllamaAPI(findings, apiKey, model = 'llama3') {
@@ -340,13 +345,28 @@ async function callOllamaAPI(findings, apiKey, model = 'llama3') {
 
 function parseGraphFromResponse(narrative) {
   try {
-    const graphMatch = narrative.match(/```graph\n([\s\S]*?)\n```/);
+    // Try to find graph data in different formats
+    let graphMatch = narrative.match(/```graph\n([\s\S]*?)\n```/);
+    if (!graphMatch) {
+      graphMatch = narrative.match(/```json\n([\s\S]*?)\n```/);
+    }
+    
     if (graphMatch) {
-      const graphJson = JSON.parse(graphMatch[1]);
-      return {
-        nodes: graphJson.nodes || [],
-        edges: graphJson.edges || []
-      };
+      let graphText = graphMatch[1];
+      const graphJson = JSON.parse(graphText);
+      
+      // Handle both formats: direct nodes/edges or wrapped in graph object
+      if (graphJson.graph) {
+        return {
+          nodes: graphJson.graph.nodes || [],
+          edges: graphJson.graph.edges || []
+        };
+      } else {
+        return {
+          nodes: graphJson.nodes || [],
+          edges: graphJson.edges || []
+        };
+      }
     }
   } catch (error) {
     console.error('Error parsing graph from response:', error);
@@ -357,7 +377,10 @@ function parseGraphFromResponse(narrative) {
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '../frontend/dist');
+  const frontendPath = path.join(__dirname, '..', 'frontend', 'dist');
+
+  console.log('Frontend path:', frontendPath);
+  console.log('Frontend exists:', fs.existsSync(frontendPath));
 
   if (fs.existsSync(frontendPath)) {
     app.use(express.static(frontendPath));

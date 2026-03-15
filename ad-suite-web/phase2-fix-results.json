@@ -1,0 +1,11 @@
+{
+  "TotalProcessed": 262,
+  "AlreadyFixed": 2,
+  "Failed": [
+    {
+      "Reason": "Fix applied but syntax still invalid",
+      "File": "C:\\Users\\acer\\Downloads\\AD_suiteXXX\\Domain_Controllers\\DC-017_DCs_with_Weak_Kerberos_Encryption\\adsi.ps1"
+    }
+  ],
+  "SuccessfullyFixed": 259
+}

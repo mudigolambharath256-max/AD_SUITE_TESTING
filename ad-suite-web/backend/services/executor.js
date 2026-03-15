@@ -396,6 +396,7 @@ async function runScan({ scanId, checkIds, engine, suiteRoot, domain, serverIp }
 
   console.log(`[SCAN ${scanId}] Starting scan with ${checkIds.length} checks using ${engine} engine`);
   console.log(`[SCAN ${scanId}] Suite Root: ${suiteRoot}`);
+  console.log(`[SCAN ${scanId}] Check IDs: ${checkIds.join(', ')}`);
 
   db.updateScanStatus(scanId, 'running');
 
@@ -408,6 +409,7 @@ async function runScan({ scanId, checkIds, engine, suiteRoot, domain, serverIp }
 
     const resolved = resolveScriptPath(suiteRoot, checkId, engine);
     if (!resolved) {
+      console.log(`[SCAN ${scanId}] Script not found for check ${checkId} with engine ${engine}`);
       emitSSE(scanId, {
         type: 'log',
         line: `[SKIP] ${checkId}: script not found for engine '${engine}'`
@@ -416,6 +418,7 @@ async function runScan({ scanId, checkIds, engine, suiteRoot, domain, serverIp }
       continue;
     }
 
+    console.log(`[SCAN ${scanId}] Resolved ${checkId} to: ${resolved.scriptPath}`);
     const { scriptPath, category } = resolved;
 
     emitSSE(scanId, {
@@ -541,7 +544,7 @@ async function discoverChecks(suiteRoot) {
     return { valid: false, error: 'Path does not exist', checks: [] };
   }
 
-  const categories = require('../lib/categories.js').CATEGORIES;
+  const categories = require('../lib/categories.js').CATEGORIES || require('./../lib/categories.js').CATEGORIES;
   const discoveredChecks = [];
 
   for (const category of categories) {
@@ -589,6 +592,7 @@ module.exports = {
   abortActiveScan,
   runScan,
   discoverChecks,
+  resolveScriptPath,
   registerSSEClient,
   unregisterSSEClient,
   writeExportFiles,

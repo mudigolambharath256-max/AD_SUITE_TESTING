@@ -278,35 +278,55 @@ router.get('/diagnose', async (req, res) => {
   }
 
   try {
-    const result = await executor.runCheck(
-      suiteRoot, category, checkId, checkId, engine,
-      { domain, targetServer, timeoutMs: 30000 }
-    );
+    console.log(`[DIAGNOSE] Testing suite root: ${suiteRoot}`);
+    
+    // First check if suite root exists
+    if (!require('fs').existsSync(suiteRoot)) {
+      return res.json({ 
+        valid: false, 
+        error: 'Suite root path does not exist',
+        suiteRoot,
+        suggestions: [
+          'Check if the path is correct',
+          'Ensure the AD Suite scripts are extracted',
+          'Try using absolute path like C:\\ADSuite\\AD-Suite-scripts-main'
+        ]
+      });
+    }
+
+    // Discover checks
+    const discoverResult = await executor.discoverChecks(suiteRoot);
+    console.log(`[DIAGNOSE] Discovery result:`, discoverResult);
+
+    // Try to resolve a specific check
+    const resolved = executor.resolveScriptPath(suiteRoot, checkId, engine);
+    console.log(`[DIAGNOSE] Resolved ${checkId}:`, resolved);
 
     res.json({
-      // Path resolution
-      scriptPath: result.scriptPath,
-      scriptFound: !!result.scriptPath,
-
-      // Execution result
-      exitCode: result.exitCode,
-      durationMs: result.durationMs,
-      error: result.error,
-
-      // Raw output (first 5000 chars)
-      stdoutRaw: (result.stdout || '').slice(0, 5000),
-      stderrRaw: (result.stderr || '').slice(0, 2000),
-      stdoutLength: (result.stdout || '').length,
-
-      // Parsed findings
-      findingCount: result.findings.length,
-      findings: result.findings.slice(0, 20), // first 20
-
-      // Diagnosis
-      diagnosis: executor.diagnoseProblem(result),
+      suiteRoot,
+      suiteRootExists: true,
+      discoverResult,
+      testCheck: {
+        checkId,
+        engine,
+        resolved: !!resolved,
+        scriptPath: resolved?.scriptPath,
+        category: resolved?.category
+      },
+      suggestions: !discoverResult.valid ? [
+        'Ensure the path contains AD Suite category folders',
+        'Check that folders like "Authentication", "Domain_Controllers" exist',
+        'Verify permissions to read the directory'
+      ] : []
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message, stack: err.stack });
+
+  } catch (error) {
+    console.error('[DIAGNOSE] Error:', error);
+    res.status(500).json({
+      valid: false,
+      error: error.message,
+      suiteRoot
+    });
   }
 });
 
