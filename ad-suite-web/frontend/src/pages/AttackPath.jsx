@@ -27,6 +27,7 @@ const AttackPath = () => {
   const [findings, setFindings] = useState([]);
   const [error, setError] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [bloodhoundDataAvailable, setBloodhoundDataAvailable] = useState(false);
 
   const [nodesState, setNodesState, onNodesChange] = useNodesState(nodes);
   const [edgesState, setEdgesState, onEdgesChange] = useEdgesState(edges);
@@ -34,6 +35,15 @@ const AttackPath = () => {
   React.useEffect(() => {
     loadRecentScans();
   }, []);
+
+  // Load findings when scan selection changes
+  React.useEffect(() => {
+    if (dataSource === 'recent' || dataSource === 'choose') {
+      if (selectedScanId) {
+        loadFindings(selectedScanId);
+      }
+    }
+  }, [selectedScanId, dataSource, severityFilter]);
 
   React.useEffect(() => {
     setNodesState(nodes);
@@ -57,25 +67,87 @@ const AttackPath = () => {
       setRecentScans(scans);
       if (scans.length > 0) {
         setSelectedScanId(scans[0].id);
+        // Auto-load findings for the most recent scan if using recent data source
+        if (dataSource === 'recent') {
+          await loadFindings(scans[0].id);
+        }
       }
     } catch (error) {
       console.error('Failed to load recent scans:', error);
+      setError('Failed to load recent scans');
     }
   };
 
   const loadFindings = async (scanId) => {
+    if (!scanId) return;
+
     try {
+      setError(null);
+
+      // First try to load BloodHound data from the scan
+      const bloodhoundResponse = await fetch(`/api/bloodhound/scan/${scanId}`);
+
+      if (bloodhoundResponse.ok) {
+        const bloodhoundData = await bloodhoundResponse.json();
+
+        if (bloodhoundData.nodes && bloodhoundData.nodes.length > 0) {
+          console.log(`Loaded ${bloodhoundData.nodes.length} BloodHound nodes from scan ${scanId}`);
+          setBloodhoundDataAvailable(true);
+
+          // Convert BloodHound nodes to findings format for analysis
+          const bhFindings = bloodhoundData.nodes.map(node => ({
+            checkId: node.Properties?.adSuiteCheckId || 'UNKNOWN',
+            category: node.Properties?.adSuiteCategory || 'Unknown',
+            checkName: node.Properties?.adSuiteCheckName || 'Unknown Check',
+            severity: node.Properties?.adSuiteSeverity?.toUpperCase() || 'INFO',
+            riskScore: 0,
+            mitre: '',
+            name: node.Properties?.samaccountname || node.Properties?.name || 'Unknown',
+            distinguishedName: node.Properties?.distinguishedname || '',
+            detailsJson: JSON.stringify(node.Properties || {}),
+            description: `BloodHound node: ${node.Properties?.name || 'Unknown'}`
+          }));
+
+          const filteredFindings = bhFindings.filter(finding =>
+            severityFilter.includes(finding.severity.toLowerCase())
+          );
+
+          setFindings(filteredFindings);
+
+          if (filteredFindings.length === 0 && bhFindings.length > 0) {
+            setError(`No BloodHound findings match the selected severity filters. Total BloodHound nodes: ${bhFindings.length}`);
+          }
+          return;
+        }
+      }
+
+      // Fallback to regular findings if no BloodHound data
+      setBloodhoundDataAvailable(false);
       const response = await fetch(`/api/scan/${scanId}/findings`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to load findings: ${response.status}`);
+      }
+
       const data = await response.json();
+
+      if (!data.findings || !Array.isArray(data.findings)) {
+        throw new Error('Invalid findings data format');
+      }
 
       const filteredFindings = data.findings.filter(finding =>
         severityFilter.includes(finding.severity.toLowerCase())
       );
 
       setFindings(filteredFindings);
+
+      if (filteredFindings.length === 0 && data.findings.length > 0) {
+        setError(`No findings match the selected severity filters. Total findings: ${data.findings.length}`);
+      }
     } catch (error) {
       console.error('Failed to load findings:', error);
-      setError('Failed to load findings');
+      setError(`Failed to load findings: ${error.message}`);
+      setFindings([]);
     }
   };
 
@@ -403,7 +475,14 @@ const AttackPath = () => {
                     name="dataSource"
                     value={option.value}
                     checked={dataSource === option.value}
-                    onChange={(e) => setDataSource(e.target.value)}
+                    onChange={(e) => {
+                      setDataSource(e.target.value);
+                      // Clear findings when switching to upload mode
+                      if (e.target.value === 'upload') {
+                        setFindings([]);
+                        setError(null);
+                      }
+                    }}
                     className="radio"
                   />
                   <span className="text-text-primary">{option.label}</span>
@@ -414,9 +493,15 @@ const AttackPath = () => {
             {dataSource === 'choose' && (
               <select
                 value={selectedScanId}
-                onChange={(e) => setSelectedScanId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedScanId(e.target.value);
+                  if (e.target.value) {
+                    loadFindings(e.target.value);
+                  }
+                }}
                 className="select"
               >
+                <option value="">Select a scan...</option>
                 {recentScans.map(scan => (
                   <option key={scan.id} value={scan.id}>
                     {new Date(scan.timestamp).toLocaleString()} - {scan.engine} ({scan.finding_count} findings)
@@ -478,6 +563,12 @@ const AttackPath = () => {
 
             <div className="text-sm text-text-secondary">
               {findings.length} findings ready for analysis
+              {bloodhoundDataAvailable && (
+                <div className="flex items-center gap-1 mt-1 text-accent-primary">
+                  <Network className="w-3 h-3" />
+                  <span className="text-xs">BloodHound data available</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

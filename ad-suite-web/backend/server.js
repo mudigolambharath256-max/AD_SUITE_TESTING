@@ -11,6 +11,7 @@ const integrationsRoutes = require('./routes/integrations');
 const scheduleRoutes = require('./routes/schedule');
 const settingsRoutes = require('./routes/settings');
 const adexplorerRoutes = require('./routes/adexplorer');
+const bloodhoundRoutes = require('./routes/bloodhound');
 
 // Import services
 const db = require('./services/db');
@@ -33,6 +34,7 @@ app.use('/api/integrations', integrationsRoutes);
 app.use('/api/integrations/adexplorer', adexplorerRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/bloodhound', bloodhoundRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -409,6 +409,16 @@ async function runScan({ scanId, checkIds, engine, suiteRoot, domain, serverIp }
   console.log(`[SCAN ${scanId}] Suite Root: ${suiteRoot}`);
   console.log(`[SCAN ${scanId}] Check IDs: ${checkIds.join(', ')}`);
 
+  // Create BloodHound output directory and set environment variables
+  const bloodhoundDir = path.join(REPORTS_DIR, scanId, 'bloodhound');
+  fs.mkdirSync(bloodhoundDir, { recursive: true });
+
+  // Set environment variables for BloodHound export in scripts
+  process.env.ADSUITE_SESSION_ID = scanId;
+  process.env.ADSUITE_OUTPUT_ROOT = REPORTS_DIR;
+
+  console.log(`[SCAN ${scanId}] BloodHound export enabled: ${bloodhoundDir}`);
+
   db.updateScanStatus(scanId, 'running');
 
   let completedCount = 0;
@@ -549,6 +559,10 @@ async function runScan({ scanId, checkIds, engine, suiteRoot, domain, serverIp }
 
   // Write final export files
   await writeExportFiles(scanId, allFindings);
+
+  // Clean up environment variables
+  delete process.env.ADSUITE_SESSION_ID;
+  delete process.env.ADSUITE_OUTPUT_ROOT;
 
   emitSSE(scanId, { type: 'complete', summary });
   emitSSE(scanId, { type: 'done' });
