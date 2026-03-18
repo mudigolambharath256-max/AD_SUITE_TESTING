@@ -2,13 +2,15 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import cytoscape from 'cytoscape';
 
 const NODE_COLOURS = {
-    User: '#5b7fa6',   // warm blue-grey
-    Group: '#4e8c5f',   // warm forest green
+    User: '#5b7fa6',       // warm blue-grey (BloodHound style)
+    Group: '#4e8c5f',      // warm forest green
     Computer: '#c47b3a',   // warm burnt orange
-    Domain: '#8b6db5',   // warm muted purple
-    OU: '#3d8c7a',   // warm teal
+    Domain: '#8b6db5',     // warm muted purple
+    OU: '#3d8c7a',         // warm teal
+    GPO: '#9b59b6',        // purple for Group Policy Objects
     Category: '#d4a96a',   // Claude accent amber
-    Finding: '#c0392b',   // warm red
+    Finding: '#c0392b',    // warm red
+    ATTACKER: '#e74c3c',   // bright red for attack nodes
 };
 
 const LAYOUTS = {
@@ -28,7 +30,7 @@ export function AdGraphVisualiser({ preloadSessionId }) {
     const [error, setError] = useState('');
     const [layout, setLayout] = useState('Force-directed');
     const [filter, setFilter] = useState('All');
-    const [dataSource, setDataSource] = useState('adexplorer');
+    const [dataSource, setDataSource] = useState('bloodhound');
     const [sessionId, setSessionId] = useState('');
     const [scanId, setScanId] = useState('');
     const [recentScans, setRecentScans] = useState([]);
@@ -77,17 +79,50 @@ export function AdGraphVisualiser({ preloadSessionId }) {
                         'text-valign': 'bottom',
                         'text-halign': 'center',
                         'text-margin-y': 4,
-                        'width': (el) => el.data('type') === 'Domain' ? 50 : 30,
-                        'height': (el) => el.data('type') === 'Domain' ? 50 : 30,
+                        'width': (el) => {
+                            const type = el.data('type');
+                            if (type === 'Domain') return 60;
+                            if (type === 'Computer') return 35;
+                            if (type === 'Group') return 30;
+                            return 25; // User default
+                        },
+                        'height': (el) => {
+                            const type = el.data('type');
+                            if (type === 'Domain') return 60;
+                            if (type === 'Computer') return 35;
+                            if (type === 'Group') return 30;
+                            return 25; // User default
+                        },
+                        'shape': (el) => {
+                            const type = el.data('type');
+                            if (type === 'User') return 'ellipse';
+                            if (type === 'Computer') return 'rectangle';
+                            if (type === 'Group') return 'hexagon';
+                            if (type === 'Domain') return 'star';
+                            if (type === 'OU') return 'triangle';
+                            if (type === 'GPO') return 'diamond';
+                            return 'ellipse';
+                        },
                         'border-width': 2,
-                        'border-color': (el) => NODE_COLOURS[el.data('type')] || '#6b5f54',
-                        'border-opacity': 0.4,
+                        'border-color': (el) => {
+                            const props = el.data('properties') || {};
+                            // Highlight high-value targets
+                            if (props.adSuiteSeverity === 'CRITICAL') return '#e74c3c';
+                            if (props.adSuiteSeverity === 'HIGH') return '#f39c12';
+                            if (props.isACLProtected || props.admincount) return '#d4a96a';
+                            return NODE_COLOURS[el.data('type')] || '#6b5f54';
+                        },
+                        'border-opacity': (el) => {
+                            const props = el.data('properties') || {};
+                            if (props.adSuiteSeverity === 'CRITICAL' || props.adSuiteSeverity === 'HIGH') return 1;
+                            return 0.4;
+                        },
                     },
                 },
                 {
                     selector: 'node:selected',
                     style: {
-                        'border-width': 3,
+                        'border-width': 4,
                         'border-color': '#d4a96a',
                         'border-opacity': 1,
                     },
@@ -95,15 +130,35 @@ export function AdGraphVisualiser({ preloadSessionId }) {
                 {
                     selector: 'edge',
                     style: {
-                        'width': 1.5,
-                        'line-color': '#4a403a',
-                        'target-arrow-color': '#4a403a',
+                        'width': (el) => {
+                            const type = el.data('type');
+                            if (type === 'attack') return 3;
+                            if (type === 'membership') return 2;
+                            return 1.5;
+                        },
+                        'line-color': (el) => {
+                            const type = el.data('type');
+                            if (type === 'attack') return '#e74c3c';
+                            if (type === 'membership') return '#3498db';
+                            return '#4a403a';
+                        },
+                        'target-arrow-color': (el) => {
+                            const type = el.data('type');
+                            if (type === 'attack') return '#e74c3c';
+                            if (type === 'membership') return '#3498db';
+                            return '#4a403a';
+                        },
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
                         'label': 'data(label)',
                         'font-size': '8px',
                         'color': '#6b5f54',
                         'text-rotation': 'autorotate',
+                        'line-style': (el) => {
+                            const type = el.data('type');
+                            if (type === 'attack') return 'dashed';
+                            return 'solid';
+                        },
                     },
                 },
                 {
@@ -133,16 +188,115 @@ export function AdGraphVisualiser({ preloadSessionId }) {
 
     // ── Build cytoscape elements from graph data ──────────────────────────────
     function buildElements(data, typeFilter) {
+        // Handle BloodHound format data
+        if (data.nodes && data.nodes[0]?.ObjectIdentifier) {
+            return buildBloodHoundElements(data, typeFilter);
+        }
+
+        // Handle legacy format data
         const nodes = data.nodes
             .filter(n => typeFilter === 'All' || n.type === typeFilter)
-            .map(n => ({ data: { id: n.id, label: truncateLabel(n.label), type: n.type, properties: n.properties } }));
+            .map(n => ({
+                data: {
+                    id: n.id,
+                    label: truncateLabel(n.label),
+                    type: n.type,
+                    properties: n.properties
+                }
+            }));
 
         const nodeIds = new Set(nodes.map(n => n.data.id));
         const edges = data.edges
             .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
-            .map(e => ({ data: { source: e.source, target: e.target, label: e.label || e.type, type: e.type } }));
+            .map(e => ({
+                data: {
+                    source: e.source,
+                    target: e.target,
+                    label: e.label || e.type,
+                    type: e.type
+                }
+            }));
 
         return [...nodes, ...edges];
+    }
+
+    // Build elements from BloodHound format data
+    function buildBloodHoundElements(data, typeFilter) {
+        const nodes = data.nodes
+            .filter(n => {
+                const nodeType = getNodeType(n);
+                return typeFilter === 'All' || nodeType === typeFilter;
+            })
+            .map(n => {
+                const nodeType = getNodeType(n);
+                const label = getNodeLabel(n);
+
+                return {
+                    data: {
+                        id: n.ObjectIdentifier,
+                        label: truncateLabel(label),
+                        type: nodeType,
+                        properties: {
+                            ...n.Properties,
+                            objectIdentifier: n.ObjectIdentifier,
+                            isDeleted: n.IsDeleted,
+                            isACLProtected: n.IsACLProtected
+                        }
+                    }
+                };
+            });
+
+        const nodeIds = new Set(nodes.map(n => n.data.id));
+        const edges = data.edges
+            .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
+            .map(e => ({
+                data: {
+                    source: e.source,
+                    target: e.target,
+                    label: e.label || e.type,
+                    type: e.type || 'relationship'
+                }
+            }));
+
+        return [...nodes, ...edges];
+    }
+
+    // Get node type from BloodHound node
+    function getNodeType(node) {
+        if (node.Labels && node.Labels.length > 0) {
+            return node.Labels[0];
+        }
+
+        // Fallback to properties-based detection
+        const props = node.Properties || {};
+        if (props.samaccountname && props.samaccountname.endsWith('$')) return 'Computer';
+        if (props.distinguishedname && props.distinguishedname.includes('CN=Groups')) return 'Group';
+        if (props.distinguishedname && props.distinguishedname.startsWith('OU=')) return 'OU';
+        if (props.distinguishedname && props.distinguishedname.startsWith('DC=')) return 'Domain';
+
+        return 'User'; // Default
+    }
+
+    // Get display label for BloodHound node
+    function getNodeLabel(node) {
+        const props = node.Properties || {};
+
+        // Use name property if available
+        if (props.name) {
+            // Remove domain suffix for cleaner display
+            const atIndex = props.name.indexOf('@');
+            return atIndex > 0 ? props.name.substring(0, atIndex) : props.name;
+        }
+
+        // Fallback to samaccountname or CN from DN
+        if (props.samaccountname) return props.samaccountname;
+
+        if (props.distinguishedname) {
+            const cnMatch = props.distinguishedname.match(/CN=([^,]+)/);
+            if (cnMatch) return cnMatch[1];
+        }
+
+        return node.ObjectIdentifier || 'Unknown';
     }
 
     function truncateLabel(label) {
@@ -154,22 +308,37 @@ export function AdGraphVisualiser({ preloadSessionId }) {
 
     // ── Load graph data ───────────────────────────────────────────────────────
     async function loadGraph(source, id) {
-        if (!id) return;
+        if (!id && source !== 'demo') return;
         setStatus('loading');
         setSelected(null);
         setError('');
 
         try {
-            const url = source === 'adexplorer'
-                ? `/api/integrations/adexplorer/graph/${id}`
-                : `/api/reports/graph-data/${id}`;
+            let url;
+
+            switch (source) {
+                case 'demo':
+                    url = `/api/bloodhound/demo`;
+                    break;
+                case 'bloodhound':
+                    url = `/api/bloodhound/scan/${id}`;
+                    break;
+                case 'findings':
+                    url = `/api/bloodhound/findings/${id}`;
+                    break;
+                case 'adexplorer':
+                    url = `/api/integrations/adexplorer/graph/${id}`;
+                    break;
+                default:
+                    url = `/api/reports/graph-data/${id}`;
+            }
 
             const r = await fetch(url);
             if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
             const data = await r.json();
 
             if (!data.nodes || data.nodes.length === 0) {
-                throw new Error('No nodes in graph data. Ensure the conversion completed successfully.');
+                throw new Error('No nodes in graph data. Run a scan first or ensure BloodHound export is enabled.');
             }
 
             setGraphData(data);
@@ -201,7 +370,14 @@ export function AdGraphVisualiser({ preloadSessionId }) {
     function fitGraph() { cyInstance.current?.fit(undefined, 30); }
 
     const nodeTypes = graphData
-        ? ['All', ...new Set(graphData.nodes.map(n => n.type))]
+        ? ['All', ...new Set(graphData.nodes.map(n => {
+            // Handle BloodHound format
+            if (n.ObjectIdentifier) {
+                return getNodeType(n);
+            }
+            // Handle legacy format
+            return n.type;
+        }))]
         : ['All'];
 
     return (
@@ -211,14 +387,32 @@ export function AdGraphVisualiser({ preloadSessionId }) {
             <div className="p-4 border-b border-border">
                 <h3 className="text-text-primary font-semibold">AD Graph Visualiser</h3>
                 <p className="text-text-secondary text-sm mt-1">
-                    Interactive node graph from ADExplorer snapshots or scan findings.
-                    Separate from BloodHound — visualised entirely in-browser.
+                    Interactive BloodHound-style visualization of Active Directory objects (Users, Computers, Groups)
+                    from scan findings or BloodHound exports. Shows actual AD relationships and attack paths.
                 </p>
             </div>
 
             {/* ── Data Source Selector ─── */}
             <div className="p-4 border-b border-border flex flex-wrap gap-3 items-end">
                 <div className="flex gap-2">
+                    <button
+                        onClick={() => setDataSource('bloodhound')}
+                        className={`text-sm px-3 py-1.5 rounded border transition-all ${dataSource === 'bloodhound'
+                            ? 'bg-accent-muted border-accent-primary text-accent-primary'
+                            : 'bg-bg-tertiary border-border text-text-secondary'
+                            }`}
+                    >
+                        BloodHound Export
+                    </button>
+                    <button
+                        onClick={() => setDataSource('findings')}
+                        className={`text-sm px-3 py-1.5 rounded border transition-all ${dataSource === 'findings'
+                            ? 'bg-accent-muted border-accent-primary text-accent-primary'
+                            : 'bg-bg-tertiary border-border text-text-secondary'
+                            }`}
+                    >
+                        Scan Findings
+                    </button>
                     <button
                         onClick={() => setDataSource('adexplorer')}
                         className={`text-sm px-3 py-1.5 rounded border transition-all ${dataSource === 'adexplorer'
@@ -229,13 +423,13 @@ export function AdGraphVisualiser({ preloadSessionId }) {
                         ADExplorer Session
                     </button>
                     <button
-                        onClick={() => setDataSource('scan')}
-                        className={`text-sm px-3 py-1.5 rounded border transition-all ${dataSource === 'scan'
-                            ? 'bg-accent-muted border-accent-primary text-accent-primary'
-                            : 'bg-bg-tertiary border-border text-text-secondary'
-                            }`}
+                        onClick={() => {
+                            setDataSource('demo');
+                            loadGraph('demo', null);
+                        }}
+                        className="text-sm px-3 py-1.5 rounded border transition-all bg-green-600 hover:bg-green-700 border-green-500 text-white"
                     >
-                        Scan Findings
+                        Demo Data
                     </button>
                 </div>
 
@@ -248,6 +442,10 @@ export function AdGraphVisualiser({ preloadSessionId }) {
                        text-text-primary text-sm font-mono placeholder:text-text-muted
                        focus:outline-none focus:border-accent-primary"
                     />
+                ) : dataSource === 'demo' ? (
+                    <div className="flex-1 text-sm text-text-secondary italic">
+                        Click "Demo Data" to load sample BloodHound visualization
+                    </div>
                 ) : (
                     <select
                         value={scanId}
@@ -264,15 +462,17 @@ export function AdGraphVisualiser({ preloadSessionId }) {
                     </select>
                 )}
 
-                <button
-                    onClick={() => loadGraph(dataSource, dataSource === 'adexplorer' ? sessionId : scanId)}
-                    disabled={status === 'loading'}
-                    className="bg-accent-primary hover:bg-accent-hover text-bg-primary font-medium
-                     text-sm px-4 py-1.5 rounded-lg transition-all active:scale-95
-                     disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {status === 'loading' ? 'Loading…' : 'Load Graph'}
-                </button>
+                {dataSource !== 'demo' && (
+                    <button
+                        onClick={() => loadGraph(dataSource, dataSource === 'adexplorer' ? sessionId : scanId)}
+                        disabled={status === 'loading'}
+                        className="bg-accent-primary hover:bg-accent-hover text-bg-primary font-medium
+                         text-sm px-4 py-1.5 rounded-lg transition-all active:scale-95
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {status === 'loading' ? 'Loading…' : 'Load Graph'}
+                    </button>
+                )}
             </div>
 
             {/* ── Graph Controls (only when loaded) ─── */}
@@ -321,7 +521,7 @@ export function AdGraphVisualiser({ preloadSessionId }) {
                     {/* Empty states */}
                     {status === 'idle' && (
                         <div className="flex items-center justify-center h-full text-text-muted text-sm">
-                            Select a data source and click Load Graph
+                            Select BloodHound Export or Scan Findings and click Load Graph
                         </div>
                     )}
                     {status === 'loading' && (
@@ -357,14 +557,83 @@ export function AdGraphVisualiser({ preloadSessionId }) {
                         </div>
 
                         <div className="space-y-1.5">
-                            {Object.entries(selected.properties || {}).map(([k, v]) => (
-                                <div key={k} className="text-xs">
-                                    <span className="text-text-muted">{k}: </span>
-                                    <span className="text-text-secondary font-mono break-all">
-                                        {typeof v === 'boolean' ? (v ? 'yes' : 'no') : String(v || '—')}
+                            {/* Show BloodHound-specific properties first */}
+                            {selected.properties?.adSuiteCheckId && (
+                                <div className="mb-3 p-2 bg-bg-secondary rounded border">
+                                    <div className="text-xs text-text-muted mb-1">Security Finding</div>
+                                    <div className="text-xs">
+                                        <span className="text-text-muted">Check: </span>
+                                        <span className="text-text-secondary font-mono">{selected.properties.adSuiteCheckId}</span>
+                                    </div>
+                                    <div className="text-xs">
+                                        <span className="text-text-muted">Severity: </span>
+                                        <span className={`font-mono ${selected.properties.adSuiteSeverity === 'CRITICAL' ? 'text-red-400' :
+                                            selected.properties.adSuiteSeverity === 'HIGH' ? 'text-orange-400' :
+                                                selected.properties.adSuiteSeverity === 'MEDIUM' ? 'text-yellow-400' :
+                                                    'text-text-secondary'
+                                            }`}>
+                                            {selected.properties.adSuiteSeverity}
+                                        </span>
+                                    </div>
+                                    {selected.properties.adSuiteMitre && (
+                                        <div className="text-xs">
+                                            <span className="text-text-muted">MITRE: </span>
+                                            <span className="text-text-secondary font-mono">{selected.properties.adSuiteMitre}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Core AD properties */}
+                            {selected.properties?.samaccountname && (
+                                <div className="text-xs">
+                                    <span className="text-text-muted">SAM Account: </span>
+                                    <span className="text-text-secondary font-mono break-all">{selected.properties.samaccountname}</span>
+                                </div>
+                            )}
+
+                            {selected.properties?.domain && (
+                                <div className="text-xs">
+                                    <span className="text-text-muted">Domain: </span>
+                                    <span className="text-text-secondary font-mono break-all">{selected.properties.domain}</span>
+                                </div>
+                            )}
+
+                            {selected.properties?.enabled !== undefined && (
+                                <div className="text-xs">
+                                    <span className="text-text-muted">Enabled: </span>
+                                    <span className={`font-mono ${selected.properties.enabled ? 'text-green-400' : 'text-red-400'}`}>
+                                        {selected.properties.enabled ? 'Yes' : 'No'}
                                     </span>
                                 </div>
-                            ))}
+                            )}
+
+                            {selected.properties?.isACLProtected && (
+                                <div className="text-xs">
+                                    <span className="text-text-muted">ACL Protected: </span>
+                                    <span className="text-yellow-400 font-mono">Yes</span>
+                                </div>
+                            )}
+
+                            {/* Distinguished Name */}
+                            {selected.properties?.distinguishedname && (
+                                <div className="text-xs">
+                                    <span className="text-text-muted">DN: </span>
+                                    <span className="text-text-secondary font-mono break-all text-xs">{selected.properties.distinguishedname}</span>
+                                </div>
+                            )}
+
+                            {/* All other properties */}
+                            {Object.entries(selected.properties || {})
+                                .filter(([k]) => !['adSuiteCheckId', 'adSuiteSeverity', 'adSuiteMitre', 'samaccountname', 'domain', 'enabled', 'isACLProtected', 'distinguishedname'].includes(k))
+                                .map(([k, v]) => (
+                                    <div key={k} className="text-xs">
+                                        <span className="text-text-muted">{k}: </span>
+                                        <span className="text-text-secondary font-mono break-all">
+                                            {typeof v === 'boolean' ? (v ? 'yes' : 'no') : String(v || '—')}
+                                        </span>
+                                    </div>
+                                ))}
                         </div>
                     </div>
                 )}
@@ -372,13 +641,42 @@ export function AdGraphVisualiser({ preloadSessionId }) {
 
             {/* ── Legend ─── */}
             {status === 'loaded' && (
-                <div className="px-4 py-2 border-t border-border bg-bg-primary flex flex-wrap gap-3">
-                    {Object.entries(NODE_COLOURS).map(([type, colour]) => (
-                        <div key={type} className="flex items-center gap-1.5 text-xs text-text-muted">
-                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: colour }} />
-                            {type}
+                <div className="px-4 py-2 border-t border-border bg-bg-primary">
+                    <div className="flex flex-wrap gap-3 mb-2">
+                        <div className="text-xs text-text-muted font-medium">Node Types:</div>
+                        {Object.entries(NODE_COLOURS).map(([type, colour]) => (
+                            <div key={type} className="flex items-center gap-1.5 text-xs text-text-muted">
+                                <span
+                                    className="w-2.5 h-2.5 flex-shrink-0"
+                                    style={{
+                                        backgroundColor: colour,
+                                        borderRadius: type === 'User' ? '50%' :
+                                            type === 'Computer' ? '0' :
+                                                type === 'Group' ? '0' : '50%'
+                                    }}
+                                />
+                                {type}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-xs text-text-muted">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-0.5 bg-red-400"></div>
+                            Attack Path
                         </div>
-                    ))}
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-0.5 bg-blue-400"></div>
+                            Membership
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-0.5 bg-gray-400"></div>
+                            Relationship
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 border-2 border-yellow-400 rounded-full"></div>
+                            High-Value Target
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

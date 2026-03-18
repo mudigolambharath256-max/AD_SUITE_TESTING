@@ -20,36 +20,61 @@ router.get('/scan/:scanId', (req, res) => {
         const scanDir = path.join(reportsDir, scanId);
         const bloodhoundDir = path.join(scanDir, 'bloodhound');
 
-        if (!fs.existsSync(bloodhoundDir)) {
-            return res.json({
-                nodes: [],
-                edges: [],
-                message: 'No BloodHound data available for this scan'
-            });
-        }
-
-        // Read all BloodHound JSON files
-        const jsonFiles = fs.readdirSync(bloodhoundDir)
-            .filter(file => file.endsWith('.json'));
-
         let allNodes = [];
         let allEdges = [];
 
-        for (const file of jsonFiles) {
-            try {
-                const filePath = path.join(bloodhoundDir, file);
-                const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        // Try to read BloodHound JSON files first
+        if (fs.existsSync(bloodhoundDir)) {
+            const jsonFiles = fs.readdirSync(bloodhoundDir)
+                .filter(file => file.endsWith('.json'));
 
-                if (content.data && Array.isArray(content.data)) {
-                    allNodes.push(...content.data);
+            for (const file of jsonFiles) {
+                try {
+                    const filePath = path.join(bloodhoundDir, file);
+                    const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+                    if (content.data && Array.isArray(content.data)) {
+                        allNodes.push(...content.data);
+                    }
+                } catch (error) {
+                    console.error(`Error reading BloodHound file ${file}:`, error);
                 }
-            } catch (error) {
-                console.error(`Error reading BloodHound file ${file}:`, error);
+            }
+        }
+
+        // If no BloodHound data found, convert findings to BloodHound format
+        if (allNodes.length === 0) {
+            console.log(`No BloodHound files found for scan ${scanId}, converting findings...`);
+            const findings = db.getScanFindings(scanId);
+
+            if (findings && findings.length > 0) {
+                allNodes = convertFindingsToNodes(findings);
+                console.log(`Converted ${findings.length} findings to ${allNodes.length} nodes`);
             }
         }
 
         // Generate edges based on AD relationships
         const edges = generateADRelationships(allNodes);
+
+        // Add virtual attacker node if we have attack edges
+        const hasAttackEdges = edges.some(e => e.type === 'attack');
+        if (hasAttackEdges) {
+            allNodes.push({
+                ObjectIdentifier: 'ATTACKER_NODE',
+                Properties: {
+                    name: 'ATTACKER',
+                    domain: 'EXTERNAL',
+                    distinguishedname: 'CN=ATTACKER,CN=EXTERNAL',
+                    samaccountname: 'ATTACKER',
+                    enabled: true,
+                    isdeleted: false
+                },
+                Labels: ['ATTACKER'],
+                Aces: [],
+                IsDeleted: false,
+                IsACLProtected: false
+            });
+        }
 
         res.json({
             nodes: allNodes,
@@ -58,7 +83,8 @@ router.get('/scan/:scanId', (req, res) => {
                 scanId,
                 nodeCount: allNodes.length,
                 edgeCount: edges.length,
-                timestamp: scan.timestamp
+                timestamp: scan.timestamp,
+                source: allNodes.length > 0 ? (fs.existsSync(bloodhoundDir) ? 'bloodhound_export' : 'findings_conversion') : 'none'
             }
         });
 
@@ -108,32 +134,44 @@ router.get('/findings/:scanId', (req, res) => {
 // Helper function to convert findings to BloodHound nodes
 function convertFindingsToNodes(findings) {
     const nodeMap = new Map();
+    const domainSet = new Set();
 
     findings.forEach(finding => {
         try {
             const details = JSON.parse(finding.detailsJson || '{}');
-            const dn = finding.distinguishedName;
+            let dn = finding.distinguishedName || details.DistinguishedName || details.distinguishedname;
+            let name = finding.name || details.Name || details.SamAccountName || details.samaccountname;
 
-            if (!dn) return;
+            // If no DN or name, create synthetic ones based on the finding
+            if (!dn && !name) {
+                name = `${finding.checkId}_Object_${finding.id}`;
+                dn = `CN=${name},CN=Users,DC=domain,DC=local`;
+            } else if (!dn && name) {
+                dn = `CN=${name},CN=Users,DC=domain,DC=local`;
+            } else if (dn && !name) {
+                const cnMatch = dn.match(/CN=([^,]+)/i);
+                name = cnMatch ? cnMatch[1] : `Object_${finding.id}`;
+            }
 
             // Extract domain from DN
             const domain = extractDomainFromDN(dn);
+            domainSet.add(domain);
 
             // Determine node type based on DN and finding
             const nodeType = determineNodeType(dn, finding, details);
 
             // Create unique node ID
-            const nodeId = finding.name ? `${finding.name.toUpperCase()}@${domain}` : dn;
+            const nodeId = details.objectSid || `${name.toUpperCase()}@${domain}`;
 
             if (!nodeMap.has(nodeId)) {
                 nodeMap.set(nodeId, {
-                    ObjectIdentifier: details.objectSid || dn,
+                    ObjectIdentifier: nodeId,
                     Properties: {
-                        name: nodeId,
+                        name: `${name.toUpperCase()}@${domain}`,
                         domain: domain,
                         distinguishedname: dn,
-                        samaccountname: finding.name,
-                        enabled: !details.disabled,
+                        samaccountname: name,
+                        enabled: !details.disabled && details.enabled !== false,
                         isdeleted: false,
                         // Add finding-specific properties
                         adSuiteCheckId: finding.checkId,
@@ -148,15 +186,48 @@ function convertFindingsToNodes(findings) {
                     Labels: [nodeType],
                     Aces: [],
                     IsDeleted: false,
-                    IsACLProtected: false
+                    IsACLProtected: details.adminCount === 1 || details.AdminCount === 1 || finding.severity === 'CRITICAL'
                 });
+            } else {
+                // Update existing node with additional finding info
+                const existingNode = nodeMap.get(nodeId);
+                if (finding.severity === 'CRITICAL' || finding.severity === 'HIGH') {
+                    existingNode.Properties.adSuiteSeverity = finding.severity;
+                    existingNode.Properties.adSuiteCheckId = finding.checkId;
+                    existingNode.IsACLProtected = true;
+                }
             }
         } catch (error) {
             console.error('Error processing finding:', error);
         }
     });
 
-    return Array.from(nodeMap.values());
+    // Add domain nodes
+    const nodes = Array.from(nodeMap.values());
+    domainSet.forEach(domain => {
+        if (domain && domain !== 'UNKNOWN.LOCAL') {
+            const domainDN = `DC=${domain.split('.').join(',DC=')}`;
+            const domainId = `${domain.toUpperCase()}_DOMAIN`;
+
+            nodes.push({
+                ObjectIdentifier: domainId,
+                Properties: {
+                    name: domain.toUpperCase(),
+                    domain: domain,
+                    distinguishedname: domainDN,
+                    samaccountname: domain.split('.')[0],
+                    enabled: true,
+                    isdeleted: false
+                },
+                Labels: ['Domain'],
+                Aces: [],
+                IsDeleted: false,
+                IsACLProtected: false
+            });
+        }
+    });
+
+    return nodes;
 }
 
 // Helper function to generate relationships from findings
@@ -241,9 +312,241 @@ function getAttackLabel(checkId) {
 }
 
 function generateADRelationships(nodes) {
-    // This would generate edges based on AD relationships
-    // For now, return empty array - we'll use findings-based relationships
-    return [];
+    const edges = [];
+    const nodeMap = new Map();
+
+    // Create a map of nodes by their identifier for quick lookup
+    nodes.forEach(node => {
+        if (node.ObjectIdentifier) {
+            nodeMap.set(node.ObjectIdentifier, node);
+        }
+    });
+
+    nodes.forEach(node => {
+        const props = node.Properties || {};
+        const sourceId = node.ObjectIdentifier;
+
+        // Generate MemberOf relationships from memberof property
+        if (props.memberof && Array.isArray(props.memberof)) {
+            props.memberof.forEach(groupDN => {
+                // Try to find the group node by DN
+                const groupNode = Array.from(nodeMap.values()).find(n =>
+                    n.Properties?.distinguishedname === groupDN
+                );
+
+                if (groupNode) {
+                    edges.push({
+                        id: `${sourceId}-memberof-${groupNode.ObjectIdentifier}`,
+                        source: sourceId,
+                        target: groupNode.ObjectIdentifier,
+                        label: 'MemberOf',
+                        type: 'membership'
+                    });
+                }
+            });
+        }
+
+        // Generate attack edges for high-severity findings
+        if (props.adSuiteSeverity === 'CRITICAL' || props.adSuiteSeverity === 'HIGH') {
+            // Create virtual attacker node
+            const attackerId = 'ATTACKER_NODE';
+
+            edges.push({
+                id: `attack-${sourceId}`,
+                source: attackerId,
+                target: sourceId,
+                label: getAttackLabel(props.adSuiteCheckId),
+                type: 'attack'
+            });
+        }
+
+        // Generate delegation relationships
+        if (props.adSuiteCheckId && props.adSuiteCheckId.includes('Delegation')) {
+            // Find domain node
+            const domainNode = Array.from(nodeMap.values()).find(n =>
+                n.Properties?.domain === props.domain &&
+                (n.Labels?.includes('Domain') || n.Properties?.distinguishedname?.startsWith('DC='))
+            );
+
+            if (domainNode) {
+                edges.push({
+                    id: `${sourceId}-delegate-${domainNode.ObjectIdentifier}`,
+                    source: sourceId,
+                    target: domainNode.ObjectIdentifier,
+                    label: 'AllowedToDelegate',
+                    type: 'delegation'
+                });
+            }
+        }
+    });
+
+    // Add virtual attacker node if we have attack edges
+    const hasAttackEdges = edges.some(e => e.type === 'attack');
+    if (hasAttackEdges) {
+        // This will be handled by the frontend to add the attacker node
+    }
+
+    return edges;
 }
+
+// GET /api/bloodhound/demo - Generate demo BloodHound data for testing
+router.get('/demo', (req, res) => {
+    try {
+        // Create sample BloodHound nodes representing typical AD objects
+        const demoNodes = [
+            {
+                ObjectIdentifier: 'S-1-5-21-123456789-123456789-123456789-1001',
+                Properties: {
+                    name: 'ADMIN@CONTOSO.COM',
+                    domain: 'CONTOSO.COM',
+                    distinguishedname: 'CN=admin,CN=Users,DC=contoso,DC=com',
+                    samaccountname: 'admin',
+                    enabled: true,
+                    isdeleted: false,
+                    adSuiteCheckId: 'ACC-001',
+                    adSuiteCheckName: 'Privileged Users (adminCount=1)',
+                    adSuiteSeverity: 'HIGH',
+                    adSuiteCategory: 'Access_Control',
+                    admincount: 1
+                },
+                Labels: ['User'],
+                Aces: [],
+                IsDeleted: false,
+                IsACLProtected: true
+            },
+            {
+                ObjectIdentifier: 'S-1-5-21-123456789-123456789-123456789-512',
+                Properties: {
+                    name: 'DOMAIN ADMINS@CONTOSO.COM',
+                    domain: 'CONTOSO.COM',
+                    distinguishedname: 'CN=Domain Admins,CN=Users,DC=contoso,DC=com',
+                    samaccountname: 'Domain Admins',
+                    enabled: true,
+                    isdeleted: false,
+                    adSuiteCheckId: 'ACC-002',
+                    adSuiteCheckName: 'Privileged Groups',
+                    adSuiteSeverity: 'CRITICAL',
+                    adSuiteCategory: 'Access_Control'
+                },
+                Labels: ['Group'],
+                Aces: [],
+                IsDeleted: false,
+                IsACLProtected: true
+            },
+            {
+                ObjectIdentifier: 'S-1-5-21-123456789-123456789-123456789-1000',
+                Properties: {
+                    name: 'DC01@CONTOSO.COM',
+                    domain: 'CONTOSO.COM',
+                    distinguishedname: 'CN=DC01,OU=Domain Controllers,DC=contoso,DC=com',
+                    samaccountname: 'DC01$',
+                    enabled: true,
+                    isdeleted: false,
+                    adSuiteCheckId: 'CMP-001',
+                    adSuiteCheckName: 'Domain Controllers',
+                    adSuiteSeverity: 'HIGH',
+                    adSuiteCategory: 'Computers_Servers'
+                },
+                Labels: ['Computer'],
+                Aces: [],
+                IsDeleted: false,
+                IsACLProtected: true
+            },
+            {
+                ObjectIdentifier: 'S-1-5-21-123456789-123456789-123456789-2001',
+                Properties: {
+                    name: 'JDOE@CONTOSO.COM',
+                    domain: 'CONTOSO.COM',
+                    distinguishedname: 'CN=John Doe,CN=Users,DC=contoso,DC=com',
+                    samaccountname: 'jdoe',
+                    enabled: true,
+                    isdeleted: false,
+                    adSuiteCheckId: 'AUTH-001',
+                    adSuiteCheckName: 'Kerberoastable Users',
+                    adSuiteSeverity: 'MEDIUM',
+                    adSuiteCategory: 'Authentication',
+                    serviceprincipalnames: ['HTTP/webapp.contoso.com']
+                },
+                Labels: ['User'],
+                Aces: [],
+                IsDeleted: false,
+                IsACLProtected: false
+            },
+            {
+                ObjectIdentifier: 'CONTOSO_DOMAIN',
+                Properties: {
+                    name: 'CONTOSO.COM',
+                    domain: 'CONTOSO.COM',
+                    distinguishedname: 'DC=contoso,DC=com',
+                    samaccountname: 'contoso',
+                    enabled: true,
+                    isdeleted: false
+                },
+                Labels: ['Domain'],
+                Aces: [],
+                IsDeleted: false,
+                IsACLProtected: false
+            }
+        ];
+
+        // Generate relationships
+        const demoEdges = [
+            {
+                id: 'admin-memberof-domainadmins',
+                source: 'S-1-5-21-123456789-123456789-123456789-1001',
+                target: 'S-1-5-21-123456789-123456789-123456789-512',
+                label: 'MemberOf',
+                type: 'membership'
+            },
+            {
+                id: 'attack-admin',
+                source: 'ATTACKER_NODE',
+                target: 'S-1-5-21-123456789-123456789-123456789-1001',
+                label: 'Privilege Escalation',
+                type: 'attack'
+            },
+            {
+                id: 'attack-jdoe',
+                source: 'ATTACKER_NODE',
+                target: 'S-1-5-21-123456789-123456789-123456789-2001',
+                label: 'Kerberoast',
+                type: 'attack'
+            }
+        ];
+
+        // Add attacker node
+        demoNodes.push({
+            ObjectIdentifier: 'ATTACKER_NODE',
+            Properties: {
+                name: 'ATTACKER',
+                domain: 'EXTERNAL',
+                distinguishedname: 'CN=ATTACKER,CN=EXTERNAL',
+                samaccountname: 'ATTACKER',
+                enabled: true,
+                isdeleted: false
+            },
+            Labels: ['ATTACKER'],
+            Aces: [],
+            IsDeleted: false,
+            IsACLProtected: false
+        });
+
+        res.json({
+            nodes: demoNodes,
+            edges: demoEdges,
+            meta: {
+                scanId: 'demo',
+                nodeCount: demoNodes.length,
+                edgeCount: demoEdges.length,
+                timestamp: new Date().toISOString(),
+                source: 'demo_data'
+            }
+        });
+
+    } catch (error) {
+        console.error('Error generating demo BloodHound data:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 module.exports = router;
