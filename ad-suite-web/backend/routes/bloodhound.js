@@ -31,7 +31,7 @@ router.get('/scan/:scanId', (req, res) => {
             for (const file of jsonFiles) {
                 try {
                     const filePath = path.join(bloodhoundDir, file);
-                    const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                    const content = JSON.parse(fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, ''));
 
                     if (content.data && Array.isArray(content.data)) {
                         allNodes.push(...content.data);
@@ -233,21 +233,26 @@ function convertFindingsToNodes(findings) {
 // Helper function to generate relationships from findings
 function generateRelationshipsFromFindings(findings, nodes) {
     const edges = [];
-    const nodeMap = new Map(nodes.map(n => [n.Properties.distinguishedname, n]));
+    const nodeMap = new Map(nodes.map(n => [n.Properties?.distinguishedname, n]));
 
     findings.forEach(finding => {
         try {
             const details = JSON.parse(finding.detailsJson || '{}');
+
+            // Safely check if finding.checkId exists and is a string
+            if (!finding.checkId || typeof finding.checkId !== 'string') {
+                return;
+            }
 
             // Generate relationships based on finding type
             if (finding.checkId.startsWith('ACC-') && details.memberOf) {
                 // Group membership relationships
                 const memberOf = Array.isArray(details.memberOf) ? details.memberOf : [details.memberOf];
                 memberOf.forEach(groupDN => {
-                    if (nodeMap.has(groupDN)) {
+                    if (groupDN && nodeMap.has(groupDN)) {
                         edges.push({
-                            id: `${finding.distinguishedName}-${groupDN}`,
-                            source: finding.distinguishedName,
+                            id: `${finding.distinguishedName || finding.id}-${groupDN}`,
+                            source: finding.distinguishedName || finding.id,
                             target: groupDN,
                             label: 'MemberOf',
                             type: 'membership',
@@ -263,9 +268,9 @@ function generateRelationshipsFromFindings(findings, nodes) {
             if (finding.checkId.startsWith('AUTH-') && finding.severity === 'HIGH') {
                 // Authentication vulnerabilities - create attack edges
                 edges.push({
-                    id: `attack-${finding.distinguishedName}`,
+                    id: `attack-${finding.distinguishedName || finding.id}`,
                     source: 'ATTACKER',
-                    target: finding.distinguishedName,
+                    target: finding.distinguishedName || finding.id,
                     label: getAttackLabel(finding.checkId),
                     type: 'attack',
                     properties: {
