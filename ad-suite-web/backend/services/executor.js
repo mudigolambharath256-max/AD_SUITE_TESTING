@@ -68,6 +68,8 @@ function resolveScriptPath(suiteRoot, checkId, engine) {
     throw new Error(`Unknown engine: ${engine}`);
   }
 
+  console.log(`[resolveScriptPath] Looking for ${checkId} with engine ${engine} (file: ${engineFile}) in ${suiteRoot}`);
+
   // Walk all category folders
   for (const cat of fs.readdirSync(suiteRoot)) {
     const catPath = path.join(suiteRoot, cat);
@@ -78,12 +80,16 @@ function resolveScriptPath(suiteRoot, checkId, engine) {
       // Match by check ID prefix
       if (!checkFolder.startsWith(checkId + '_') && !checkFolder.startsWith(checkId)) continue;
 
+      console.log(`[resolveScriptPath] Found matching folder: ${checkFolder} in category ${cat}`);
+
       const checkPath = path.join(catPath, checkFolder);
       if (!fs.statSync(checkPath).isDirectory()) continue;
 
       // Try direct script
       const directScript = path.join(checkPath, engineFile);
+      console.log(`[resolveScriptPath] Checking direct script: ${directScript}`);
       if (fs.existsSync(directScript)) {
+        console.log(`[resolveScriptPath] ✓ Found script: ${directScript}`);
         return { scriptPath: directScript, category: cat };
       }
 
@@ -94,7 +100,9 @@ function resolveScriptPath(suiteRoot, checkId, engine) {
           if (!fs.statSync(subPath).isDirectory()) continue;
 
           const nestedScript = path.join(subPath, engineFile);
+          console.log(`[resolveScriptPath] Checking nested script: ${nestedScript}`);
           if (fs.existsSync(nestedScript)) {
+            console.log(`[resolveScriptPath] ✓ Found nested script: ${nestedScript}`);
             return { scriptPath: nestedScript, category: cat };
           }
         }
@@ -104,6 +112,7 @@ function resolveScriptPath(suiteRoot, checkId, engine) {
     }
   }
 
+  console.log(`[resolveScriptPath] ✗ No script found for ${checkId} with engine ${engine}`);
   return null;
 }
 
@@ -111,10 +120,24 @@ function resolveScriptPath(suiteRoot, checkId, engine) {
 function buildPsCommand(scriptPath, engine) {
   const escapedPath = scriptPath.replace(/'/g, "''");
 
-  // combined_multiengine.ps1 uses 'return $results' instead of piping
+  // Inject code to capture $output before Format-List is called
+  // This prevents PowerShell formatting objects from being serialized
   const wrapper = engine === 'combined'
     ? `$r = & '${escapedPath}'; $r | ConvertTo-Json -Depth 10 -Compress`
-    : `& '${escapedPath}' | ConvertTo-Json -Depth 10 -Compress`;
+    : `
+      $ErrorActionPreference = 'Continue'
+      $outputCapture = @()
+      $null = & '${escapedPath}' *>&1 | ForEach-Object {
+        if ($_ -is [PSCustomObject] -or $_ -is [Hashtable]) {
+          $outputCapture += $_
+        }
+      }
+      if ($outputCapture.Count -gt 0) {
+        $outputCapture | ConvertTo-Json -Depth 10 -Compress
+      } else {
+        @() | ConvertTo-Json
+      }
+    `.replace(/\n\s+/g, ' ');
 
   return {
     cmd: 'powershell.exe',
