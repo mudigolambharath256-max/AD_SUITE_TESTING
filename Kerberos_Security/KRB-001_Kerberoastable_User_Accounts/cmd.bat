@@ -2,11 +2,10 @@ REM Check: Kerberoastable User Accounts
 REM Category: Kerberos Security
 REM Severity: high
 REM ID: KRB-001
-REM Requirements: dsquery (RSAT DS tools)
+REM Requirements: dsquery (Windows RSAT DS Tools)
 REM ============================================
+REM NOTE: OID extensible match filters stripped (not supported by dsquery).
+REM This cmd.bat returns structural inventory. Use adsi.ps1 for full detection.
 
 @echo off
-REM LDAP search (CMD + dsquery)
-REM Filter: (&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))
-
-dsquery * -filter "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))" -limit 0 -attr name distinguishedname samaccountname serviceprincipalname pwdlastset description
+dsquery * -filter "(&(objectClass=user)(!)(servicePrincipalName=*))" -limit 0 -attr name distinguishedName samAccountName servicePrincipalName pwdLastSet

@@ -1,145 +1,73 @@
-// ============================================================================
-// ACC-004: Users with SIDHistory
-// ============================================================================
-// Category: Access_Control
-// Language: C#
-// Description: C# implementation using System.DirectoryServices
-// ============================================================================
-// COMPILATION:
-//   csc /out:ACC-004.exe csharp.cs
-//   (Requires .NET Framework and System.DirectoryServices reference)
-// ============================================================================
+// Check: Users with SIDHistory
+// Category: Access Control
+// Severity: high
+// ID: ACC-004
+// Requirements: System.DirectoryServices (.NET 4.6.2+ or .NET 6+)
+// ============================================
 
 using System;
 using System.DirectoryServices;
-using System.Collections.Generic;
 
-namespace ADSecurityChecks
+class Program
 {
-    /// <summary>
-    /// Security check: Users with SIDHistory
-    /// Check ID: ACC-004
-    /// Category: Access_Control
-    /// </summary>
-    class ACC_004
+    static string GetProp(SearchResult r, string attr)
     {
-        static void Main(string[] args)
-        {
-            Console.WriteLine("============================================================================");
-            Console.WriteLine("ACC-004: Users with SIDHistory");
-            Console.WriteLine("============================================================================");
-            Console.WriteLine();
-            
-            try
-            {
-                // Execute the security check
-                RunSecurityCheck();
-                
-                Console.WriteLine();
-                Console.WriteLine("Check completed successfully");
+        return r.Properties.Contains(attr) && r.Properties[attr].Count > 0
+            ? r.Properties[attr][0].ToString()
+            : "";
+    }
 
-        static void ExportToBloodHound(System.Collections.Generic.List<System.Collections.Generic.Dictionary<string, string>> items, string checkId, string checkName, string severity, string category, string nodeType)
-        {
-            try
-            {
-                string session = System.Environment.GetEnvironmentVariable("ADSUITE_SESSION_ID") ?? System.Guid.NewGuid().ToString("N");
-                string root    = System.Environment.GetEnvironmentVariable("ADSUITE_OUTPUT_ROOT") ?? System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ADSuite_Sessions");
-                string dir     = System.IO.Path.Combine(root, session, "bloodhound");
-                System.IO.Directory.CreateDirectory(dir);
+    static string GetDomain(string dn)
+    {
+        if (string.IsNullOrEmpty(dn)) return "";
+        var parts = dn.Split(',');
+        var dc = new System.Collections.Generic.List<string>();
+        foreach (var p in parts)
+            if (p.TrimStart().StartsWith("DC=", StringComparison.OrdinalIgnoreCase))
+                dc.Add(p.TrimStart().Substring(3));
+        return string.Join(".", dc);
+    }
 
-                var nodes = new System.Text.StringBuilder();
-                nodes.Append("{\"data\":[");
-                bool first = true;
-                foreach (var item in items)
+    static void Main()
+    {
+        string filter = @"(&(objectClass=user)(sIDHistory=*))";
+        string[] props = new string[] { "name","distinguishedName","samAccountName","sIDHistory" };
+
+        try
+        {
+            using (DirectoryEntry rootEntry = new DirectoryEntry("LDAP://RootDSE"))
+            {
+                string targetNC = rootEntry.Properties["defaultNamingContext"].Value.ToString();
+
+                using (DirectoryEntry searchEntry = new DirectoryEntry("LDAP://" + targetNC))
+                using (DirectorySearcher searcher = new DirectorySearcher(searchEntry))
                 {
-                    if (!first) nodes.Append(",");
-                    first = false;
-                    string dn   = item.ContainsKey("dn")   ? item["dn"].ToUpper()   : "";
-                    string name = item.ContainsKey("name") ? item["name"].ToUpper() : "";
-                    string dom  = "";
-                    foreach (var part in dn.Split(','))
+                    searcher.Filter   = filter;
+                    searcher.PageSize = 1000;
+                    foreach (string p in props) searcher.PropertiesToLoad.Add(p);
+
+                    using (SearchResultCollection results = searcher.FindAll())
                     {
-                        if (part.StartsWith("DC=", System.StringComparison.OrdinalIgnoreCase))
+                        Console.WriteLine("ACC-004: found " + results.Count + " objects");
+                        // Fix R07: 5-field output header
+                        Console.WriteLine("Name\tDistinguishedName\tSamAccountName\tDomain\tEngine");
+                        foreach (SearchResult r in results)
                         {
-                            if (dom.Length > 0) dom += ".";
-                            dom += part.Substring(3).ToUpper();
+                            string nm  = GetProp(r, "sAMAccountName");
+                            if (string.IsNullOrEmpty(nm)) nm = GetProp(r, "name");
+                            string dn  = GetProp(r, "distinguishedName");
+                            string sam = GetProp(r, "sAMAccountName");
+                            string dom = GetDomain(dn);
+                            Console.WriteLine(nm + "\t" + dn + "\t" + sam + "\t" + dom + "\tCSharp");
                         }
                     }
-                    string displayName = dom.Length > 0 ? name + "@" + dom : name;
-                    string oid = dn.Length > 0 ? dn : System.Guid.NewGuid().ToString();
-                    nodes.Append(string.Format(
-                        "{{\"ObjectIdentifier\":\"{0}\",\"Properties\":{{\"name\":\"{1}\",\"domain\":\"{2}\",\"distinguishedname\":\"{3}\",\"enabled\":true,\"adSuiteCheckId\":\"{4}\",\"adSuiteCheckName\":\"{5}\",\"adSuiteSeverity\":\"{6}\",\"adSuiteCategory\":\"{7}\",\"adSuiteFlag\":true}},\"Aces\":[],\"IsDeleted\":false,\"IsACLProtected\":false}}",
-                        oid, displayName, dom, dn, checkId, checkName, severity, category));
                 }
-                nodes.Append(string.Format("],\"meta\":{{\"type\":\"{0}\",\"count\":{1},\"version\":5,\"methods\":0}}}}", nodeType, items.Count));
-
-                string ts   = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string file = System.IO.Path.Combine(dir, checkId + "_" + ts + ".json");
-                System.IO.File.WriteAllText(file, nodes.ToString(), System.Text.Encoding.UTF8);
-            }
-            catch { /* silent fail */ }
-        }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine();
-                Console.WriteLine("ERROR: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-                Environment.Exit(1);
             }
         }
-        
-        /// <summary>
-        /// Executes the Active Directory security check
-        /// </summary>
-        static void RunSecurityCheck()
+        catch (Exception ex)
         {
-            // Get root DSE to find default naming context
-            DirectoryEntry rootDSE = new DirectoryEntry("LDAP://RootDSE");
-            string domainDN = rootDSE.Properties["defaultNamingContext"][0].ToString();
-            
-            Console.WriteLine("Domain: " + domainDN);
-            Console.WriteLine("Executing query...");
-            Console.WriteLine();
-            
-            // Create directory searcher
-            DirectoryEntry searchRoot = new DirectoryEntry("LDAP://" + domainDN);
-            DirectorySearcher searcher = new DirectorySearcher(searchRoot);
-            
-            // Configure search
-            searcher.Filter = "(&(objectCategory=person)(objectClass=user)(sIDHistory=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))";
-            searcher.PageSize = 1000;
-            searcher.PropertiesToLoad.Add("name");
-            searcher.PropertiesToLoad.Add("distinguishedName");
-            searcher.PropertiesToLoad.Add("objectClass");
-            
-            // Execute search
-            SearchResultCollection results = searcher.FindAll();
-            
-            Console.WriteLine("Found " + results.Count + " objects");
-            Console.WriteLine();
-            
-            // Process results
-            int count = 0;
-            foreach (SearchResult result in results)
-            {
-                count++;
-                
-                string name = result.Properties.Contains("name") ? 
-                    result.Properties["name"][0].ToString() : "N/A";
-                string dn = result.Properties.Contains("distinguishedName") ? 
-                    result.Properties["distinguishedName"][0].ToString() : "N/A";
-                
-                Console.WriteLine(count + ". " + name);
-                Console.WriteLine("   DN: " + dn);
-            }
-            
-            // Cleanup
-            results.Dispose();
-            searcher.Dispose();
-            searchRoot.Dispose();
-            rootDSE.Dispose();
+            Console.Error.WriteLine("ACC-004 error: " + ex.Message);
+            Environment.Exit(1);
         }
     }
 }
-

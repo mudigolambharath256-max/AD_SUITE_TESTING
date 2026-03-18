@@ -5,60 +5,48 @@
 # Requirements: ActiveDirectory module (RSAT)
 # ============================================
 
-$searchBase = (Get-ADRootDSE).defaultNamingContext
-
-# LDAP search (PowerShell AD module)
 Import-Module ActiveDirectory -ErrorAction SilentlyContinue
 
-$ldapFilter = '(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))'
-$props = @('name', 'distinguishedName', 'samAccountName', 'servicePrincipalName', 'pwdLastSet', 'description', 'objectSid')
+$ldapFilter = '(&(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))'
+$props      = @('name','distinguishedName','samAccountName','servicePrincipalName','pwdLastSet', 'objectSid')
 
-Get-ADObject -LDAPFilter $ldapFilter -SearchBase $searchBase -Properties $props -ErrorAction Stop |
-  Select-Object name, distinguishedName, samAccountName, servicePrincipalName, pwdLastSet, description |
-  Sort-Object name |
-  ForEach-Object { $_ }
-
-
-# ── BloodHound Export ─────────────────────────────────────────────────────────
-# Added by Kiro automation — DO NOT modify lines above this section
 try {
-    $bhSession = if ($env:ADSUITE_SESSION_ID) { $env:ADSUITE_SESSION_ID } else { [guid]::NewGuid().ToString('N') }
-    $bhRoot    = if ($env:ADSUITE_OUTPUT_ROOT) { $env:ADSUITE_OUTPUT_ROOT } else { Join-Path $env:TEMP 'ADSuite_Sessions' }
-    $bhDir     = Join-Path $bhRoot "$bhSession\bloodhound"
-    if (-not (Test-Path $bhDir)) { New-Item -ItemType Directory -Path $bhDir -Force -ErrorAction Stop | Out-Null }
+    $searchBase = (Get-ADDomain -ErrorAction Stop).DistinguishedName
 
-    $bhNodes = [System.Collections.Generic.List[hashtable]]::new()
+    $found = Get-ADObject -LDAPFilter $ldapFilter `
+                          -Properties $props `
+                          -SearchBase $searchBase `
+                          -ErrorAction Stop
 
-    foreach ($r in $output) {
-        $dn   = if ($r.DistinguishedName) { $r.DistinguishedName } else { '' }
-        $name = if ($r.Name) { $r.Name } else { 'UNKNOWN' }
-        $dom  = (($dn -split ',') | Where-Object{$_ -match '^DC='} | ForEach-Object{$_ -replace '^DC=',''}) -join '.' | ForEach-Object{$_.ToUpper()}
-        $oid  = if ($dn) { $dn.ToUpper() } else { [guid]::NewGuid().ToString() }
+    Write-Host "KRB-001: found $($found.Count) objects"
+    
+    # Fix R07: Standardized 5-field output schema
+    $output = $found | ForEach-Object {
+        $domain = if ($_.DistinguishedName) {
+            (($_.DistinguishedName -split ',') | Where-Object { $_ -match '^DC=' } | ForEach-Object { ($_ -replace '^DC=','') }) -join '.'
+        } else { '' }
+        
+        $obj = [PSCustomObject]@{
+            Name              = if ($_.SamAccountName) { $_.SamAccountName } elseif ($_.CN) { $_.CN } else { $_.Name }
+            DistinguishedName = [string]$_.DistinguishedName
+            SamAccountName    = [string]$_.SamAccountName
+            Domain            = $domain
+            Engine            = 'PowerShell'
+        }
+        
+        # Fix R13: Add relevant detection data to output
+                if ($_.'servicePrincipalName') { $obj | Add-Member -NotePropertyName 'servicePrincipalName' -NotePropertyValue ([string]$_.'servicePrincipalName') -Force }         if ($_.'pwdLastSet') { $obj | Add-Member -NotePropertyName 'pwdLastSet' -NotePropertyValue ([string]$_.'pwdLastSet') -Force }
+        
+        $obj
+    } | Sort-Object Name
 
-        $bhNodes.Add(@{
-            ObjectIdentifier = $oid
-            Properties       = @{
-                name              = if ($dom) { "$($name.ToUpper())@$dom" } else { $name.ToUpper() }
-                domain            = $dom
-                distinguishedname = $dn.ToUpper()
-                enabled           = $true
-                adSuiteCheckId    = 'KRB-001'
-                adSuiteCheckName  = 'Kerberoastable_User_Accounts'
-                adSuiteMEDIUM   = 'MEDIUM'
-                adSuiteKerberos_Security   = 'Kerberos_Security'
-                adSuiteFlag       = $true
-            }
-            Aces      = @()
-            IsDeleted = $false
-            IsACLProtected = $false
-        })
-    }
+    $output | Format-List
 
-    $bhTs   = Get-Date -Format 'yyyyMMdd_HHmmss'
-    $bhFile = Join-Path $bhDir "KRB-001_$bhTs.json"
-    @{
-        data = $bhNodes.ToArray()
-        meta = @{ type = 'users'; count = $bhNodes.Count; version = 5; methods = 0 }
-    } | ConvertTo-Json -Depth 10 -Compress | Out-File -FilePath $bhFile -Encoding UTF8 -Force
-} catch { }
-# ── End BloodHound Export ─────────────────────────────────────────────────────
+} catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
+    Write-Warning "KRB-001: Object not found — $_"
+} catch [Microsoft.ActiveDirectory.Management.ADServerDownException] {
+    Write-Warning "KRB-001: AD server unreachable — $_"
+} catch {
+    # Fix R10: no silent catch
+    Write-Warning "KRB-001: Query failed — $_"
+}

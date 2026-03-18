@@ -5,199 +5,118 @@
 # Requirements: None
 # ============================================
 
-# LDAP search (ADSI / DirectorySearcher)
+# Fix R11: Conditional NC declarations - only what this partition needs
+$root     = [ADSI]'LDAP://RootDSE'
+$domainNC = $root.Properties['defaultNamingContext'].Value
 
-# ─────────────────────────────────────────────
-# DetectionConfidence : High
-# DataSource          : LDAP
-# FalsePositiveRisk   : Low
-# ─────────────────────────────────────────────
-
-try {
-function Convert-FileTime([object]$val) {
-    if ($null -eq $val) { return '(not set)' }
-    try {
-        $ft = [long]$val
-        if ($ft -le 0 -or $ft -eq [long]::MaxValue) { return '(never)' }
-        return [DateTime]::FromFileTime($ft).ToString('yyyy-MM-dd HH:mm:ss')
-    } catch { return '(invalid)' }
-}
-
-$searcher = [ADSISearcher]'(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))'
+# Fix R01: SearchRoot explicitly bound to correct partition
+$searchBase = [ADSI]"LDAP://$domainNC"
+$searcher   = New-Object System.DirectoryServices.DirectorySearcher($searchBase)
+$searcher.Filter   = '(&(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))'
 $searcher.PageSize = 1000
 $searcher.PropertiesToLoad.Clear()
-(@('name', 'distinguishedName', 'samAccountName', 'servicePrincipalName', 'pwdLastSet', 'description', 'userAccountControl', 'objectSid') | ForEach-Object { [void]$searcher.PropertiesToLoad.Add($_) }
+# Fix R12: objectSid only for identity objects
+@('name','distinguishedName','samAccountName','servicePrincipalName','pwdLastSet', 'objectSid') | ForEach-Object { [void]$searcher.PropertiesToLoad.Add($_) }
 
 $results = $searcher.FindAll()
-Write-Host "Found $($results.Count) objects" -ForegroundColor Cyan
+Write-Host "KRB-001: found $($results.Count) objects"
 
-$output = $results | ForEach-Object {
-  $p = $_.Properties
-  [PSCustomObject]@{
-    Label = 'Kerberoastable User Accounts'
-    Name = if ($p['name'] -and $p['name'].Count -gt 0) { $p['name'][0]
-        UserAccountControl = if ($props['useraccountcontrol'].Count -gt 0) { $props['useraccountcontrol'][0]
-        ServicePrincipalName = if ($props['serviceprincipalname'].Count -gt 0) { $props['serviceprincipalname']
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0]
-    UserAccountControl = if ($p['useraccountcontrol'] -and $p['useraccountcontrol'].Count -gt 0) { $p['useraccountcontrol'][0] } else { 'N/A' }
-    SamAccountName = if ($p['samaccountname'] -and $p['samaccountname'].Count -gt 0) { $p['samaccountname'][0] } else { 'N/A' } } else { 'N/A' } } else { 'N/A'
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } }
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A'
-        ServicePrincipalName = if ($props['serviceprincipalname'].Count -gt 0) { $props['serviceprincipalname']
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A'
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } }
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } }
-        ServicePrincipalName = if ($props['serviceprincipalname'].Count -gt 0) { $props['serviceprincipalname']
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A'
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } }
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A' }
-    DistinguishedName = if ($p['distinguishedname'] -and $p['distinguishedname'].Count -gt 0) { $p['distinguishedname'][0] } else { 'N/A' }
-    PwdLastSet = Convert-FileTime ($p['pwdlastset'] | Select-Object -First 1)
-  }
+# Fix R07: Standard 5-field output schema + Fix R13: check-specific extra fields
+$output = @()
+$results | ForEach-Object {
+    $p   = $_.Properties
+    $dn  = ($p['distinguishedname'] | Select-Object -First 1)
+    $sam = ($p['samaccountname']    | Select-Object -First 1)
+    $name = ($p['name']             | Select-Object -First 1)
+    $cn  = ($p['cn']                | Select-Object -First 1)
+    
+    # Extract domain from DN
+    $domain = if ($dn) { 
+        (($dn -split ',') | Where-Object { $_ -match '^DC=' } | ForEach-Object { ($_ -replace '^DC=','') }) -join '.'
+    } else { '' }
+    
+    # Fix R07: Standardized 5-field output schema
+    $obj = [PSCustomObject]@{
+        Name              = if ($sam) { $sam } elseif ($cn) { $cn } else { $name }
+        DistinguishedName = [string]$dn.ToUpper()  # Fix R09: DN normalization
+        SamAccountName    = [string]$sam
+        Domain            = $domain
+        Engine            = 'ADSI'
+    }
+    
+    # Fix R13: Add relevant detection data to output
+        ServicePrincipalNames = ($p['serviceprincipalname'] | ForEach-Object { $_ }) -join '; '
+        PasswordLastSet = if ($p['pwdlastset'].Count -gt 0) { [datetime]::FromFileTime([long]$p['pwdlastset'][0]) } else { $null }
+    
+    $output += $obj
 }
 
+$output | Format-List
 $results.Dispose()
-$searcher.Dispose()
 
-if ($output) { $output | Format-Table -AutoSize }
-
-
-# ============================================================================
-# BLOODHOUND EXPORT BLOCK
-# ============================================================================
-# Automatically export results to BloodHound-compatible JSON format
-# ============================================================================
-
+# ── Fixed BloodHound Export ─────────────────────────────────────────────────────
 try {
-    # Initialize session
-    if (-not $env:ADSUITE_SESSION_ID) {
-        $env:ADSUITE_SESSION_ID = Get-Date -Format 'yyyyMMdd_HHmmss'
-        Write-Host "[BloodHound] New session: $env:ADSUITE_SESSION_ID" -ForegroundColor Cyan
-    }
-    
-    $bhDir = "C:\ADSuite_BloodHound\SESSION_$env:ADSUITE_SESSION_ID"
-    if (-not (Test-Path $bhDir)) {
-        New-Item -ItemType Directory -Path $bhDir -Force | Out-Null
-    }
-    
-    # Convert results to BloodHound format
-    if ($results -and $results.Count -gt 0) {
-        $bhNodes = @()
-        
-        foreach ($item in $results) {
-            # Extract SID as ObjectIdentifier
-            $objectId = if ($item.objectSid) {
-                try {
-                    (New-Object System.Security.Principal.SecurityIdentifier($item.objectSid, 0)).Value
-                } catch {
-                    $item.DistinguishedName
-                }
-            } else {
-                $item.DistinguishedName
+    $bhSession = if ($env:ADSUITE_SESSION_ID) { $env:ADSUITE_SESSION_ID } else { [guid]::NewGuid().ToString('N') }
+    $bhRoot    = if ($env:ADSUITE_OUTPUT_ROOT) { $env:ADSUITE_OUTPUT_ROOT } else { Join-Path $env:TEMP 'ADSuite_Sessions' }
+    $bhDir     = Join-Path $bhRoot (Join-Path $bhSession 'bloodhound')
+    if (-not (Test-Path $bhDir)) { New-Item -ItemType Directory -Path $bhDir -Force -ErrorAction Stop | Out-Null }
+
+    # Fix R12: Separate BH query with minimal required props
+    $bhS = New-Object System.DirectoryServices.DirectorySearcher($searchBase)
+    $bhS.Filter   = '(&(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))'
+    $bhS.PageSize = 1000
+    $bhS.PropertiesToLoad.Clear()
+    @('name','distinguishedname','samaccountname','cn','displayname','objectsid','useraccountcontrol') |
+        Where-Object { $_ } | ForEach-Object { [void]$bhS.PropertiesToLoad.Add($_) }
+    $bhRaw   = $bhS.FindAll()
+    $bhNodes = [System.Collections.Generic.List[hashtable]]::new()
+
+    foreach ($r in $bhRaw) {
+        $p   = $r.Properties
+        $dn  = ($p['distinguishedname'] | Select-Object -First 1)
+        $nm  = ($p['name']              | Select-Object -First 1)
+        $sam = ($p['samaccountname']    | Select-Object -First 1)
+        $cn  = ($p['cn']                | Select-Object -First 1)
+        $dsp = ($p['displayname']       | Select-Object -First 1)
+        $dom = (($dn -split ',') | Where-Object { $_ -match '^DC=' } |
+                 ForEach-Object { ($_ -replace '^DC=','').ToUpper() }) -join '.'
+
+        # Fix R06: BH identity uses the correct primary attribute per node type
+        $bhName = if ($sam) { "$($sam.ToUpper())@$dom" } else { "$($nm.ToUpper())@$dom" }
+
+        # Fix R06: ObjectIdentifier — prefer SID for identity objects
+        $oid = if ($dn) { $dn.ToUpper() } else { [guid]::NewGuid().ToString() }
+        $sid = if ($p['objectsid'].Count -gt 0) { $p['objectsid'][0] } else { $null }
+        if ($sid) { try { $oid = (New-Object System.Security.Principal.SecurityIdentifier([byte[]]$sid, 0)).Value } catch { } }
+
+        $bhNodes.Add(@{
+            ObjectIdentifier = $oid
+            Properties       = @{
+                name              = $bhName
+                domain            = $dom
+                distinguishedname = [string]$dn
+                samaccountname    = [string]$sam
+                enabled           = -not (([int]($p['useraccountcontrol'] | Select-Object -First 1)) -band 2)
+                isdeleted         = $false
+                adSuiteCheckId    = 'KRB-001'
+                adSuiteCheckName  = 'Kerberoastable User Accounts'
+                adSuiteSeverity   = 'high'
+                adSuiteCategory   = 'Kerberos_Security'
+                adSuiteFlag       = $true
             }
-            
-            # Determine object type
-            $objectType = if ($item.objectClass -contains 'user') { 'User' }
-                         elseif ($item.objectClass -contains 'computer') { 'Computer' }
-                         elseif ($item.objectClass -contains 'group') { 'Group' }
-                         else { 'Base' }
-            
-            # Extract domain from DN
-            $domain = if ($item.DistinguishedName -match 'DC=([^,]+)') {
-                ($matches[1..($matches.Count-1)] -join '.').ToUpper()
-            } else { 'UNKNOWN' }
-            
-            $bhNodes += @{
-                ObjectIdentifier = $objectId
-                ObjectType = $objectType
-                Properties = @{
-                    name = $item.Name
-                    distinguishedname = $item.DistinguishedName
-                    samaccountname = $item.samAccountName
-                    domain = $domain
-                    checkid = 'KRB-001'
-                    severity = 'high'
-                    timestamp = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffZ')
-                }
-            }
-        }
-        
-        # Write JSON
-        $bhOutput = @{ nodes = $bhNodes } | ConvertTo-Json -Depth 10
-        $bhFile = Join-Path $bhDir "KRB-001_nodes.json"
-        Set-Content -Path $bhFile -Value $bhOutput -Encoding UTF8
-        
-        Write-Host "[BloodHound] Exported $($bhNodes.Count) nodes to: $bhFile" -ForegroundColor Green
+            Aces           = @()
+            IsDeleted      = $false
+            IsACLProtected = $false
+        })
     }
-    
-} catch {
-    Write-Warning "[BloodHound] Export failed: # Check: Kerberoastable User Accounts
-# Category: Kerberos Security
-# Severity: high
-# ID: KRB-001
-# Requirements: None
-# ============================================
+    $bhRaw.Dispose()
 
-# LDAP search (ADSI / DirectorySearcher)
+    $bhTs = Get-Date -Format 'yyyyMMdd_HHmmss'
+    @{ data = $bhNodes.ToArray()
+       meta = @{ type = 'users'; count = $bhNodes.Count; version = 5; methods = 0 }
+    } | ConvertTo-Json -Depth 10 -Compress |
+        Out-File -FilePath (Join-Path $bhDir "KRB-001_$bhTs.json") -Encoding UTF8 -Force
 
-# ─────────────────────────────────────────────
-# DetectionConfidence : High
-# DataSource          : LDAP
-# FalsePositiveRisk   : Low
-# ─────────────────────────────────────────────
-
-try {
-$searcher = [ADSISearcher]'(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))'
-$searcher.PageSize = 1000
-$searcher.PropertiesToLoad.Clear()
-(@('name', 'distinguishedName', 'samAccountName', 'servicePrincipalName', 'pwdLastSet', 'description', 'userAccountControl', 'objectSid') | ForEach-Object { [void]$searcher.PropertiesToLoad.Add($_) }
-
-$results = $searcher.FindAll()
-Write-Host "Found $($results.Count) objects" -ForegroundColor Cyan
-
-$output = $results | ForEach-Object {
-  $p = $_.Properties
-  [PSCustomObject]@{
-    Label = 'Kerberoastable User Accounts'
-    Name = if ($p['name'] -and $p['name'].Count -gt 0) { $p['name'][0]
-        UserAccountControl = if ($props['useraccountcontrol'].Count -gt 0) { $props['useraccountcontrol'][0]
-        ServicePrincipalName = if ($props['serviceprincipalname'].Count -gt 0) { $props['serviceprincipalname']
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0]
-    UserAccountControl = if ($p['useraccountcontrol'] -and $p['useraccountcontrol'].Count -gt 0) { $p['useraccountcontrol'][0] } else { 'N/A' }
-    SamAccountName = if ($p['samaccountname'] -and $p['samaccountname'].Count -gt 0) { $p['samaccountname'][0] } else { 'N/A' } } else { 'N/A' } } else { 'N/A'
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } }
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A'
-        ServicePrincipalName = if ($props['serviceprincipalname'].Count -gt 0) { $props['serviceprincipalname']
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A'
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } }
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } }
-        ServicePrincipalName = if ($props['serviceprincipalname'].Count -gt 0) { $props['serviceprincipalname']
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A'
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } }
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A' }
-    DistinguishedName = if ($p['distinguishedname'] -and $p['distinguishedname'].Count -gt 0) { $p['distinguishedname'][0] } else { 'N/A' }
-  }
-}
-
-$results.Dispose()
-$searcher.Dispose()
-
-if ($output) { $output | Format-Table -AutoSize }
-else { Write-Host 'No findings' -ForegroundColor Gray }
-
-} catch {
-    Write-Error "AD query failed: $_"
-    exit 1
-}
-"
-}
-
-# ============================================================================
-# END BLOODHOUND EXPORT BLOCK
-# ============================================================================
-else { Write-Host 'No findings' -ForegroundColor Gray }
-
-} catch {
-    Write-Error "AD query failed: $_"
-    exit 1
-}
+# Fix R10: No silent catch — warn on failure
+} catch { Write-Warning "KRB-001 BloodHound export error: $_" }
+# ── End BloodHound Export ─────────────────────────────────────────────────────

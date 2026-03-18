@@ -1,157 +1,121 @@
-# ============================================================================
-# ACC-004: Users with SIDHistory
-# ============================================================================
-# Category: Access_Control
-# Method: ADSI (Active Directory Service Interfaces)
-# Description: Uses DirectorySearcher for LDAP queries without requiring
-#              the ActiveDirectory PowerShell module
-# ============================================================================
-# USAGE:
-#   .\adsi.ps1
-#
-# OUTPUT:
-#   Returns objects matching the security check criteria
-# ============================================================================
+# Check: Users with SIDHistory
+# Category: Access Control
+# Severity: high
+# ID: ACC-004
+# Requirements: None
+# ============================================
 
-# Initialize LDAP connection to domain
-# ─────────────────────────────────────────────
-# DetectionConfidence : High
-# DataSource          : LDAP
-# FalsePositiveRisk   : Low
-# ─────────────────────────────────────────────
+# Fix R11: Conditional NC declarations - only what this partition needs
+$root     = [ADSI]'LDAP://RootDSE'
+$domainNC = $root.Properties['defaultNamingContext'].Value
 
-try {
-    $root = [ADSI]'LDAP://RootDSE'
-$domainNC = $root.defaultNamingContext.ToString()
-} catch {
-    Write-Error \"Cannot connect to Active Directory: $_\"
-    exit 1
-}
-
-# Create DirectorySearcher object for LDAP queries
-$searcher = New-Object System.DirectoryServices.DirectorySearcher
-$searcher.SearchRoot = [ADSI]"LDAP://$domainNC"
-
-# Set LDAP filter for the security check
-$searcher.Filter = '(&(objectCategory=person)(objectClass=user)(sIDHistory=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
-
-# Configure paging for large result sets
+# Fix R01: SearchRoot explicitly bound to correct partition
+$searchBase = [ADSI]"LDAP://$domainNC"
+$searcher   = New-Object System.DirectoryServices.DirectorySearcher($searchBase)
+$searcher.Filter   = '(&(objectClass=user)(sIDHistory=*))'
 $searcher.PageSize = 1000
-
-# Clear default properties and add specific ones
 $searcher.PropertiesToLoad.Clear()
-(@('name', 'distinguishedName', 'objectClass', 'whenCreated', 'whenChanged', 'sidHistory', 'userAccountControl', 'samAccountName', 'objectSid') | ForEach-Object { [void]$searcher.PropertiesToLoad.Add($_)
-}
+# Fix R12: objectSid only for identity objects
+@('name','distinguishedName','samAccountName','sIDHistory', 'objectSid') | ForEach-Object { [void]$searcher.PropertiesToLoad.Add($_) }
 
-# Execute search and process results
-try {
-    $results = $searcher.FindAll()
-} catch {
-    Write-Error \"LDAP query failed: $_\"
-    $searcher.Dispose()
-    exit 1
-}
+$results = $searcher.FindAll()
+Write-Host "ACC-004: found $($results.Count) objects"
 
-Write-Host "Found $($results.Count) objects for check: Users with SIDHistory" -ForegroundColor Cyan
-
+# Fix R07: Standard 5-field output schema + Fix R13: check-specific extra fields
+$output = @()
 $results | ForEach-Object {
-    $props = $_.Properties
-
-    # Create custom object with relevant properties
-    [PSCustomObject]@{
-        CheckID           = 'ACC-004'
-        CheckName         = 'Users with SIDHistory'
-        Name              = if ($props['name'].Count -gt 0) { $props['name'][0]
-        UserAccountControl = if ($props['useraccountcontrol'].Count -gt 0) { $props['useraccountcontrol'][0]
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0]
-    UserAccountControl = if ($props['useraccountcontrol'] -and $props['useraccountcontrol'].Count -gt 0) { $props['useraccountcontrol'][0] } else { 'N/A' }
-    SamAccountName = if ($props['samaccountname'] -and $props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A' } } else { 'N/A'
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } }
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A' }
-        DistinguishedName = if ($props['distinguishedname'].Count -gt 0) { $props['distinguishedname'][0] } else { 'N/A' }
-        ObjectClass       = if ($props['objectclass'].Count -gt 0) { $props['objectclass'][0] } else { 'N/A' }
-        WhenCreated       = if ($props['whencreated'].Count -gt 0) { $props['whencreated'][0] } else { 'N/A' }
-        WhenChanged       = if ($props['whenchanged'].Count -gt 0) { $props['whenchanged'][0] } else { 'N/A' }
+    $p   = $_.Properties
+    $dn  = ($p['distinguishedname'] | Select-Object -First 1)
+    $sam = ($p['samaccountname']    | Select-Object -First 1)
+    $name = ($p['name']             | Select-Object -First 1)
+    $cn  = ($p['cn']                | Select-Object -First 1)
+    
+    # Extract domain from DN
+    $domain = if ($dn) { 
+        (($dn -split ',') | Where-Object { $_ -match '^DC=' } | ForEach-Object { ($_ -replace '^DC=','') }) -join '.'
+    } else { '' }
+    
+    # Fix R07: Standardized 5-field output schema
+    $obj = [PSCustomObject]@{
+        Name              = if ($sam) { $sam } elseif ($cn) { $cn } else { $name }
+        DistinguishedName = [string]$dn.ToUpper()  # Fix R09: DN normalization
+        SamAccountName    = [string]$sam
+        Domain            = $domain
+        Engine            = 'ADSI'
     }
+    
+    # Fix R13: Add relevant detection data to output
+        SIDHistory = ($p['sidhistory'] | ForEach-Object { try { (New-Object System.Security.Principal.SecurityIdentifier([byte[]]$_, 0)).Value } catch { '(unreadable)' } }) -join '; '
+    
+    $output += $obj
 }
 
-# Cleanup
+$output | Format-List
 $results.Dispose()
-$searcher.Dispose()
 
-
-# ============================================================================
-# BLOODHOUND EXPORT BLOCK
-# ============================================================================
-# Automatically export results to BloodHound-compatible JSON format
-# ============================================================================
-
+# ── Fixed BloodHound Export ─────────────────────────────────────────────────────
 try {
-    # Initialize session
-    if (-not $env:ADSUITE_SESSION_ID) {
-        $env:ADSUITE_SESSION_ID = Get-Date -Format 'yyyyMMdd_HHmmss'
-        Write-Host "[BloodHound] New session: $env:ADSUITE_SESSION_ID" -ForegroundColor Cyan
-    }
-    
-    $bhDir = "C:\ADSuite_BloodHound\SESSION_$env:ADSUITE_SESSION_ID"
-    if (-not (Test-Path $bhDir)) {
-        New-Item -ItemType Directory -Path $bhDir -Force | Out-Null
-    }
-    
-    # Convert results to BloodHound format
-    if ($results -and $results.Count -gt 0) {
-        $bhNodes = @()
-        
-        foreach ($item in $results) {
-            # Extract SID as ObjectIdentifier
-            $objectId = if ($item.objectSid) {
-                try {
-                    (New-Object System.Security.Principal.SecurityIdentifier($item.objectSid, 0)).Value
-                } catch {
-                    $item.DistinguishedName
-                }
-            } else {
-                $item.DistinguishedName
-            }
-            
-            # Determine object type
-            $objectType = if ($item.objectClass -contains 'user') { 'User' }
-                         elseif ($item.objectClass -contains 'computer') { 'Computer' }
-                         elseif ($item.objectClass -contains 'group') { 'Group' }
-                         else { 'Base' }
-            
-            # Extract domain from DN
-            $domain = if ($item.DistinguishedName -match 'DC=([^,]+)') {
-                ($matches[1..($matches.Count-1)] -join '.').ToUpper()
-            } else { 'UNKNOWN' }
-            
-            $bhNodes += @{
-                ObjectIdentifier = $objectId
-                ObjectType = $objectType
-                Properties = @{
-                    name = $item.Name
-                    distinguishedname = $item.DistinguishedName
-                    samaccountname = $item.samAccountName
-                    domain = $domain
-                    checkid = 'ACC-004'
-                    severity = 'MEDIUM'
-                    timestamp = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffZ')
-                }
-            }
-        }
-        
-        # Write JSON
-        $bhOutput = @{ nodes = $bhNodes } | ConvertTo-Json -Depth 10
-        $bhFile = Join-Path $bhDir "ACC-004_nodes.json"
-        Set-Content -Path $bhFile -Value $bhOutput -Encoding UTF8
-        
-        Write-Host "[BloodHound] Exported $($bhNodes.Count) nodes to: $bhFile" -ForegroundColor Green
-    }
-    
-} catch {
-    Write-Warning "[BloodHound] Export failed: $_"
-}
+    $bhSession = if ($env:ADSUITE_SESSION_ID) { $env:ADSUITE_SESSION_ID } else { [guid]::NewGuid().ToString('N') }
+    $bhRoot    = if ($env:ADSUITE_OUTPUT_ROOT) { $env:ADSUITE_OUTPUT_ROOT } else { Join-Path $env:TEMP 'ADSuite_Sessions' }
+    $bhDir     = Join-Path $bhRoot (Join-Path $bhSession 'bloodhound')
+    if (-not (Test-Path $bhDir)) { New-Item -ItemType Directory -Path $bhDir -Force -ErrorAction Stop | Out-Null }
 
-# ============================================================================
-# END BLOODHOUND EXPORT BLOCK
-# ============================================================================
+    # Fix R12: Separate BH query with minimal required props
+    $bhS = New-Object System.DirectoryServices.DirectorySearcher($searchBase)
+    $bhS.Filter   = '(&(objectClass=user)(sIDHistory=*))'
+    $bhS.PageSize = 1000
+    $bhS.PropertiesToLoad.Clear()
+    @('name','distinguishedname','samaccountname','cn','displayname','objectsid','useraccountcontrol') |
+        Where-Object { $_ } | ForEach-Object { [void]$bhS.PropertiesToLoad.Add($_) }
+    $bhRaw   = $bhS.FindAll()
+    $bhNodes = [System.Collections.Generic.List[hashtable]]::new()
+
+    foreach ($r in $bhRaw) {
+        $p   = $r.Properties
+        $dn  = ($p['distinguishedname'] | Select-Object -First 1)
+        $nm  = ($p['name']              | Select-Object -First 1)
+        $sam = ($p['samaccountname']    | Select-Object -First 1)
+        $cn  = ($p['cn']                | Select-Object -First 1)
+        $dsp = ($p['displayname']       | Select-Object -First 1)
+        $dom = (($dn -split ',') | Where-Object { $_ -match '^DC=' } |
+                 ForEach-Object { ($_ -replace '^DC=','').ToUpper() }) -join '.'
+
+        # Fix R06: BH identity uses the correct primary attribute per node type
+        $bhName = if ($sam) { "$($sam.ToUpper())@$dom" } else { "$($nm.ToUpper())@$dom" }
+
+        # Fix R06: ObjectIdentifier — prefer SID for identity objects
+        $oid = if ($dn) { $dn.ToUpper() } else { [guid]::NewGuid().ToString() }
+        $sid = if ($p['objectsid'].Count -gt 0) { $p['objectsid'][0] } else { $null }
+        if ($sid) { try { $oid = (New-Object System.Security.Principal.SecurityIdentifier([byte[]]$sid, 0)).Value } catch { } }
+
+        $bhNodes.Add(@{
+            ObjectIdentifier = $oid
+            Properties       = @{
+                name              = $bhName
+                domain            = $dom
+                distinguishedname = [string]$dn
+                samaccountname    = [string]$sam
+                enabled           = -not (([int]($p['useraccountcontrol'] | Select-Object -First 1)) -band 2)
+                isdeleted         = $false
+                adSuiteCheckId    = 'ACC-004'
+                adSuiteCheckName  = 'Users with SIDHistory'
+                adSuiteSeverity   = 'high'
+                adSuiteCategory   = 'Access_Control'
+                adSuiteFlag       = $true
+            }
+            Aces           = @()
+            IsDeleted      = $false
+            IsACLProtected = $false
+        })
+    }
+    $bhRaw.Dispose()
+
+    $bhTs = Get-Date -Format 'yyyyMMdd_HHmmss'
+    @{ data = $bhNodes.ToArray()
+       meta = @{ type = 'users'; count = $bhNodes.Count; version = 5; methods = 0 }
+    } | ConvertTo-Json -Depth 10 -Compress |
+        Out-File -FilePath (Join-Path $bhDir "ACC-004_$bhTs.json") -Encoding UTF8 -Force
+
+# Fix R10: No silent catch — warn on failure
+} catch { Write-Warning "ACC-004 BloodHound export error: $_" }
+# ── End BloodHound Export ─────────────────────────────────────────────────────

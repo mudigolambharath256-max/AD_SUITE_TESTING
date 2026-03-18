@@ -1,192 +1,177 @@
-# ============================================================================
-# ACC-004: Users with SIDHistory
-# ============================================================================
-# Category: Access_Control
-# Method: Multi-Engine (PowerShell + ADSI Fallback)
-# Description: Attempts to use ActiveDirectory module, falls back to ADSI
-#              if module is not available
-# ============================================================================
-# USAGE:
-#   .\combined_multiengine.ps1
-#
-# FEATURES:
-#   - Automatic detection of available methods
-#   - Graceful fallback to ADSI if AD module unavailable
-#   - Consistent output format regardless of method used
-# ============================================================================
+# =============================================================================
+# COMBINED MULTI-ENGINE SCRIPT (FIXED VERSION v3)
+# Check: Users with SIDHistory
+# Category: Access Control
+# ID: ACC-004
+# Incorporates ALL 20 fixes from fix.ps1
+# =============================================================================
 
-[CmdletBinding()]
-param(
-    [Parameter()]
-    [string]$SearchBase,
+$ErrorActionPreference = 'Continue'
+$allResults  = [System.Collections.Generic.List[PSObject]]::new()
+$engStatus   = @{}
 
-    [Parameter()]
-    [string]$ExportPath
-)
+Write-Host "=== Users with SIDHistory ===" -ForegroundColor Cyan
 
-Write-Host "=== ACC-004: Users with SIDHistory ===" -ForegroundColor Cyan
-Write-Host "Multi-Engine Security Check" -ForegroundColor Gray
-Write-Host ""
+# Fix R11: Conditional NC declarations — only what this partition needs
+$root     = [ADSI]'LDAP://RootDSE'
+$domainNC = $root.Properties['defaultNamingContext'].Value
+$targetNC = "$domainNC"
 
-# Try to import ActiveDirectory module
-$useADModule = $false
+# ── ENGINE 1: PowerShell AD Module ────────────────────────────────────────────
+Write-Host "[1/3] PowerShell..." -ForegroundColor Yellow
 try {
     Import-Module ActiveDirectory -ErrorAction Stop
-    $useADModule = $true
-    Write-Host "[Method] Using ActiveDirectory PowerShell Module" -ForegroundColor Green
-} catch {
-    Write-Host "[Method] ActiveDirectory module not available, using ADSI" -ForegroundColor Yellow
-}
 
-$results = @()
-
-if ($useADModule) {
-    # ========================================================================
-    # METHOD 1: PowerShell ActiveDirectory Module
-    # ========================================================================
-
-    try {
-        $domain = Get-ADDomain -ErrorAction Stop
-        $domainDN = $domain.DistinguishedName
-        $domainName = $domain.DNSRoot
-
-        if (-not $SearchBase) { $SearchBase = $domainDN }
-
-        Write-Host "Domain: $domainName" -ForegroundColor Cyan
-        Write-Host "Search Base: $SearchBase" -ForegroundColor Gray
-        Write-Host ""
-
-        # Execute query
-        $adObjects = Get-ADObject -LDAPFilter '(&(objectCategory=person)(objectClass=user)(sIDHistory=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))' `
-                                   -Properties name,distinguishedName,objectClass,whenCreated,whenChanged,sidHistory,userAccountControl,samAccountName `
-                                   -SearchBase $SearchBase `
-                                   -SearchScope Subtree `
-                                   -ResultSetSize $null `
-                                   -ErrorAction Stop
-
-        # Format results
-        $results = $adObjects | Select-Object `
-            @{N='CheckID'; E={'ACC-004'}}, `
-            @{N='CheckName'; E={'Users with SIDHistory'}}, `
-            @{N='Method'; E={'PowerShell'}}, `
-            @{N='Domain'; E={$domainName}}, `
-            name, distinguishedName, objectClass, whenCreated, whenChanged
-
-        Write-Host "Found $($results.Count) objects using PowerShell method" -ForegroundColor Green
-
-    } catch {
-        Write-Error "PowerShell method failed: $_"
-        $useADModule = $false
-    }
-}
-
-if (-not $useADModule) {
-    # ========================================================================
-    # METHOD 2: ADSI (Active Directory Service Interfaces)
-    # ========================================================================
-
-    try {
-        # Initialize LDAP connection
-        $root = [ADSI]'LDAP://RootDSE'
-        $domainNC = $root.defaultNamingContext.ToString()
-
-        Write-Host "Domain NC: $domainNC" -ForegroundColor Cyan
-        Write-Host ""
-
-        # Create searcher
-        $searcher = New-Object System.DirectoryServices.DirectorySearcher
-        $searcher.SearchRoot = [ADSI]"LDAP://$domainNC"
-        $searcher.Filter = '(&(objectCategory=person)(objectClass=user)(sIDHistory=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
-        $searcher.PageSize = 1000
-        $searcher.PropertiesToLoad.Clear()
-        (@('name', 'distinguishedName', 'objectClass', 'whenCreated', 'whenChanged', 'sidHistory', 'userAccountControl', 'samAccountName') | ForEach-Object { [void]$searcher.PropertiesToLoad.Add($_) }
-
-        # Execute search
-        $adsiResults = $searcher.FindAll()
-
-        # Format results
-        $results = $adsiResults | ForEach-Object {
-            $props = $_.Properties
-            [PSCustomObject]@{
-                CheckID           = 'ACC-004'
-                CheckName         = 'Users with SIDHistory'
-                Method            = 'ADSI'
-                Domain            = $domainNC
-                Name              = if ($props['name'].Count -gt 0) { $props['name'][0]
-        UserAccountControl = if ($props['useraccountcontrol'].Count -gt 0) { $props['useraccountcontrol'][0]
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A'
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } }
-        SamAccountName = if ($props['samaccountname'].Count -gt 0) { $props['samaccountname'][0] } else { 'N/A' } } else { 'N/A' }
-                DistinguishedName = if ($props['distinguishedname'].Count -gt 0) { $props['distinguishedname'][0] } else { 'N/A' }
-                ObjectClass       = if ($props['objectclass'].Count -gt 0) { $props['objectclass'][0] } else { 'N/A' }
-                WhenCreated       = if ($props['whencreated'].Count -gt 0) { $props['whencreated'][0] } else { 'N/A' }
-                WhenChanged       = if ($props['whenchanged'].Count -gt 0) { $props['whenchanged'][0] } else { 'N/A' }
-            }
-        }
-
-        Write-Host "Found $($results.Count) objects using ADSI method" -ForegroundColor Green
-
-        # Cleanup
-        $searcher.Dispose()
-
-    } catch {
-        Write-Error "ADSI method failed: $_"
-        exit 1
-    }
-}
-
-# Display and export results
-if ($results.Count -gt 0) {
-    Write-Host "`n=== Results ===" -ForegroundColor Yellow
-    $results | Format-List
-
-} else {
-    Write-Host "`nNo objects found" -ForegroundColor Gray
-}
-
-return $results
-
-
-# ── BloodHound Export ─────────────────────────────────────────────────────────
-# Added by Kiro automation — DO NOT modify lines above this section
-try {
-    $bhSession = if ($env:ADSUITE_SESSION_ID) { $env:ADSUITE_SESSION_ID } else { [guid]::NewGuid().ToString('N') }
-    $bhRoot    = if ($env:ADSUITE_OUTPUT_ROOT) { $env:ADSUITE_OUTPUT_ROOT } else { Join-Path $env:TEMP 'ADSuite_Sessions' }
-    $bhDir     = Join-Path $bhRoot "$bhSession\bloodhound"
-    if (-not (Test-Path $bhDir)) { New-Item -ItemType Directory -Path $bhDir -Force -ErrorAction Stop | Out-Null }
-
-    $bhNodes = [System.Collections.Generic.List[hashtable]]::new()
-
-    foreach ($r in $uniqueResults) {
-        $dn   = if ($r.DistinguishedName) { $r.DistinguishedName } else { '' }
-        $name = if ($r.Name) { $r.Name } else { if ($r.PSObject.Properties['CheckName']) { $r.CheckName } else { 'UNKNOWN' } }
-        $dom  = (($dn -split ',') | Where-Object{$_ -match '^DC='} | ForEach-Object{$_ -replace '^DC=',''}) -join '.' | ForEach-Object{$_.ToUpper()}
-        $oid  = if ($dn) { $dn.ToUpper() } else { [guid]::NewGuid().ToString() }
-
-        $bhNodes.Add(@{
-            ObjectIdentifier = $oid
-            Properties       = @{
-                name              = if ($dom) { "$($name.ToUpper())@$dom" } else { $name.ToUpper() }
-                domain            = $dom
-                distinguishedname = $dn.ToUpper()
-                enabled           = $true
-                adSuiteCheckId    = 'ACC-004'
-                adSuiteCheckName  = 'Users_with_SIDHistory'
-                adSuiteMEDIUM   = 'MEDIUM'
-                adSuiteAccess_Control   = 'Access_Control'
-                adSuiteFlag       = $true
-            }
-            Aces      = @()
-            IsDeleted = $false
-            IsACLProtected = $false
+    Get-ADObject -LDAPFilter '(&(objectClass=user)(sIDHistory=*))' `
+                 -Properties @('name','distinguishedName','samAccountName','sIDHistory', 'objectSid') `
+                 -SearchBase $targetNC `
+                 -ErrorAction Stop |
+    ForEach-Object {
+        $dn  = $_.DistinguishedName
+        $dom = ($dn -split ',' | Where-Object { $_ -match '^DC=' } |
+                ForEach-Object { $_ -replace '^DC=','' }) -join '.'
+        $allResults.Add([PSCustomObject]@{
+            Name              = if ($_.SamAccountName) { $_.SamAccountName } elseif ($_.CN) { $_.CN } else { $_.Name }
+            DistinguishedName = $dn.ToUpper()       # Fix R09: normalise for dedup
+            SamAccountName    = $_.SamAccountName
+            Domain            = $dom
+            Engine            = 'PowerShell'
         })
     }
 
-    $bhTs   = Get-Date -Format 'yyyyMMdd_HHmmss'
-    $bhFile = Join-Path $bhDir "ACC-004_$bhTs.json"
-    @{
-        data = $bhNodes.ToArray()
-        meta = @{ type = 'users'; count = $bhNodes.Count; version = 5; methods = 0 }
-    } | ConvertTo-Json -Depth 10 -Compress | Out-File -FilePath $bhFile -Encoding UTF8 -Force
-} catch { }
-# ── End BloodHound Export ─────────────────────────────────────────────────────
+    $engStatus['PowerShell'] = "Success ($($allResults.Count))"
+    Write-Host "    [OK] PS found $($allResults.Count) objects" -ForegroundColor Green
+
+} catch {
+    $engStatus['PowerShell'] = "Failed: $_"
+    Write-Warning "ACC-004 PowerShell engine: $_"   # Fix R10: no silent catch
+}
+
+# ── ENGINE 2: ADSI / DirectorySearcher ───────────────────────────────────────
+Write-Host "[2/3] ADSI..." -ForegroundColor Yellow
+$beforeADSI = $allResults.Count
+try {
+    $adsiS = New-Object System.DirectoryServices.DirectorySearcher([ADSI]"LDAP://$targetNC")
+    $adsiS.Filter   = '(&(objectClass=user)(sIDHistory=*))'
+    $adsiS.PageSize = 1000
+    $adsiS.PropertiesToLoad.Clear()
+    @('name','distinguishedName','samAccountName','sIDHistory', 'objectSid') | ForEach-Object { [void]$adsiS.PropertiesToLoad.Add($_) }
+
+    $adsiRaw = $adsiS.FindAll()
+    foreach ($r in $adsiRaw) {
+        $p   = $r.Properties
+        $dn  = ($p['distinguishedname'] | Select-Object -First 1)
+        $sam = ($p['samaccountname']    | Select-Object -First 1)
+        $name = ($p['name']             | Select-Object -First 1)
+        $cn  = ($p['cn']                | Select-Object -First 1)
+        $dom = (($dn -split ',') | Where-Object { $_ -match '^DC=' } |
+                ForEach-Object { ($_ -replace '^DC=','') }) -join '.'
+        $allResults.Add([PSCustomObject]@{
+            Name              = if ($sam) { $sam } elseif ($cn) { $cn } else { $name }
+            DistinguishedName = $dn.ToUpper()         # Fix R09: normalise for dedup
+            SamAccountName    = $sam
+            Domain            = $dom
+            Engine            = 'ADSI'
+        })
+    }
+    $adsiRaw.Dispose()
+
+    $adsiFound = $allResults.Count - $beforeADSI
+    $engStatus['ADSI'] = "Success ($adsiFound)"
+    Write-Host "    [OK] ADSI found $adsiFound objects" -ForegroundColor Green
+
+} catch {
+    $engStatus['ADSI'] = "Failed: $_"
+    Write-Warning "ACC-004 ADSI engine: $_"          # Fix R10
+}
+
+# ── ENGINE 3: C# DirectoryServices ───────────────────────────────────────────
+# Fix R08: C# Run() returns List<string[]> — not Console.WriteLine only
+Write-Host "[3/3] C#..." -ForegroundColor Yellow
+$beforeCS = $allResults.Count
+try {
+    $csFilter  = '(&(objectClass=user)(sIDHistory=*))'
+    $csProps   = @("name","distinguishedName","samAccountName","sIDHistory")   # PS array of double-quoted strings
+    $csCheckId = 'ACC-004'
+
+    $csCode = [System.Text.StringBuilder]::new()
+    [void]$csCode.AppendLine('using System;')
+    [void]$csCode.AppendLine('using System.DirectoryServices;')
+    [void]$csCode.AppendLine('using System.Collections.Generic;')
+    [void]$csCode.AppendLine('public class ADSuiteChecker {')
+    [void]$csCode.AppendLine('    private static string Prop(SearchResult r, string a) {')
+    [void]$csCode.AppendLine('        return r.Properties.Contains(a) && r.Properties[a].Count > 0 ? r.Properties[a][0].ToString() : ""; }')
+    [void]$csCode.AppendLine('    private static string Dom(string dn) {')
+    [void]$csCode.AppendLine('        var dc = new List<string>();')
+    [void]$csCode.AppendLine('        foreach (var p in dn.Split('','')) if (p.TrimStart().StartsWith("DC=", StringComparison.OrdinalIgnoreCase)) dc.Add(p.TrimStart().Substring(3));')
+    [void]$csCode.AppendLine('        return string.Join(".", dc); }')
+    [void]$csCode.AppendLine('    // Fix R08: returns structured data, not console output')
+    [void]$csCode.AppendLine('    public List<string[]> Run(string tNC, string[] propsArg, string filter) {')
+    [void]$csCode.AppendLine('        var results = new List<string[]>();')
+    [void]$csCode.AppendLine('        using (var se = new DirectoryEntry("LDAP://" + tNC))')
+    [void]$csCode.AppendLine('        using (var s = new DirectorySearcher(se)) {')
+    [void]$csCode.AppendLine('            s.Filter = filter; s.PageSize = 1000;')
+    [void]$csCode.AppendLine('            foreach (var p in propsArg) s.PropertiesToLoad.Add(p);')
+    [void]$csCode.AppendLine('            using (var r = s.FindAll()) {')
+    [void]$csCode.AppendLine('                foreach (SearchResult res in r) {')
+    [void]$csCode.AppendLine('                    string nm  = Prop(res,"sAMAccountName"); if (nm=="") nm = Prop(res,"name");')
+    [void]$csCode.AppendLine('                    string dn  = Prop(res,"distinguishedName");')
+    [void]$csCode.AppendLine('                    string sam = Prop(res,"sAMAccountName");')
+    [void]$csCode.AppendLine('                    string dom = Dom(dn);')
+    [void]$csCode.AppendLine('                    results.Add(new string[]{nm, dn.ToUpper(), sam, dom}); } } }')
+    [void]$csCode.AppendLine('        return results; } }')
+
+    if (-not ([System.Management.Automation.PSTypeName]'ADSuiteChecker').Type) {
+        $dsDll = [System.AppDomain]::CurrentDomain.GetAssemblies() |
+                 Where-Object { $_.Location -like '*DirectoryServices*' } |
+                 Select-Object -First 1 -ExpandProperty Location
+        if ($dsDll) { Add-Type -TypeDefinition $csCode.ToString() -ReferencedAssemblies $dsDll -ErrorAction Stop }
+        else         { Add-Type -TypeDefinition $csCode.ToString() -ReferencedAssemblies System.DirectoryServices -ErrorAction Stop }
+    }
+
+    # Fix R08: capture returned list into $allResults
+    $csResults = (New-Object ADSuiteChecker).Run($targetNC, $csProps, $csFilter)
+    foreach ($row in $csResults) {
+        $allResults.Add([PSCustomObject]@{
+            Name              = $row[0]
+            DistinguishedName = $row[1]   # already .ToUpper() from C#
+            SamAccountName    = $row[2]
+            Domain            = $row[3]
+            Engine            = 'CSharp'
+        })
+    }
+
+    $csFound = $allResults.Count - $beforeCS
+    $engStatus['CSharp'] = "Success ($csFound)"
+    Write-Host "    [OK] C# found $csFound objects" -ForegroundColor Green
+
+} catch {
+    $engStatus['CSharp'] = "Failed: $_"
+    Write-Warning "ACC-004 C# engine: $_"             # Fix R10
+}
+
+# ── DEDUPLICATION ─────────────────────────────────────────────────────────────
+# Fix R09: DistinguishedName already normalised to uppercase before this step
+
+$uniqueResults = $allResults |
+    Group-Object -Property Name, DistinguishedName |
+    ForEach-Object { $_.Group | Select-Object -First 1 }
+
+# ── OUTPUT ────────────────────────────────────────────────────────────────────
+Write-Host ""
+Write-Host "=== Engine Status ===" -ForegroundColor Cyan
+$engStatus.GetEnumerator() | ForEach-Object {
+    $col = if ($_.Value -like 'Success*') { 'Green' } else { 'Red' }
+    Write-Host "  $($_.Key): $($_.Value)" -ForegroundColor $col
+}
+
+Write-Host ""
+Write-Host "=== ACC-004: $($uniqueResults.Count) unique findings ===" -ForegroundColor Cyan
+$uniqueResults | Format-List
+
+# Fix R14: Fixed 5-field schema enforced before CSV export
+$csvPath = Join-Path $env:TEMP "ACC-004_results.csv"
+$uniqueResults |
+    Select-Object Name, DistinguishedName, SamAccountName, Domain, Engine |
+    Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
+Write-Host "Results exported: $csvPath" -ForegroundColor Green

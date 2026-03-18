@@ -809,6 +809,7 @@ module.exports = {
   abortActiveScan,
   runScan,
   discoverChecks,
+  resolveScriptPath,
   registerSSEClient,
   unregisterSSEClient,
   writeExportFiles,

@@ -1,21 +1,68 @@
-import { useState } from 'react';
-
-const DEFAULT_CHECKS = [
-    { category: 'Authentication', checkId: 'AUTH-001' },
-    { category: 'Kerberos_Security', checkId: 'KRB-001' },
-    { category: 'Access_Control', checkId: 'ACC-033' },
-    { category: 'Domain_Controllers', checkId: 'DC-015' },
-    { category: 'Service_Accounts', checkId: 'SVC-002' },
-];
+import { useState, useEffect } from 'react';
 
 export function ScanDiagnostics({ suiteRoot, domain, targetServer }) {
     const [open, setOpen] = useState(false);
     const [running, setRunning] = useState(false);
     const [engine, setEngine] = useState('adsi');
-    const [selCat, setSelCat] = useState(DEFAULT_CHECKS[0].category);
-    const [selCheck, setSelCheck] = useState(DEFAULT_CHECKS[0].checkId);
+    const [selCat, setSelCat] = useState('');
+    const [selCheck, setSelCheck] = useState('');
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
+    const [availableChecks, setAvailableChecks] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    // Load available checks when suiteRoot changes
+    useEffect(() => {
+        if (suiteRoot && open) {
+            loadAvailableChecks();
+        }
+    }, [suiteRoot, open]);
+
+    async function loadAvailableChecks() {
+        if (!suiteRoot) return;
+
+        setLoading(true);
+        try {
+            const res = await fetch('/api/scan/discover-checks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ suiteRoot })
+            });
+            const data = await res.json();
+
+            if (data.valid && data.checks) {
+                const checks = data.checks;
+                setAvailableChecks(checks);
+
+                // Extract unique categories
+                const uniqueCategories = [...new Set(checks.map(c => c.category))].sort();
+                setCategories(uniqueCategories);
+
+                // Set default selections
+                if (checks.length > 0 && !selCheck) {
+                    const firstCheck = checks[0];
+                    setSelCat(firstCheck.category);
+                    setSelCheck(firstCheck.id);
+                }
+            } else {
+                console.error('Discovery failed:', data.error || 'Unknown error');
+                setAvailableChecks([]);
+                setCategories([]);
+            }
+        } catch (err) {
+            console.error('Failed to load checks:', err);
+            setAvailableChecks([]);
+            setCategories([]);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // Get checks for selected category
+    const checksInCategory = availableChecks.filter(c => c.category === selCat);
 
     async function runDiagnostic() {
         setRunning(true);
@@ -92,20 +139,52 @@ export function ScanDiagnostics({ suiteRoot, domain, targetServer }) {
                     {/* Controls */}
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
 
-                        {/* Check selector */}
+                        {/* Category selector */}
                         <select
-                            value={`${selCat}||${selCheck}`}
+                            value={selCat}
                             onChange={e => {
-                                const [cat, chk] = e.target.value.split('||');
-                                setSelCat(cat); setSelCheck(chk);
+                                const newCat = e.target.value;
+                                setSelCat(newCat);
+                                // Set first check in new category
+                                const checksInNewCat = availableChecks.filter(c => c.category === newCat);
+                                if (checksInNewCat.length > 0) {
+                                    setSelCheck(checksInNewCat[0].id);
+                                }
                             }}
                             style={selectStyle}
+                            disabled={loading || !suiteRoot}
                         >
-                            {DEFAULT_CHECKS.map(c => (
-                                <option key={c.checkId} value={`${c.category}||${c.checkId}`}>
-                                    {c.checkId.replace(/_/g, ' ')}
-                                </option>
-                            ))}
+                            {loading ? (
+                                <option>Loading categories...</option>
+                            ) : categories.length === 0 ? (
+                                <option>No categories found</option>
+                            ) : (
+                                categories.map(cat => (
+                                    <option key={cat} value={cat}>
+                                        {cat.replace(/_/g, ' ')}
+                                    </option>
+                                ))
+                            )}
+                        </select>
+
+                        {/* Check selector */}
+                        <select
+                            value={selCheck}
+                            onChange={e => setSelCheck(e.target.value)}
+                            style={selectStyle}
+                            disabled={loading || !suiteRoot || checksInCategory.length === 0}
+                        >
+                            {loading ? (
+                                <option>Loading checks...</option>
+                            ) : checksInCategory.length === 0 ? (
+                                <option>No checks in category</option>
+                            ) : (
+                                checksInCategory.map(c => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.id} - {c.name}
+                                    </option>
+                                ))
+                            )}
                         </select>
 
                         {/* Engine selector */}
@@ -118,22 +197,32 @@ export function ScanDiagnostics({ suiteRoot, domain, targetServer }) {
                         {/* Run button */}
                         <button
                             onClick={runDiagnostic}
-                            disabled={running || !suiteRoot}
+                            disabled={running || !suiteRoot || !selCheck || loading}
                             style={{
-                                backgroundColor: running ? '#2d2926' : '#d4a96a',
-                                color: running ? '#6b5f54' : '#1a1612',
+                                backgroundColor: (running || !suiteRoot || !selCheck || loading) ? '#2d2926' : '#d4a96a',
+                                color: (running || !suiteRoot || !selCheck || loading) ? '#6b5f54' : '#1a1612',
                                 border: 'none', borderRadius: 6,
                                 padding: '6px 18px', fontSize: 13, fontWeight: 600,
-                                cursor: running || !suiteRoot ? 'not-allowed' : 'pointer',
+                                cursor: (running || !suiteRoot || !selCheck || loading) ? 'not-allowed' : 'pointer',
                                 fontFamily: "'JetBrains Mono', monospace",
                             }}
                         >
-                            {running ? '⏳ Running…' : '▶ Run Diagnostic'}
+                            {running ? '⏳ Running…' : loading ? '⏳ Loading…' : '▶ Run Diagnostic'}
                         </button>
 
                         {!suiteRoot && (
                             <span style={{ fontSize: 11, color: '#c0392b', alignSelf: 'center' }}>
                                 ⚠ Suite root path not set — go to Settings first
+                            </span>
+                        )}
+                        {suiteRoot && availableChecks.length === 0 && !loading && (
+                            <span style={{ fontSize: 11, color: '#c0392b', alignSelf: 'center' }}>
+                                ⚠ No checks found — verify suite root path
+                            </span>
+                        )}
+                        {suiteRoot && availableChecks.length > 0 && (
+                            <span style={{ fontSize: 11, color: '#4e8c5f', alignSelf: 'center' }}>
+                                ✓ {availableChecks.length} checks available
                             </span>
                         )}
                     </div>

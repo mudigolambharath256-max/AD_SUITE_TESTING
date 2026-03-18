@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { spawn } = require('child_process');
 const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 const executor = require('../services/executor');
 const db = require('../services/db');
 
@@ -278,12 +279,12 @@ router.get('/diagnose', async (req, res) => {
   }
 
   try {
-    console.log(`[DIAGNOSE] Testing suite root: ${suiteRoot}`);
-    
+    console.log(`[DIAGNOSE] Running diagnostic for ${checkId} with engine ${engine}`);
+
     // First check if suite root exists
     if (!require('fs').existsSync(suiteRoot)) {
-      return res.json({ 
-        valid: false, 
+      return res.json({
+        valid: false,
         error: 'Suite root path does not exist',
         suiteRoot,
         suggestions: [
@@ -294,38 +295,98 @@ router.get('/diagnose', async (req, res) => {
       });
     }
 
-    // Discover checks
+    // Discover checks to get check name and category
     const discoverResult = await executor.discoverChecks(suiteRoot);
-    console.log(`[DIAGNOSE] Discovery result:`, discoverResult);
+    console.log(`[DIAGNOSE] Discovery found ${discoverResult.totalChecks} checks`);
 
-    // Try to resolve a specific check
-    const resolved = executor.resolveScriptPath(suiteRoot, checkId, engine);
-    console.log(`[DIAGNOSE] Resolved ${checkId}:`, resolved);
+    // Find the specific check to get its name and correct category
+    const check = discoverResult.checks.find(c => c.id === checkId);
+    if (!check) {
+      return res.json({
+        valid: false,
+        error: `Check ${checkId} not found in suite`,
+        suiteRoot,
+        diagnosis: `CHECK_NOT_FOUND: Check ${checkId} was not found in the discovered checks. Available checks: ${discoverResult.checks.slice(0, 5).map(c => c.id).join(', ')}...`
+      });
+    }
 
-    res.json({
-      suiteRoot,
-      suiteRootExists: true,
-      discoverResult,
-      testCheck: {
-        checkId,
-        engine,
-        resolved: !!resolved,
-        scriptPath: resolved?.scriptPath,
-        category: resolved?.category
-      },
-      suggestions: !discoverResult.valid ? [
-        'Ensure the path contains AD Suite category folders',
-        'Check that folders like "Authentication", "Domain_Controllers" exist',
-        'Verify permissions to read the directory'
-      ] : []
+    const checkName = check.name;
+    const actualCategory = check.category;
+
+    // Check if the requested engine is available for this check
+    let availableEngines = [];
+    const checkPath = path.join(suiteRoot, actualCategory, check.folder);
+    const engineFiles = ['adsi.ps1', 'powershell.ps1', 'csharp.cs', 'cmd.bat', 'combined_multiengine.ps1'];
+    const engineNames = ['adsi', 'powershell', 'csharp', 'cmd', 'combined'];
+
+    for (let i = 0; i < engineFiles.length; i++) {
+      if (require('fs').existsSync(path.join(checkPath, engineFiles[i]))) {
+        availableEngines.push(engineNames[i]);
+      }
+    }
+
+    // If requested engine is not available, use the first available one
+    let actualEngine = engine;
+    if (!availableEngines.includes(engine)) {
+      if (availableEngines.length > 0) {
+        actualEngine = availableEngines[0];
+        console.log(`[DIAGNOSE] Engine ${engine} not available for ${checkId}, using ${actualEngine} instead`);
+      } else {
+        return res.json({
+          valid: false,
+          error: `No script engines found for check ${checkId}`,
+          suiteRoot,
+          diagnosis: `NO_ENGINES_FOUND: No script files found for check ${checkId} in ${checkPath}. Expected one of: ${engineFiles.join(', ')}`
+        });
+      }
+    }
+
+    // Run the actual diagnostic check
+    const result = await executor.runCheck(suiteRoot, actualCategory, checkId, checkName, actualEngine, {
+      domain,
+      targetServer
     });
+
+    // Add diagnostic analysis
+    const diagnosis = executor.diagnoseProblem(result);
+
+    // Format response for frontend
+    const response = {
+      checkId: result.checkId,
+      checkName: result.checkName,
+      category: result.category,
+      engine: actualEngine,
+      requestedEngine: engine,
+      availableEngines,
+      scriptFound: !!result.scriptPath,
+      scriptPath: result.scriptPath,
+      exitCode: result.exitCode,
+      durationMs: result.durationMs,
+      stdoutLength: result.stdout ? result.stdout.length : 0,
+      stdoutRaw: result.stdout,
+      stderrRaw: result.stderr,
+      findingCount: result.findings ? result.findings.length : 0,
+      findings: result.findings,
+      error: result.error,
+      diagnosis,
+      suiteRoot,
+      discoverResult: {
+        valid: discoverResult.valid,
+        totalChecks: discoverResult.totalChecks,
+        categoriesFound: discoverResult.categoriesFound
+      }
+    };
+
+    console.log(`[DIAGNOSE] Diagnostic complete: ${diagnosis}`);
+    res.json(response);
 
   } catch (error) {
     console.error('[DIAGNOSE] Error:', error);
     res.status(500).json({
       valid: false,
       error: error.message,
-      suiteRoot
+      suiteRoot,
+      diagnosis: 'ERROR: ' + error.message
     });
   }
 });
