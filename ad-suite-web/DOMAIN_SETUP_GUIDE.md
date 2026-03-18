@@ -142,6 +142,45 @@ Run everything on the domain-joined machine:
 - Run PowerShell as Administrator if needed
 - Check the Suite Root Path points to the correct location
 
+### JSON parsing errors in BloodHound data
+**Issue**: `Unexpected token in JSON at position 0` or similar parsing errors
+
+**Cause**: PowerShell's `Out-File` cmdlet adds UTF-8 BOM (Byte Order Mark) characters to JSON files
+
+**Solution**: Already fixed in latest version (commit 02691e3)
+- The backend now automatically removes BOM characters when reading JSON files
+- Pull the latest development branch: `git pull origin development`
+
+### Null reference errors in graph visualization
+**Issue**: `Cannot read property 'checkId' of undefined` or similar errors
+
+**Cause**: Some AD objects may have missing properties when queried from domain
+
+**Solution**: Already fixed in latest version (commit 02691e3)
+- Added null safety checks throughout the BloodHound integration
+- Added fallback handling for missing distinguishedName properties
+- Pull the latest development branch: `git pull origin development`
+
+### BloodHound graph shows no data
+**Issue**: Graph visualization is empty even after successful scan
+
+**Possible causes**:
+1. BloodHound JSON files not generated properly
+2. Findings not converted to graph format
+3. Frontend not receiving data from backend
+
+**Debugging steps**:
+```powershell
+# Check if BloodHound files exist
+Get-ChildItem "ad-suite-web\backend\reports\*\bloodhound\*.json"
+
+# Test the BloodHound API endpoint
+Invoke-RestMethod -Uri "http://localhost:3001/api/bloodhound/scan/SCAN_ID" | ConvertTo-Json -Depth 5
+
+# Check backend logs for errors
+# Look in the terminal where you ran 'npm start'
+```
+
 ---
 
 ## Architecture Diagram
@@ -192,3 +231,27 @@ For production use:
    - Implement authentication/authorization
    - Restrict network access with firewall rules
    - Use environment variables for sensitive configuration
+
+---
+
+## Latest Updates
+
+### Version: Development Branch (Latest)
+**Commit**: 02691e3 - Critical BloodHound fixes for domain-joined machines
+
+**Fixed Issues**:
+- ✅ UTF-8 BOM character handling in JSON files
+- ✅ Null reference errors in relationship generation
+- ✅ Missing property fallbacks for AD objects
+- ✅ Improved error resilience for domain environments
+
+**To get the latest fixes**:
+```bash
+cd AD_SUITE_TESTING
+git pull origin development
+```
+
+**Recommended for**:
+- Domain-joined Windows machines
+- Environments with PowerShell-generated JSON files
+- Production deployments requiring stability
