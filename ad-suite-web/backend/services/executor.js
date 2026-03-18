@@ -120,24 +120,12 @@ function resolveScriptPath(suiteRoot, checkId, engine) {
 function buildPsCommand(scriptPath, engine) {
   const escapedPath = scriptPath.replace(/'/g, "''");
 
-  // Inject code to capture $output before Format-List is called
-  // This prevents PowerShell formatting objects from being serialized
+  // For combined engine, capture return value
+  // For other engines, redirect output to null and capture $output variable
+  // This prevents Format-List from interfering with JSON serialization
   const wrapper = engine === 'combined'
     ? `$r = & '${escapedPath}'; $r | ConvertTo-Json -Depth 10 -Compress`
-    : `
-      $ErrorActionPreference = 'Continue'
-      $outputCapture = @()
-      $null = & '${escapedPath}' *>&1 | ForEach-Object {
-        if ($_ -is [PSCustomObject] -or $_ -is [Hashtable]) {
-          $outputCapture += $_
-        }
-      }
-      if ($outputCapture.Count -gt 0) {
-        $outputCapture | ConvertTo-Json -Depth 10 -Compress
-      } else {
-        @() | ConvertTo-Json
-      }
-    `.replace(/\n\s+/g, ' ');
+    : `& '${escapedPath}' | Out-Null; if (Get-Variable -Name output -ErrorAction SilentlyContinue) { $output | ConvertTo-Json -Depth 10 -Compress } else { @() | ConvertTo-Json }`;
 
   return {
     cmd: 'powershell.exe',
@@ -699,6 +687,11 @@ async function runCheck(suiteRoot, category, checkId, checkName, engine, options
       const error = exitCode !== 0 && findings.length === 0
         ? (stderr.trim() || `PowerShell exited with code ${exitCode}`)
         : null;
+
+      // Log stderr for debugging
+      if (stderr.trim()) {
+        console.log(`[DIAGNOSE] ${checkId} stderr:`, stderr.trim());
+      }
 
       resolve({
         checkId, checkName, category,
