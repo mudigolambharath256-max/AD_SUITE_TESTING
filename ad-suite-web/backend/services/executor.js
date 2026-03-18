@@ -30,7 +30,7 @@ if (!fs.existsSync(REPORTS_DIR)) {
 }
 
 function isScanning() {
-  return _activeScanProcess !== null;
+  return _activeScanId !== null;
 }
 
 function abortActiveScan() {
@@ -415,9 +415,17 @@ async function runScan({ scanId, checkIds, engine, suiteRoot, domain, serverIp }
   const total = checkIds.length;
   const allFindings = [];
 
-  for (const checkId of checkIds) {
-    if (!isScanning()) break; // aborted
+  console.log(`[SCAN ${scanId}] About to process ${checkIds.length} checks`);
+  console.log(`[SCAN ${scanId}] isScanning(): ${isScanning()}`);
 
+  for (const checkId of checkIds) {
+    console.log(`[SCAN ${scanId}] Loop iteration for ${checkId}`);
+    if (!isScanning()) {
+      console.log(`[SCAN ${scanId}] Scan aborted, isScanning() = false`);
+      break; // aborted
+    }
+
+    console.log(`[SCAN ${scanId}] Processing check ${checkId} with engine ${engine}`);
     const resolved = resolveScriptPath(suiteRoot, checkId, engine);
     if (!resolved) {
       console.log(`[SCAN ${scanId}] Script not found for check ${checkId} with engine ${engine}`);
