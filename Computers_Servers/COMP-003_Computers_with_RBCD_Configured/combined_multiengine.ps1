@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # COMBINED MULTI-ENGINE SCRIPT
 # Check: Computers with RBCD Configured
 # Category: Computers & Servers
@@ -54,18 +54,12 @@ try {
         $searcher = [ADSISearcher]'(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToActOnBehalfOfOtherIdentity=*))'
         $searcher.PageSize = 1000
         $searcher.PropertiesToLoad.Clear()
-        (@('name', 'distinguishedName', 'samAccountName', 'msDS-AllowedToActOnBehalfOfOtherIdentity', 'userAccountControl') | ForEach-Object { [void]$searcher.PropertiesToLoad.Add($_) }
+        (@('name', 'distinguishedName', 'samAccountName', 'msDS-AllowedToActOnBehalfOfOtherIdentity', 'userAccountControl') | ForEach-Object { [void]$searcher.PropertiesToLoad.Add($_) })
 
         $searcher.FindAll() | ForEach-Object {
           $p = $_.Properties
           [PSCustomObject]@{
             Label = 'Computers with RBCD Configured'
-            Name = $p['name'][0]
-            DistinguishedName = $p['distinguishedname'][0]
-        UserAccountControl = if ($props['useraccountcontrol'].Count -gt 0) { $props['useraccountcontrol'][0]
-        MsDsAllowedToActOnBehalfOfOtherIdentity = if ($props['msds-allowedtoactonbehalfofotheridentity'].Count -gt 0) { $props['msds-allowedtoactonbehalfofotheridentity'][0] } else { 'N/A' } } else { 'N/A'
-        MsDsAllowedToActOnBehalfOfOtherIdentity = if ($props['msds-allowedtoactonbehalfofotheridentity'].Count -gt 0) { $props['msds-allowedtoactonbehalfofotheridentity'][0] } else { 'N/A' } }
-        MsDsAllowedToActOnBehalfOfOtherIdentity = if ($props['msds-allowedtoactonbehalfofotheridentity'].Count -gt 0) { $props['msds-allowedtoactonbehalfofotheridentity'][0] } else { 'N/A' }
           }
         }
 

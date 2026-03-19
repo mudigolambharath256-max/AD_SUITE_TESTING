@@ -40,13 +40,13 @@ try {
         $obj
     } | Sort-Object Name
 
-    $output | Format-List
+    $output
 
 } catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
-    Write-Warning "CERT-053: Object not found — $_"
+    Write-Warning "CERT-053: Object not found : $_"
 } catch [Microsoft.ActiveDirectory.Management.ADServerDownException] {
-    Write-Warning "CERT-053: AD server unreachable — $_"
+    Write-Warning "CERT-053: AD server unreachable : $_"
 } catch {
     # Fix R10: no silent catch
-    Write-Warning "CERT-053: Query failed — $_"
+    Write-Warning "CERT-053: Query failed : $_"
 }

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Stop the AD Security Suite application processes.
 #>

@@ -1,4 +1,4 @@
-# Run this before attempting to build the Docker image.
+﻿# Run this before attempting to build the Docker image.
 # It checks that Docker is installed, running, and in Windows containers mode.
 
 #Requires -RunAsAdministrator

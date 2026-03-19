@@ -40,13 +40,13 @@ try {
         $obj
     } | Sort-Object Name
 
-    $output | Format-List
+    $output
 
 } catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
-    Write-Warning "USER-015: Object not found — $_"
+    Write-Warning "USER-015: Object not found : $_"
 } catch [Microsoft.ActiveDirectory.Management.ADServerDownException] {
-    Write-Warning "USER-015: AD server unreachable — $_"
+    Write-Warning "USER-015: AD server unreachable : $_"
 } catch {
     # Fix R10: no silent catch
-    Write-Warning "USER-015: Query failed — $_"
+    Write-Warning "USER-015: Query failed : $_"
 }

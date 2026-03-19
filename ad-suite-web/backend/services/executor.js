@@ -120,12 +120,10 @@ function resolveScriptPath(suiteRoot, checkId, engine) {
 function buildPsCommand(scriptPath, engine) {
   const escapedPath = scriptPath.replace(/'/g, "''");
 
-  // For combined engine, capture return value
-  // For other engines, redirect output to null and capture $output variable
-  // This prevents Format-List from interfering with JSON serialization
-  const wrapper = engine === 'combined'
-    ? `$r = & '${escapedPath}'; $r | ConvertTo-Json -Depth 10 -Compress`
-    : `& '${escapedPath}' | Out-Null; if (Get-Variable -Name output -ErrorAction SilentlyContinue) { $output | ConvertTo-Json -Depth 10 -Compress } else { @() | ConvertTo-Json }`;
+  // Capture pipeline output and convert to JSON
+  // This works for all engines (powershell, adsi, combined)
+  // Scripts output Format-List which gets captured and converted to JSON
+  const wrapper = `$r = & '${escapedPath}'; $r | ConvertTo-Json -Depth 10 -Compress`;
 
   return {
     cmd: 'powershell.exe',

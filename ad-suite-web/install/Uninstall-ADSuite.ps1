@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Clean uninstall of AD Security Suite.
     Removes node_modules, build artifacts, database, and config.

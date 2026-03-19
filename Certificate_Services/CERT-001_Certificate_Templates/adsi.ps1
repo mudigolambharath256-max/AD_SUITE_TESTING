@@ -52,7 +52,7 @@ $results | ForEach-Object {
     $output += $obj
 }
 
-$output | Format-List
+$output
 $results.Dispose()
 
 # ── Fixed BloodHound Export ─────────────────────────────────────────────────────

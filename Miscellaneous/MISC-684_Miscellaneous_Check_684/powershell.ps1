@@ -40,13 +40,13 @@ try {
         $obj
     } | Sort-Object Name
 
-    $output | Format-List
+    $output
 
 } catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
-    Write-Warning "MISC-684: Object not found — $_"
+    Write-Warning "MISC-684: Object not found : $_"
 } catch [Microsoft.ActiveDirectory.Management.ADServerDownException] {
-    Write-Warning "MISC-684: AD server unreachable — $_"
+    Write-Warning "MISC-684: AD server unreachable : $_"
 } catch {
     # Fix R10: no silent catch
-    Write-Warning "MISC-684: Query failed — $_"
+    Write-Warning "MISC-684: Query failed : $_"
 }

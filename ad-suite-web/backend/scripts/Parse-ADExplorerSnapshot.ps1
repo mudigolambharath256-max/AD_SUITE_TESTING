@@ -1,3 +1,5 @@
+﻿# NOTE: This script requires PowerShell 7.0+ for null coalescing (??) and null conditional (?.) operators
+
 [CmdletBinding()]
 param(
   [Parameter(Mandatory)][string]$SnapshotPath,

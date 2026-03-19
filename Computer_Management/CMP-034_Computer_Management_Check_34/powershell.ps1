@@ -40,13 +40,13 @@ try {
         $obj
     } | Sort-Object Name
 
-    $output | Format-List
+    $output
 
 } catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
-    Write-Warning "CMP-034: Object not found — $_"
+    Write-Warning "CMP-034: Object not found : $_"
 } catch [Microsoft.ActiveDirectory.Management.ADServerDownException] {
-    Write-Warning "CMP-034: AD server unreachable — $_"
+    Write-Warning "CMP-034: AD server unreachable : $_"
 } catch {
     # Fix R10: no silent catch
-    Write-Warning "CMP-034: Query failed — $_"
+    Write-Warning "CMP-034: Query failed : $_"
 }

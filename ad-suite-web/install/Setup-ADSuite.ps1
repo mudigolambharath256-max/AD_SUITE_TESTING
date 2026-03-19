@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     AD Security Suite — Automated Setup Script
     Installs all prerequisites and configures the application.
