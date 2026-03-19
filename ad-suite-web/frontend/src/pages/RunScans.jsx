@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Shield, Play, Square, Download, AlertTriangle, CheckCircle, Zap, Search, Target, ZapOff, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Shield, Play, Square, Download, AlertTriangle, CheckCircle, Zap, Search, Target, ZapOff, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { useScan } from '../hooks/useScan';
 import CheckSelector from '../components/CheckSelector';
 import EngineSelector from '../components/EngineSelector';
@@ -17,6 +17,29 @@ const RunScans = () => {
   const [validation, setValidation] = useState(null);
   const [targetValidation, setTargetValidation] = useState(null);
   const [showTerminal, setShowTerminal] = useState(false);
+  const [isStoreReady, setIsStoreReady] = useState(false);
+
+  // Wait for store hydration
+  useEffect(() => {
+    // Set store ready immediately since Zustand handles hydration internally
+    // The loading state will be brief but prevents the flash of empty content
+    const timer = setTimeout(() => setIsStoreReady(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show loading state during store hydration
+  if (!isStoreReady) {
+    return (
+      <div className="p-6 flex flex-col h-full">
+        <div className="flex items-center justify-center flex-1">
+          <div className="flex items-center gap-3 text-text-secondary">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span>Loading scan configuration...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Ensure store values are initialized
   const suiteRoot = store.suiteRoot || '';
@@ -186,7 +209,7 @@ const RunScans = () => {
   };
 
   return (
-    <div className="p-6 flex flex-col min-h-0">
+    <div className="p-6 flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-text-primary mb-2">Run Scans</h1>
@@ -199,9 +222,9 @@ const RunScans = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
         {/* Left Panel - Configuration */}
-        <div className="lg:col-span-1 space-y-4">
+        <div className="lg:col-span-1 space-y-4 overflow-y-auto">
           {/* Suite Root Path */}
           <div className="card">
             <h3 className="font-semibold text-text-primary mb-3">Suite Root Path</h3>
@@ -375,7 +398,7 @@ const RunScans = () => {
         </div>
 
         {/* Right Panel - Execution & Results */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4 overflow-y-auto">
           {scanStatus === 'idle' && (
             <div className="card">
               <div className="text-center py-12">

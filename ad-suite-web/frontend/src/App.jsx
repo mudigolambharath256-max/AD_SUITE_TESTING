@@ -80,7 +80,7 @@ function App() {
       />
 
       {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'ml-12' : 'ml-60'}`}>
+      <div className={`flex-1 min-h-screen flex flex-col transition-all duration-300 ${isSidebarCollapsed ? 'ml-12' : 'ml-60'}`}>
         {/* Health Status Banner */}
         {healthError && (
           <div className="bg-severity-critical/10 border-b border-severity-critical/30 p-3">
@@ -92,15 +92,17 @@ function App() {
         )}
 
         {/* Routes */}
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/scans" element={<RunScans />} />
-          <Route path="/attack-path" element={<AttackPath />} />
-          <Route path="/integrations" element={<Integrations />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <div className="flex-1 min-h-0">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/scans" element={<RunScans />} />
+            <Route path="/attack-path" element={<AttackPath />} />
+            <Route path="/integrations" element={<Integrations />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
       </div>
 
       {/* Mobile Menu Toggle */}
