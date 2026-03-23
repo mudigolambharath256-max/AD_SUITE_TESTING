@@ -8,7 +8,50 @@ Run the backend server on the domain-joined machine and configure the frontend t
 
 ---
 
-## Setup Instructions
+## Quick Setup (Recommended)
+
+### Automated Setup Script
+
+1. **Copy the project to your domain-joined machine:**
+   ```bash
+   # Copy the entire ad-suite-web folder to your domain-joined machine
+   ```
+
+2. **Run the setup script on the domain-joined machine:**
+   ```powershell
+   # Run as Administrator (recommended)
+   cd ad-suite-web
+   .\setup-domain-backend.ps1
+   ```
+
+3. **Start the backend:**
+   ```batch
+   # On domain-joined machine
+   .\start-backend.bat
+   ```
+
+4. **Update frontend configuration:**
+   - Note the IP address shown by the setup script
+   - Update `ad-suite-web/frontend/.env`:
+   ```env
+   VITE_BACKEND_URL=http://YOUR_DOMAIN_MACHINE_IP:3001
+   ```
+
+5. **Test connectivity:**
+   ```powershell
+   # From any machine on the network
+   .\test-network-access.ps1 -DomainMachineIP YOUR_DOMAIN_MACHINE_IP
+   ```
+
+6. **Start frontend (on any machine):**
+   ```bash
+   cd ad-suite-web/frontend
+   npm run dev
+   ```
+
+---
+
+## Manual Setup Instructions
 
 ### Option 1: Backend on Domain-Joined Machine (Recommended)
 
@@ -126,6 +169,32 @@ Run everything on the domain-joined machine:
 ---
 
 ## Troubleshooting
+
+### "Run Scans" page not loading on non-domain machines
+
+**Symptoms:**
+- Website loads fine from network machines
+- All pages work except "Run Scans"
+- "Run Scans" only works on the host machine
+
+**Cause:** Backend is running on a machine without Active Directory access
+
+**Solution:**
+1. Move backend to domain-joined machine using setup script
+2. Update frontend .env with domain machine IP
+3. Test connectivity with test script
+
+**Quick fix:**
+```powershell
+# On domain-joined machine
+.\setup-domain-backend.ps1
+
+# Update frontend/.env
+VITE_BACKEND_URL=http://DOMAIN_MACHINE_IP:3001
+
+# Test from any machine
+.\test-network-access.ps1 -DomainMachineIP DOMAIN_MACHINE_IP
+```
 
 ### Frontend can't connect to backend
 - Check firewall rules on domain-joined machine

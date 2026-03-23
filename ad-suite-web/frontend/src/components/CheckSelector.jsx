@@ -162,8 +162,8 @@ const CheckSelector = ({ selectedChecks, onSelectionChange, disabled = false, av
                     className="w-4 h-4"
                   />
 
-                  <div className="flex-1">
-                    <div className="font-medium text-text-primary">{category.display}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-text-primary truncate" title={category.display}>{category.display}</div>
                     <div className="text-xs text-text-muted">
                       {category.checks.length} checks
                     </div>
@@ -189,9 +189,9 @@ const CheckSelector = ({ selectedChecks, onSelectionChange, disabled = false, av
                           disabled={disabled}
                           className="w-4 h-4 ml-6"
                         />
-                        <div className="flex-1">
-                          <div className="font-mono text-sm text-accent-primary">{check.id}</div>
-                          <div className="text-sm text-text-secondary">{check.name}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-mono text-sm text-accent-primary truncate" title={check.id}>{check.id}</div>
+                          <div className="text-sm text-text-secondary truncate" title={check.name}>{check.name}</div>
                         </div>
                       </div>
                     ))}

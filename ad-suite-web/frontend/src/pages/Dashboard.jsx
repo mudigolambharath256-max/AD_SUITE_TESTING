@@ -7,12 +7,12 @@ import {
   Clock,
   Play,
   TrendingUp,
-  Shield,
   Eye
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { getSeveritySummary, getCategorySummary, getRecentScans } from '../lib/api';
 import { chartColors } from '../lib/colours';
+import SvgIcon from '../components/SvgIcon';
 
 const Dashboard = () => {
   const [severityData, setSeverityData] = useState({});
@@ -130,7 +130,7 @@ const Dashboard = () => {
               <p className="text-text-secondary text-sm">Total Checks</p>
               <p className="text-3xl font-bold text-text-primary">775</p>
             </div>
-            <Shield className="w-8 h-8 text-accent-primary" />
+            <SvgIcon name="all-covered" size={32} className="text-accent-primary" />
           </div>
         </div>
 
@@ -310,7 +310,7 @@ const Dashboard = () => {
           Run Full Suite
         </Link>
         <Link to="/scans?category=Kerberos_Security" className="btn-secondary text-center py-3">
-          <Shield className="w-5 h-5 inline-block mr-2" />
+          <SvgIcon name="surveillance-defense" size={20} className="inline-block mr-2 text-accent-primary" />
           Kerberos Checks
         </Link>
         <Link to="/scans?category=Privileged_Access" className="btn-secondary text-center py-3">

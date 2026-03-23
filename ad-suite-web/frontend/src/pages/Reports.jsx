@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  FileText,
   Download,
   Calendar,
   Filter,
@@ -13,6 +12,7 @@ import {
   Trash2,
   Settings
 } from 'lucide-react';
+import SvgIcon from '../components/SvgIcon';
 import { getRecentScans, getFindings, exportScan, exportMultipleScans } from '../lib/api';
 import FindingsTable from '../components/FindingsTable';
 import { getSeverityColor } from '../lib/colours';
@@ -462,7 +462,7 @@ const Reports = () => {
 
         {filteredScans.length === 0 && (
           <div className="text-center py-8 text-text-secondary">
-            <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <SvgIcon name="mail-reception" size={48} className="mx-auto mb-4 opacity-50" />
             <p>No scans found matching your filters</p>
           </div>
         )}

@@ -164,6 +164,15 @@ export const setSetting = (key, value) => apiRequest('/settings', {
   body: { key, value },
 });
 
+export const browseFolderNative = () => apiRequest('/settings/browse-folder-native', {
+  method: 'POST'
+});
+
+export const browseFolder = (path) => apiRequest('/settings/browse-folder', {
+  method: 'POST',
+  body: { path },
+});
+
 // LLM Analysis
 export const analyzeWithLLM = (findings, provider, apiKey, model) =>
   apiRequest('/llm/analyse', {

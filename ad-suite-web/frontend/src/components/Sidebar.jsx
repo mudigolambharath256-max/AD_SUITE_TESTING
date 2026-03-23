@@ -7,9 +7,9 @@ import {
   Plug,
   FileText,
   Settings,
-  Shield,
   Activity
 } from 'lucide-react';
+import SvgIcon from './SvgIcon';
 
 const Sidebar = ({ isCollapsed, onToggle }) => {
   const location = useLocation();
@@ -29,11 +29,11 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
           <div className="flex-shrink-0">
-            <Shield className="w-8 h-8 text-accent-primary" fill="currentColor" />
+            <SvgIcon name="surveillance-defense" size={32} className="text-accent-primary" />
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-bold text-text-primary">AD Suite</h1>
+              <h1 className="text-lg font-bold text-text-primary">Technieum AD Suite</h1>
               <p className="text-xs text-text-secondary">Security Platform</p>
             </div>
           )}

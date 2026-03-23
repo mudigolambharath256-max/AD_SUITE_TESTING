@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Settings as SettingsIcon,
   FolderOpen,
   Terminal,
   Database,
@@ -8,18 +7,22 @@ import {
   Info,
   CheckCircle,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Folder
 } from 'lucide-react';
-import { getSetting, setSetting, getHealth } from '../lib/api';
+import { getSetting, setSetting, getHealth, browseFolderNative } from '../lib/api';
+import FolderBrowser from '../components/FolderBrowser';
+import SvgIcon from '../components/SvgIcon';
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [health, setHealth] = useState(null);
 
-  // AD Suite Configuration
+  // Technieum AD Suite Configuration
   const [suiteRoot, setSuiteRoot] = useState('');
   const [validation, setValidation] = useState(null);
+  const [showFolderBrowser, setShowFolderBrowser] = useState(false);
 
   // PowerShell Settings
   const [executionPolicy, setExecutionPolicy] = useState('Bypass');
@@ -97,6 +100,29 @@ const Settings = () => {
   const showMessage = (text, type) => {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 3000);
+  };
+
+  const handleFolderSelect = (selectedPath) => {
+    setSuiteRoot(selectedPath);
+    setShowFolderBrowser(false);
+  };
+
+  const handleBrowseClick = async () => {
+    try {
+      setLoading(true);
+      const result = await browseFolderNative();
+
+      if (result.success && result.path) {
+        setSuiteRoot(result.path);
+      } else if (!result.cancelled) {
+        showMessage('Failed to open folder browser', 'error');
+      }
+    } catch (error) {
+      console.error('Error opening folder browser:', error);
+      showMessage('Failed to open folder browser', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const testPowerShell = async () => {
@@ -276,11 +302,11 @@ const Settings = () => {
         </div>
       )}
 
-      {/* AD Suite Configuration */}
+      {/* Technieum AD Suite Configuration */}
       <div className="card">
         <div className="flex items-center gap-2 mb-4">
           <FolderOpen className="w-5 h-5 text-accent-primary" />
-          <h3 className="font-semibold text-text-primary">AD Suite Configuration</h3>
+          <h3 className="font-semibold text-text-primary">Technieum AD Suite Configuration</h3>
         </div>
 
         <div className="space-y-4">
@@ -294,6 +320,14 @@ const Settings = () => {
                 placeholder="C:\ADSuite\AD-Suite-scripts-main"
                 className={`input flex-1 ${validation?.valid ? 'input-success' : validation?.valid === false ? 'input-error' : ''}`}
               />
+              <button
+                onClick={handleBrowseClick}
+                disabled={loading}
+                className="btn-secondary"
+                title="Browse for folder"
+              >
+                <Folder className="w-4 h-4" />
+              </button>
               <button onClick={validateSuiteRoot} disabled={loading} className="btn-secondary">
                 Validate
               </button>
@@ -390,7 +424,7 @@ const Settings = () => {
       {/* C# Compiler Settings */}
       <div className="card">
         <div className="flex items-center gap-2 mb-4">
-          <SettingsIcon className="w-5 h-5 text-accent-primary" />
+          <SvgIcon name="system-settings" size={20} className="text-accent-primary" />
           <h3 className="font-semibold text-text-primary">C# Compiler</h3>
         </div>
 
@@ -564,6 +598,7 @@ const Settings = () => {
           <p className="text-xs text-text-muted mt-2">Update checking not implemented in demo</p>
         </div>
       </div>
+
     </div>
   );
 };

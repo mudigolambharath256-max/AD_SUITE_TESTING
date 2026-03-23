@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Play, Square, Download, AlertTriangle, CheckCircle, Zap, Search, Target, ZapOff, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Play, Square, Download, AlertTriangle, CheckCircle, Zap, Search, Target, ZapOff, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { useScan } from '../hooks/useScan';
 import CheckSelector from '../components/CheckSelector';
 import EngineSelector from '../components/EngineSelector';
@@ -9,6 +9,7 @@ import Terminal from '../components/Terminal';
 import { PsTerminalDrawer } from '../components/PsTerminalDrawer';
 import { ScanDiagnostics } from '../components/ScanDiagnostics';
 import { useAppStore } from '../store';
+import SvgIcon from '../components/SvgIcon';
 
 const RunScans = () => {
   const store = useAppStore();
@@ -222,12 +223,19 @@ const RunScans = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 flex-1 overflow-hidden">
         {/* Left Panel - Configuration */}
-        <div className="lg:col-span-1 space-y-4 overflow-y-auto">
+        <div className="xl:col-span-1 lg:col-span-2 space-y-4 overflow-y-auto min-w-0">
           {/* Suite Root Path */}
-          <div className="card">
-            <h3 className="font-semibold text-text-primary mb-3">Suite Root Path</h3>
+          <div className="card min-w-0">
+            <div className="flex items-center justify-between mb-3 min-w-0">
+              <h3 className="font-semibold text-text-primary truncate mr-2">Suite Root Path</h3>
+              {store.suiteRootValid && (
+                <div className="text-sm text-severity-low whitespace-nowrap">
+                  ✓ Valid
+                </div>
+              )}
+            </div>
             <div className="space-y-2">
               <input
                 type="text"
@@ -261,8 +269,15 @@ const RunScans = () => {
           </div>
 
           {/* Target Configuration */}
-          <div className="card">
-            <h3 className="text-text-secondary text-xs uppercase tracking-wider mb-3">Target Configuration</h3>
+          <div className="card min-w-0">
+            <div className="flex items-center justify-between mb-3 min-w-0">
+              <h3 className="text-text-secondary text-xs uppercase tracking-wider truncate mr-2">Target Configuration</h3>
+              {(domain || serverIp) && (
+                <div className="text-xs text-text-secondary whitespace-nowrap">
+                  Configured
+                </div>
+              )}
+            </div>
             <div className="space-y-3">
               {/* Domain Name */}
               <div>
@@ -359,8 +374,13 @@ const RunScans = () => {
           </div>
 
           {/* Engine Selector */}
-          <div className="card">
-            <h3 className="font-semibold text-text-primary mb-3">Execution Engine</h3>
+          <div className="card min-w-0">
+            <div className="flex items-center justify-between mb-3 min-w-0">
+              <h3 className="font-semibold text-text-primary truncate mr-2">Execution Engine</h3>
+              <div className="text-sm text-text-secondary whitespace-nowrap">
+                {store.engine}
+              </div>
+            </div>
             <EngineSelector
               selectedEngine={store.engine}
               onEngineChange={(engine) => store.setEngine(engine)}
@@ -376,8 +396,13 @@ const RunScans = () => {
           />
 
           {/* Check Selector */}
-          <div className="card">
-            <h3 className="font-semibold text-text-primary mb-3">Select Checks</h3>
+          <div className="card min-w-0">
+            <div className="flex items-center justify-between mb-3 min-w-0">
+              <h3 className="font-semibold text-text-primary truncate mr-2">Select Checks</h3>
+              <div className="text-sm text-text-secondary whitespace-nowrap">
+                {selectedCheckIds.length} selected
+              </div>
+            </div>
             {!store.suiteRootValid ? (
               <div className="text-center py-8 text-text-muted">
                 <p>Please validate the Suite Root Path first to load available checks</p>
@@ -398,11 +423,11 @@ const RunScans = () => {
         </div>
 
         {/* Right Panel - Execution & Results */}
-        <div className="lg:col-span-2 space-y-4 overflow-y-auto">
+        <div className="xl:col-span-3 lg:col-span-1 space-y-4 overflow-y-auto min-w-0">
           {scanStatus === 'idle' && (
             <div className="card">
               <div className="text-center py-12">
-                <Shield className="w-16 h-16 mx-auto text-text-muted mb-4" />
+                <SvgIcon name="7x24h" size={64} className="mx-auto text-text-muted mb-4" />
                 <h3 className="text-xl font-semibold text-text-primary mb-2">Ready to Scan</h3>
                 <p className="text-text-secondary mb-6">
                   Configure your scan settings and click Run Scan to begin

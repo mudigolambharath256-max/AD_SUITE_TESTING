@@ -161,6 +161,205 @@ router.post('/save', (req, res) => {
     }
 });
 
+// Browse folders - Native Windows dialog
+router.post('/browse-folder-native', (req, res) => {
+    try {
+        const { spawn } = require('child_process');
+
+        // Use PowerShell to show folder browser dialog with STA mode
+        const psScript = `
+[void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
+$folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
+$folderBrowser.Description = 'Select AD Suite Root Folder'
+$folderBrowser.ShowNewFolderButton = $false
+$folderBrowser.RootFolder = [System.Environment+SpecialFolder]::MyComputer
+$result = $folderBrowser.ShowDialog()
+if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+    Write-Output $folderBrowser.SelectedPath
+} else {
+    Write-Output 'CANCELLED'
+}
+        `.trim();
+
+        const ps = spawn('powershell.exe', [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Sta',  // Single-Threaded Apartment mode required for Windows Forms
+            '-Command',
+            psScript
+        ]);
+
+        let output = '';
+        let error = '';
+
+        ps.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+
+        ps.stderr.on('data', (data) => {
+            error += data.toString();
+        });
+
+        ps.on('close', (code) => {
+            const trimmedOutput = output.trim();
+
+            if (trimmedOutput === 'CANCELLED') {
+                return res.json({
+                    success: false,
+                    cancelled: true
+                });
+            }
+
+            if (code === 0 && trimmedOutput && trimmedOutput !== 'CANCELLED') {
+                return res.json({
+                    success: true,
+                    path: trimmedOutput
+                });
+            }
+
+            console.error('Folder browser error:', error);
+            res.json({
+                success: false,
+                error: error || 'Unknown error',
+                cancelled: false
+            });
+        });
+
+        ps.on('error', (err) => {
+            console.error('PowerShell spawn error:', err);
+            res.json({
+                success: false,
+                error: err.message
+            });
+        });
+
+        // Timeout after 2 minutes (user might take time to browse)
+        setTimeout(() => {
+            try {
+                ps.kill();
+            } catch (e) {
+                // Process might already be closed
+            }
+            if (!res.headersSent) {
+                res.json({
+                    success: false,
+                    error: 'Dialog timeout',
+                    cancelled: true
+                });
+            }
+        }, 120000);
+
+    } catch (error) {
+        console.error('Error showing folder dialog:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Browse folders
+router.post('/browse-folder', (req, res) => {
+    try {
+        let { path = 'drives' } = req.body;
+
+        // Special case: list drives on Windows
+        if (path === 'drives' || path === '' || path === '.') {
+            const drives = [];
+            // Check common drive letters on Windows
+            for (let i = 65; i <= 90; i++) { // A-Z
+                const driveLetter = String.fromCharCode(i);
+                const drivePath = `${driveLetter}:\\`;
+                try {
+                    if (fs.existsSync(drivePath)) {
+                        drives.push({
+                            name: `${driveLetter}:`,
+                            path: drivePath,
+                            isDirectory: true,
+                            isDrive: true,
+                            size: 0,
+                            modified: new Date()
+                        });
+                    }
+                } catch (err) {
+                    // Skip inaccessible drives
+                }
+            }
+
+            return res.json({
+                currentPath: 'This PC',
+                parentPath: null,
+                items: drives,
+                isDriveList: true
+            });
+        }
+
+        if (!fs.existsSync(path)) {
+            return res.json({ error: 'Path does not exist' });
+        }
+
+        const stats = fs.statSync(path);
+        if (!stats.isDirectory()) {
+            return res.json({ error: 'Path is not a directory' });
+        }
+
+        let items = [];
+        let parentPath = null;
+
+        try {
+            items = fs.readdirSync(path).map(item => {
+                const itemPath = require('path').join(path, item);
+                try {
+                    const itemStats = fs.statSync(itemPath);
+                    return {
+                        name: item,
+                        path: itemPath,
+                        isDirectory: itemStats.isDirectory(),
+                        size: itemStats.size,
+                        modified: itemStats.mtime
+                    };
+                } catch (err) {
+                    // Skip inaccessible items
+                    return null;
+                }
+            }).filter(item => item !== null);
+
+            // Sort: directories first, then files, alphabetically
+            items.sort((a, b) => {
+                if (a.isDirectory !== b.isDirectory) {
+                    return a.isDirectory ? -1 : 1;
+                }
+                return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+            });
+
+            // Determine parent path
+            const resolvedPath = require('path').resolve(path);
+            const parentResolved = require('path').resolve(path, '..');
+
+            // Check if we're at a drive root (e.g., C:\)
+            if (resolvedPath !== parentResolved) {
+                parentPath = parentResolved;
+            } else {
+                // At drive root, go back to drive list
+                parentPath = 'drives';
+            }
+
+        } catch (err) {
+            console.error('Error reading directory:', err);
+            return res.json({ error: 'Cannot read directory contents' });
+        }
+
+        res.json({
+            currentPath: path,
+            parentPath,
+            items
+        });
+    } catch (error) {
+        console.error('Error browsing folder:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get setting
 router.get('/:key', (req, res) => {
     try {

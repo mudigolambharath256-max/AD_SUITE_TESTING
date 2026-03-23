@@ -1,16 +1,9 @@
 import React, { useState } from 'react';
 import { Brain, Network, FileText, Download, Upload, Search, AlertTriangle } from 'lucide-react';
-import ReactFlow, {
-  Background,
-  Controls,
-  MiniMap,
-  useNodesState,
-  useEdgesState,
-  Handle
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+import MermaidGraph from '../components/MermaidGraph';
 import { getRecentScans, analyzeWithLLM } from '../lib/api';
-import { getSeverityColor } from '../lib/colours';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SvgIcon from '../components/SvgIcon';
 
 const AttackPath = () => {
   const [dataSource, setDataSource] = useState('recent');
@@ -21,16 +14,14 @@ const AttackPath = () => {
   const [model, setModel] = useState('claude-3-sonnet-20240229');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [narrative, setNarrative] = useState('');
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+  const [mermaidChart, setMermaidChart] = useState('');
   const [recentScans, setRecentScans] = useState([]);
   const [findings, setFindings] = useState([]);
   const [error, setError] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [bloodhoundDataAvailable, setBloodhoundDataAvailable] = useState(false);
-
-  const [nodesState, setNodesState, onNodesChange] = useNodesState(nodes);
-  const [edgesState, setEdgesState, onEdgesChange] = useEdgesState(edges);
+  const [maxFindings, setMaxFindings] = useState(100);
+  const [analysisMetadata, setAnalysisMetadata] = useState(null);
 
   React.useEffect(() => {
     loadRecentScans();
@@ -44,11 +35,6 @@ const AttackPath = () => {
       }
     }
   }, [selectedScanId, dataSource, severityFilter]);
-
-  React.useEffect(() => {
-    setNodesState(nodes);
-    setEdgesState(edges);
-  }, [nodes, edges, setNodesState, setEdgesState]);
 
   // Update model when provider changes
   React.useEffect(() => {
@@ -164,36 +150,40 @@ const AttackPath = () => {
 
     setIsAnalyzing(true);
     setError(null);
+    setAnalysisMetadata(null);
 
     try {
-      const result = await analyzeWithLLM(findings, llmProvider, apiKey, model);
+      // Automatic filtering: prioritize high-severity findings
+      let filteredFindings = [...findings];
+
+      // Sort by severity (CRITICAL > HIGH > MEDIUM > LOW > INFO)
+      const severityOrder = { 'CRITICAL': 5, 'HIGH': 4, 'MEDIUM': 3, 'LOW': 2, 'INFO': 1 };
+      filteredFindings.sort((a, b) => {
+        const severityA = severityOrder[a.severity?.toUpperCase()] || 0;
+        const severityB = severityOrder[b.severity?.toUpperCase()] || 0;
+        return severityB - severityA;
+      });
+
+      // Limit to configured max findings
+      let findingsToAnalyze = filteredFindings;
+
+      if (filteredFindings.length > maxFindings) {
+        findingsToAnalyze = filteredFindings.slice(0, maxFindings);
+        console.log(`Filtered ${filteredFindings.length} findings down to top ${maxFindings} by severity`);
+      }
+
+      const result = await analyzeWithLLM(findingsToAnalyze, llmProvider, apiKey, model);
       setNarrative(result.narrative);
+      setMermaidChart(result.mermaidChart || '');
 
-      // Convert LLM output to ReactFlow format
-      const flowNodes = result.nodes.map((node, index) => ({
-        id: node.id,
-        type: 'customNode',
-        position: {
-          x: (index % 4) * 200,
-          y: Math.floor(index / 4) * 150
-        },
-        data: {
-          label: node.label,
-          type: node.type,
-          severity: node.severity
-        }
-      }));
+      // Store metadata
+      const metadata = result.metadata || {
+        totalFindings: findings.length,
+        analyzedFindings: findingsToAnalyze.length,
+        chunked: false
+      };
+      setAnalysisMetadata(metadata);
 
-      const flowEdges = result.edges.map(edge => ({
-        id: `${edge.source}-${edge.target}`,
-        source: edge.source,
-        target: edge.target,
-        label: edge.label,
-        type: 'smoothstep'
-      }));
-
-      setNodes(flowNodes);
-      setEdges(flowEdges);
     } catch (error) {
       console.error('Analysis failed:', error);
       setError(error.message);
@@ -381,72 +371,351 @@ const AttackPath = () => {
     );
   };
 
-  const nodeTypes = {
-    customNode: ({ data }) => {
-      const getNodeStyle = () => {
-        switch (data.type) {
-          case 'finding':
-            return {
-              background: getSeverityColor(data.severity).replace('bg-', '#'),
-              color: 'white',
-              border: `2px solid ${getSeverityColor(data.severity).replace('bg-', '#')}`,
-              borderRadius: '8px',
-              padding: '8px 12px',
-              minWidth: '120px'
-            };
-          case 'object':
-            return {
-              background: '#5b7fa6',
-              color: 'white',
-              border: '2px solid #5b7fa6',
-              borderRadius: '50%',
-              width: '80px',
-              height: '80px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            };
-          case 'control':
-            return {
-              background: '#8b6db5',
-              color: 'white',
-              border: '2px solid #8b6db5',
-              borderRadius: '4px',
-              transform: 'rotate(45deg)',
-              width: '60px',
-              height: '60px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            };
-          default:
-            return {
-              background: '#6b5f54',
-              color: 'white',
-              border: '2px solid #6b5f54',
-              borderRadius: '4px',
-              padding: '8px 12px'
-            };
-        }
+  const openGraphInNewWindow = () => {
+    if (!mermaidChart) return;
+
+    // Create HTML content for the popup window
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attack Path Diagram - Interactive View</title>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        darkMode: true,
+        background: '#1a1612',
+        primaryColor: '#4A90E2',
+        primaryTextColor: '#fff',
+        primaryBorderColor: '#4A90E2',
+        lineColor: '#666',
+        secondaryColor: '#E24A4A',
+        tertiaryColor: '#50C878',
+        fontSize: '16px',
+        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+        nodeBorder: '#666',
+        mainBkg: '#2a2420',
+        textColor: '#F5F1ED',
+        edgeLabelBackground: '#1a1612',
+        clusterBkg: '#2a2420',
+        clusterBorder: '#666'
+      },
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis',
+        padding: 20
+      }
+    });
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #1a1612;
+      color: #F5F1ED;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .header {
+      background: #2a2420;
+      padding: 15px 20px;
+      border-bottom: 1px solid #3d3530;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #F5F1ED;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      background: #3d3530;
+      color: #F5F1ED;
+      border: 1px solid #4d4540;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: #4d4540;
+      border-color: #5d5550;
+    }
+    .container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .diagram-container {
+      flex: 1;
+      padding: 20px;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .findings-panel {
+      width: 400px;
+      background: #2a2420;
+      border-left: 1px solid #3d3530;
+      padding: 20px;
+      overflow-y: auto;
+      display: none;
+    }
+    .findings-panel.active {
+      display: block;
+    }
+    .finding-card {
+      background: #1a1612;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border-left: 3px solid #4A90E2;
+    }
+    .severity-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+    }
+    .severity-critical { background: #DC2626; }
+    .severity-high { background: #EA580C; }
+    .severity-medium { background: #F59E0B; }
+    .severity-low { background: #10B981; }
+    .severity-info { background: #3B82F6; }
+    .mermaid {
+      background: transparent;
+    }
+    .node {
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .node:hover {
+      opacity: 0.7;
+      filter: brightness(1.2);
+    }
+    svg {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .close-findings {
+      background: transparent;
+      border: none;
+      color: #999;
+      font-size: 24px;
+      cursor: pointer;
+      float: right;
+    }
+    .node-title {
+      background: #3d3530;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      border-left: 3px solid #4A90E2;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎯 Attack Path Diagram - Interactive View</h1>
+    <div class="controls">
+      <button class="btn" onclick="zoomIn()">🔍 Zoom In</button>
+      <button class="btn" onclick="zoomOut()">🔍 Zoom Out</button>
+      <button class="btn" onclick="resetZoom()">↺ Reset</button>
+      <button class="btn" onclick="exportPNG()">💾 Export PNG</button>
+    </div>
+  </div>
+  <div class="container">
+    <div class="diagram-container" id="diagram">
+      <div class="mermaid">
+${mermaidChart}
+      </div>
+    </div>
+    <div class="findings-panel" id="findingsPanel">
+      <button class="close-findings" onclick="closeFindings()">×</button>
+      <div id="findingsContent"></div>
+    </div>
+  </div>
+  <script>
+    const findings = ${JSON.stringify(findings)};
+    let currentZoom = 1;
+    
+    function zoomIn() {
+      currentZoom += 0.2;
+      applyZoom();
+    }
+    
+    function zoomOut() {
+      currentZoom = Math.max(0.2, currentZoom - 0.2);
+      applyZoom();
+    }
+    
+    function resetZoom() {
+      currentZoom = 1;
+      applyZoom();
+    }
+    
+    function applyZoom() {
+      const svg = document.querySelector('svg');
+      if (svg) {
+        svg.style.transform = 'scale(' + currentZoom + ')';
+        svg.style.transformOrigin = 'center center';
+      }
+    }
+    
+    function exportPNG() {
+      const svg = document.querySelector('svg');
+      if (!svg) return;
+      
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      canvas.width = svg.width.baseVal.value || 1200;
+      canvas.height = svg.height.baseVal.value || 800;
+      
+      img.onload = function() {
+        ctx.fillStyle = '#1a1612';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        const link = document.createElement('a');
+        link.download = 'attack-path-diagram.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
       };
+      
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    }
+    
+    function findRelatedFindings(nodeLabel) {
+      if (!nodeLabel || !findings || findings.length === 0) return [];
+      
+      const cleanLabel = nodeLabel.toLowerCase().replace(/['"]/g, '').trim();
+      
+      return findings.filter(finding => {
+        const searchableText = \`
+          \${finding.name || ''} 
+          \${finding.checkName || ''} 
+          \${finding.category || ''} 
+          \${finding.description || ''}
+          \${finding.distinguishedName || ''}
+        \`.toLowerCase();
+        
+        // Strategy 1: Direct substring match
+        if (searchableText.includes(cleanLabel)) return true;
+        
+        // Strategy 2: Check if finding name is in the node label
+        const findingName = (finding.name || '').toLowerCase();
+        if (findingName && cleanLabel.includes(findingName)) return true;
+        
+        // Strategy 3: Split node label and check each part (min 3 chars)
+        const labelParts = cleanLabel.split(/\\s+/).filter(part => part.length >= 3);
+        for (const part of labelParts) {
+          if (searchableText.includes(part)) return true;
+          
+          // Also check with dots replaced by spaces
+          const partWithSpaces = part.replace(/\\./g, ' ');
+          if (partWithSpaces !== part && searchableText.includes(partWithSpaces)) return true;
+        }
+        
+        // Strategy 4: Check for attack technique keywords
+        const attackKeywords = ['asrep', 'kerberoast', 'delegation', 'dcsync', 'admin', 'privileged', 'unconstrained'];
+        for (const keyword of attackKeywords) {
+          if (cleanLabel.includes(keyword) && searchableText.includes(keyword)) return true;
+        }
+        
+        return false;
+      });
+    }
+    
+    function showFindings(nodeLabel, relatedFindings) {
+      const panel = document.getElementById('findingsPanel');
+      const content = document.getElementById('findingsContent');
+      
+      let html = '<div class="node-title"><strong>' + nodeLabel + '</strong></div>';
+      html += '<h3 style="margin-bottom: 10px; color: #C9BFB5;">Related Findings (' + relatedFindings.length + ')</h3>';
+      
+      if (relatedFindings.length === 0) {
+        html += '<p style="color: #999; font-style: italic; text-align: center; padding: 20px;">No findings directly related to this node</p>';
+      } else {
+        relatedFindings.forEach(finding => {
+          const severityClass = 'severity-' + (finding.severity || 'info').toLowerCase();
+          html += '<div class="finding-card">';
+          html += '<div style="display: flex; justify-content: space-between; margin-bottom: 8px;">';
+          html += '<strong style="color: #F5F1ED; font-size: 13px;">' + (finding.checkName || finding.name) + '</strong>';
+          html += '<span class="severity-badge ' + severityClass + '">' + (finding.severity || 'INFO') + '</span>';
+          html += '</div>';
+          if (finding.name) {
+            html += '<div style="color: #C9BFB5; font-size: 12px; margin-bottom: 4px;"><strong>Object:</strong> ' + finding.name + '</div>';
+          }
+          if (finding.category) {
+            html += '<div style="color: #999; font-size: 11px; margin-bottom: 4px;"><strong>Category:</strong> ' + finding.category.replace(/_/g, ' ') + '</div>';
+          }
+          if (finding.mitre) {
+            html += '<div style="color: #999; font-size: 11px; margin-bottom: 4px;"><strong>MITRE:</strong> ' + finding.mitre + '</div>';
+          }
+          if (finding.description) {
+            html += '<div style="color: #999; font-size: 11px; margin-top: 8px; line-height: 1.4;">' + finding.description + '</div>';
+          }
+          html += '</div>';
+        });
+      }
+      
+      content.innerHTML = html;
+      panel.classList.add('active');
+    }
+    
+    function closeFindings() {
+      document.getElementById('findingsPanel').classList.remove('active');
+    }
+    
+    // Add click handlers after mermaid renders
+    setTimeout(() => {
+      const nodes = document.querySelectorAll('.node');
+      nodes.forEach(node => {
+        node.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const labelElement = node.querySelector('.nodeLabel, text');
+          const nodeLabel = labelElement ? labelElement.textContent.trim() : '';
+          const relatedFindings = findRelatedFindings(nodeLabel);
+          showFindings(nodeLabel, relatedFindings);
+        });
+      });
+    }, 1000);
+  </script>
+</body>
+</html>
+    `;
 
-      const style = getNodeStyle();
-
-      return (
-        <div style={style}>
-          {data.type === 'control' ? (
-            <div style={{ transform: 'rotate(-45deg)', fontSize: '12px' }}>
-              {data.label}
-            </div>
-          ) : (
-            <div style={{ fontSize: '12px', textAlign: 'center' }}>
-              {data.label}
-            </div>
-          )}
-          <Handle type="target" position="top" />
-          <Handle type="source" position="bottom" />
-        </div>
-      );
+    // Open new window
+    const newWindow = window.open('', '_blank', 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no');
+    if (newWindow) {
+      newWindow.document.write(htmlContent);
+      newWindow.document.close();
+    } else {
+      alert('Please allow popups for this site to open the diagram in a new window');
     }
   };
 
@@ -454,7 +723,7 @@ const AttackPath = () => {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-text-primary mb-2">Attack Path Analysis</h1>
-        <p className="text-text-secondary">AI-powered attack chain identification and visualization</p>
+        <p className="text-text-secondary">AI-powered attack chain identification and visualization with Mermaid diagrams</p>
       </div>
 
       {/* Configuration Row */}
@@ -632,19 +901,39 @@ const AttackPath = () => {
               </select>
             </div>
 
+            <div>
+              <label className="block text-sm text-text-secondary mb-2">
+                Max Findings to Analyze
+                <span className="text-xs text-text-muted ml-2">(Auto-filtered by severity)</span>
+              </label>
+              <select
+                value={maxFindings}
+                onChange={(e) => setMaxFindings(Number(e.target.value))}
+                className="select"
+              >
+                <option value="50">50 findings</option>
+                <option value="100">100 findings (Recommended)</option>
+                <option value="200">200 findings</option>
+                <option value="500">500 findings (May be slow)</option>
+              </select>
+              <p className="text-xs text-text-muted mt-1">
+                Higher values may exceed LLM token limits or take longer to process
+              </p>
+            </div>
+
             <button
               onClick={handleAnalyze}
               disabled={isAnalyzing || !apiKey.trim()}
               className="btn-primary w-full"
             >
               {isAnalyzing ? (
-                <>
-                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                  Analyzing {findings.length} findings...
-                </>
+                <div className="flex flex-col items-center">
+                  <LoadingSpinner size="small" />
+                  <span className="mt-2 text-sm">Analyzing {findings.length} findings...</span>
+                </div>
               ) : (
                 <>
-                  <Brain className="w-4 h-4 mr-2" />
+                  <SvgIcon name="data-analysis" size={16} className="mr-2" />
                   Analyse Attack Paths
                 </>
               )}
@@ -664,46 +953,86 @@ const AttackPath = () => {
         </div>
       )}
 
+      {/* Analysis Metadata */}
+      {analysisMetadata && (
+        <div className="card bg-accent-primary/10 border-accent-primary/30">
+          <div className="flex items-center gap-2 text-accent-primary mb-2">
+            <Brain className="w-5 h-5" />
+            <span className="font-medium">Analysis Summary</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <div className="text-text-muted">Total Findings</div>
+              <div className="text-text-primary font-semibold text-lg">{analysisMetadata.totalFindings}</div>
+            </div>
+            <div>
+              <div className="text-text-muted">Analyzed</div>
+              <div className="text-text-primary font-semibold text-lg">{analysisMetadata.analyzedFindings}</div>
+            </div>
+            <div>
+              <div className="text-text-muted">Filtering</div>
+              <div className="text-text-primary font-semibold text-lg">
+                {analysisMetadata.analyzedFindings < analysisMetadata.totalFindings ? 'Top Severity' : 'All'}
+              </div>
+            </div>
+            <div>
+              <div className="text-text-muted">Processing</div>
+              <div className="text-text-primary font-semibold text-lg">
+                {analysisMetadata.chunked ? `Chunked (${analysisMetadata.currentChunk}/${analysisMetadata.totalChunks})` : 'Single Pass'}
+              </div>
+            </div>
+          </div>
+          {analysisMetadata.analyzedFindings < analysisMetadata.totalFindings && (
+            <p className="text-xs text-text-muted mt-3">
+              ℹ️ Automatically filtered to top {analysisMetadata.analyzedFindings} highest-severity findings for optimal LLM performance
+            </p>
+          )}
+        </div>
+      )}
+
       {narrative && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Attack Graph */}
+        <div className="space-y-6">
+          {/* Attack Graph - Full Width */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-text-primary">Attack Graph</h3>
-              <button className="btn-secondary text-sm">
-                <Download className="w-3 h-3 mr-1" />
-                Export PNG
-              </button>
+              <h3 className="font-semibold text-text-primary text-lg">Attack Path Diagram</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => openGraphInNewWindow()}
+                  className="btn-secondary text-sm"
+                  disabled={!mermaidChart}
+                >
+                  <Network className="w-3 h-3 mr-1" />
+                  Open in New Window
+                </button>
+                <button className="btn-secondary text-sm">
+                  <Download className="w-3 h-3 mr-1" />
+                  Export PNG
+                </button>
+              </div>
             </div>
-            <div style={{ height: '400px', border: '1px solid #3d3530', borderRadius: '8px' }}>
-              <ReactFlow
-                nodes={nodesState}
-                edges={edgesState}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                nodeTypes={nodeTypes}
-                fitView
-              >
-                <Background color="#1a1612" gap={16} />
-                <Controls />
-                <MiniMap
-                  nodeColor={(node) => {
-                    switch (node.data.type) {
-                      case 'finding': return getSeverityColor(node.data.severity).replace('bg-', '#');
-                      case 'object': return '#5b7fa6';
-                      case 'control': return '#8b6db5';
-                      default: return '#6b5f54';
-                    }
-                  }}
+            <div style={{ height: '800px', width: '100%' }}>
+              {mermaidChart ? (
+                <MermaidGraph
+                  chart={mermaidChart}
+                  findings={findings}
                 />
-              </ReactFlow>
+              ) : (
+                <div className="flex items-center justify-center h-full text-text-secondary">
+                  <div className="text-center">
+                    <Network className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No diagram generated yet</p>
+                    <p className="text-sm text-text-muted mt-1">Run analysis to generate attack path</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Narrative */}
+          {/* Narrative - Full Width Below */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-text-primary">Analysis Narrative</h3>
+              <h3 className="font-semibold text-text-primary text-lg">Analysis Narrative</h3>
               <div className="flex gap-2">
                 <button className="btn-secondary text-sm">
                   <FileText className="w-3 h-3 mr-1" />

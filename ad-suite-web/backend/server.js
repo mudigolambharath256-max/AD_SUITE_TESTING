@@ -210,27 +210,44 @@ app.get('/api/settings/:key', (req, res) => {
 // LLM analysis endpoint
 app.post('/api/llm/analyse', async (req, res) => {
   try {
-    const { findings, provider, apiKey, model } = req.body;
+    const { findings, provider, apiKey, model, chunkSize = 100 } = req.body;
 
     if (!findings || !Array.isArray(findings) || !provider || !apiKey) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    let response;
+    // If findings exceed chunk size, process in chunks
+    if (findings.length > chunkSize) {
+      console.log(`Processing ${findings.length} findings in chunks of ${chunkSize}`);
 
-    switch (provider) {
-      case 'anthropic':
-        response = await callAnthropicAPI(findings, apiKey, model);
-        break;
-      case 'openai':
-        response = await callOpenAIAPI(findings, apiKey, model);
-        break;
-      case 'ollama':
-        response = await callOllamaAPI(findings, apiKey, model);
-        break;
-      default:
-        return res.status(400).json({ error: 'Unsupported provider' });
+      // Split findings into chunks
+      const chunks = [];
+      for (let i = 0; i < findings.length; i += chunkSize) {
+        chunks.push(findings.slice(i, i + chunkSize));
+      }
+
+      // Process first chunk for now (can be extended to merge multiple chunks)
+      const firstChunkResponse = await processLLMAnalysis(chunks[0], provider, apiKey, model);
+
+      // Add metadata about chunking
+      firstChunkResponse.metadata = {
+        totalFindings: findings.length,
+        analyzedFindings: chunks[0].length,
+        chunked: true,
+        totalChunks: chunks.length,
+        currentChunk: 1
+      };
+
+      return res.json(firstChunkResponse);
     }
+
+    // Process normally if within limits
+    const response = await processLLMAnalysis(findings, provider, apiKey, model);
+    response.metadata = {
+      totalFindings: findings.length,
+      analyzedFindings: findings.length,
+      chunked: false
+    };
 
     res.json(response);
   } catch (error) {
@@ -239,13 +256,60 @@ app.post('/api/llm/analyse', async (req, res) => {
   }
 });
 
+// Helper function to process LLM analysis
+async function processLLMAnalysis(findings, provider, apiKey, model) {
+  let response;
+
+  switch (provider) {
+    case 'anthropic':
+      response = await callAnthropicAPI(findings, apiKey, model);
+      break;
+    case 'openai':
+      response = await callOpenAIAPI(findings, apiKey, model);
+      break;
+    case 'ollama':
+      response = await callOllamaAPI(findings, apiKey, model);
+      break;
+    default:
+      throw new Error('Unsupported provider');
+  }
+
+  return response;
+}
+
 // LLM API helper functions
 async function callAnthropicAPI(findings, apiKey, model = 'claude-3-sonnet-20240229') {
   const axios = require('axios');
 
-  const systemPrompt = `You are an Active Directory penetration tester. Analyse the findings and identify attack chains. Format your response in Markdown. At the end, include a JSON block labelled \`\`\`graph containing nodes and edges arrays for visualisation: nodes have id, label, type (finding|object|control), severity. Edges have source, target, label.`;
+  const systemPrompt = `You are an Active Directory penetration tester. Analyze the findings and identify attack chains.
 
-  const userPrompt = JSON.stringify(findings, null, 2);
+Format your response in two parts:
+
+1. **Narrative Analysis** (Markdown format):
+   - Provide a detailed analysis of the attack paths
+   - Explain the vulnerabilities and their relationships
+   - Describe potential attack scenarios
+   - Include MITRE ATT&CK techniques
+
+2. **Mermaid Diagram** (at the end):
+   - Create a Mermaid flowchart showing the attack path
+   - IMPORTANT: Keep node labels SHORT and SIMPLE (max 30 characters)
+   - Use ONLY alphanumeric characters, spaces, and hyphens in labels
+   - NO special characters like parentheses, brackets, pipes, backslashes
+   - Use this format:
+   \`\`\`mermaid
+   graph TD
+       A["Attacker"] --> B["Initial Access"]
+       B --> C["Privilege Escalation"]
+       C --> D["Domain Admin"]
+   \`\`\`
+   - Use descriptive but SHORT node labels
+   - Show the attack flow from initial access to final objective
+   - Use different node shapes: ["text"] for objects, ("text") for actions, {"text"} for outcomes
+   - Example good labels: "ASREPRoast User", "Kerberoast SPN", "Exploit Delegation"
+   - Example bad labels: "sansa.stark (No Kerberos Pre-Auth Required)" - TOO LONG`;
+
+  const userPrompt = `Analyze these Active Directory findings and create an attack path diagram:\n\n${JSON.stringify(findings, null, 2)}`;
 
   const response = await axios.post('https://api.anthropic.com/v1/messages', {
     model: model,
@@ -263,21 +327,64 @@ async function callAnthropicAPI(findings, apiKey, model = 'claude-3-sonnet-20240
   });
 
   const narrative = response.data.content[0].text;
-  const graphData = parseGraphFromResponse(narrative);
+  const mermaidChart = parseMermaidFromResponse(narrative);
 
   return {
     narrative,
-    nodes: graphData.nodes,
-    edges: graphData.edges
+    mermaidChart
   };
 }
 
 async function callOpenAIAPI(findings, apiKey, model = 'gpt-4') {
   const axios = require('axios');
 
-  const systemPrompt = `You are an Active Directory penetration tester. Analyse the findings and identify attack chains. Format your response in Markdown. At the end, include a JSON block labelled \`\`\`graph containing nodes and edges arrays for visualisation: nodes have id, label, type (finding|object|control), severity. Edges have source, target, label.`;
+  const systemPrompt = `You are an Active Directory penetration tester. Analyze the findings and identify attack chains.
 
-  const userPrompt = JSON.stringify(findings, null, 2);
+Format your response in two parts:
+
+1. **Narrative Analysis** (Markdown format):
+   - Provide a detailed analysis of the attack paths
+   - Explain the vulnerabilities and their relationships
+   - Describe potential attack scenarios
+   - Include MITRE ATT&CK techniques
+
+2. **Mermaid Diagram** (at the end):
+   - Create a Mermaid flowchart showing the attack path with COLOR CODING
+   - IMPORTANT: Keep node labels SHORT and SIMPLE (max 30 characters)
+   - Use ONLY alphanumeric characters, spaces, and hyphens in labels
+   - NO special characters like parentheses, brackets, pipes, backslashes
+   
+   COLOR CODING RULES:
+   - Use :::red for HIGH RISK nodes (Domain Admin, Enterprise Admin, final objectives)
+   - Use :::orange for MEDIUM RISK nodes (privilege escalation steps, exploitation)
+   - Use :::yellow for LOW RISK nodes (reconnaissance, initial access)
+   - Use :::cyan for INFORMATION nodes (discovered assets, enumeration results)
+   - Use :::green for STARTING POINT (attacker position)
+   
+   Use this format:
+   \`\`\`mermaid
+   graph LR
+       A["Attacker"]:::green --> B["Find vulnerable user"]:::cyan
+       B --> C["ASREPRoast attack"]:::orange
+       C --> D["Crack hash"]:::orange
+       D --> E["User compromised"]:::red
+       E --> F["Domain Admin"]:::red
+       
+       classDef red fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px,color:#fff
+       classDef orange fill:#ff922b,stroke:#e8590c,stroke-width:2px,color:#fff
+       classDef yellow fill:#ffd43b,stroke:#fab005,stroke-width:2px,color:#000
+       classDef cyan fill:#22b8cf,stroke:#0c8599,stroke-width:2px,color:#fff
+       classDef green fill:#51cf66,stroke:#2f9e44,stroke-width:2px,color:#fff
+   \`\`\`
+   
+   - Use descriptive but SHORT node labels
+   - Show the attack flow from initial access to final objective
+   - Use graph LR (left to right) or TD (top to bottom) based on complexity
+   - Apply appropriate color classes to each node
+   - Example good labels: "ASREPRoast User", "Kerberoast SPN", "Exploit Delegation"
+   - Example bad labels: "sansa.stark (No Kerberos Pre-Auth Required)" - TOO LONG`;
+
+  const userPrompt = `Analyze these Active Directory findings and create an attack path diagram:\n\n${JSON.stringify(findings, null, 2)}`;
 
   try {
     const response = await axios.post('https://api.openai.com/v1/chat/completions', {
@@ -295,12 +402,11 @@ async function callOpenAIAPI(findings, apiKey, model = 'gpt-4') {
     });
 
     const narrative = response.data.choices[0].message.content;
-    const graphData = parseGraphFromResponse(narrative);
+    const mermaidChart = parseMermaidFromResponse(narrative);
 
     return {
       narrative,
-      nodes: graphData.nodes,
-      edges: graphData.edges
+      mermaidChart
     };
   } catch (error) {
     console.error('OpenAI API Error:', error.response?.data || error.message);
@@ -311,9 +417,53 @@ async function callOpenAIAPI(findings, apiKey, model = 'gpt-4') {
 async function callOllamaAPI(findings, apiKey, model = 'llama3') {
   const axios = require('axios');
 
-  const systemPrompt = `You are an Active Directory penetration tester. Analyse the findings and identify attack chains. Format your response in Markdown. At the end, include a JSON block labelled \`\`\`graph containing nodes and edges arrays for visualisation: nodes have id, label, type (finding|object|control), severity. Edges have source, target, label.`;
+  const systemPrompt = `You are an Active Directory penetration tester. Analyze the findings and identify attack chains.
 
-  const userPrompt = JSON.stringify(findings, null, 2);
+Format your response in two parts:
+
+1. **Narrative Analysis** (Markdown format):
+   - Provide a detailed analysis of the attack paths
+   - Explain the vulnerabilities and their relationships
+   - Describe potential attack scenarios
+   - Include MITRE ATT&CK techniques
+
+2. **Mermaid Diagram** (at the end):
+   - Create a Mermaid flowchart showing the attack path with COLOR CODING
+   - IMPORTANT: Keep node labels SHORT and SIMPLE (max 30 characters)
+   - Use ONLY alphanumeric characters, spaces, and hyphens in labels
+   - NO special characters like parentheses, brackets, pipes, backslashes
+   
+   COLOR CODING RULES:
+   - Use :::red for HIGH RISK nodes (Domain Admin, Enterprise Admin, final objectives)
+   - Use :::orange for MEDIUM RISK nodes (privilege escalation steps, exploitation)
+   - Use :::yellow for LOW RISK nodes (reconnaissance, initial access)
+   - Use :::cyan for INFORMATION nodes (discovered assets, enumeration results)
+   - Use :::green for STARTING POINT (attacker position)
+   
+   Use this format:
+   \`\`\`mermaid
+   graph LR
+       A["Attacker"]:::green --> B["Find vulnerable user"]:::cyan
+       B --> C["ASREPRoast attack"]:::orange
+       C --> D["Crack hash"]:::orange
+       D --> E["User compromised"]:::red
+       E --> F["Domain Admin"]:::red
+       
+       classDef red fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px,color:#fff
+       classDef orange fill:#ff922b,stroke:#e8590c,stroke-width:2px,color:#fff
+       classDef yellow fill:#ffd43b,stroke:#fab005,stroke-width:2px,color:#000
+       classDef cyan fill:#22b8cf,stroke:#0c8599,stroke-width:2px,color:#fff
+       classDef green fill:#51cf66,stroke:#2f9e44,stroke-width:2px,color:#fff
+   \`\`\`
+   
+   - Use descriptive but SHORT node labels
+   - Show the attack flow from initial access to final objective
+   - Use graph LR (left to right) or TD (top to bottom) based on complexity
+   - Apply appropriate color classes to each node
+   - Example good labels: "ASREPRoast User", "Kerberoast SPN", "Exploit Delegation"
+   - Example bad labels: "sansa.stark (No Kerberos Pre-Auth Required)" - TOO LONG`;
+
+  const userPrompt = `Analyze these Active Directory findings and create an attack path diagram:\n\n${JSON.stringify(findings, null, 2)}`;
 
   const response = await axios.post(`${apiKey}/api/generate`, {
     model: model,
@@ -327,45 +477,121 @@ async function callOllamaAPI(findings, apiKey, model = 'llama3') {
   });
 
   const narrative = response.data.response;
-  const graphData = parseGraphFromResponse(narrative);
+  const mermaidChart = parseMermaidFromResponse(narrative);
 
   return {
     narrative,
-    nodes: graphData.nodes,
-    edges: graphData.edges
+    mermaidChart
   };
 }
 
-function parseGraphFromResponse(narrative) {
+function parseMermaidFromResponse(narrative) {
   try {
-    // Try to find graph data in different formats
-    let graphMatch = narrative.match(/```graph\n([\s\S]*?)\n```/);
-    if (!graphMatch) {
-      graphMatch = narrative.match(/```json\n([\s\S]*?)\n```/);
+    // Try to find mermaid diagram in the response
+    let mermaidMatch = narrative.match(/```mermaid\n([\s\S]*?)\n```/);
+
+    if (mermaidMatch) {
+      let mermaidCode = mermaidMatch[1].trim();
+
+      // Sanitize the mermaid code to fix common issues
+      mermaidCode = sanitizeMermaidCode(mermaidCode);
+
+      return mermaidCode;
     }
 
-    if (graphMatch) {
-      let graphText = graphMatch[1];
-      const graphJson = JSON.parse(graphText);
-
-      // Handle both formats: direct nodes/edges or wrapped in graph object
-      if (graphJson.graph) {
-        return {
-          nodes: graphJson.graph.nodes || [],
-          edges: graphJson.graph.edges || []
-        };
-      } else {
-        return {
-          nodes: graphJson.nodes || [],
-          edges: graphJson.edges || []
-        };
-      }
-    }
+    // If no mermaid found, return a default diagram
+    return `graph TD
+    A["No Attack Path Diagram Generated"]
+    A --> B["Please try again or check the narrative"]`;
   } catch (error) {
-    console.error('Error parsing graph from response:', error);
+    console.error('Error parsing mermaid from response:', error);
+    return `graph TD
+    A["Error Parsing Diagram"]
+    A --> B["Check console for details"]`;
+  }
+}
+
+function sanitizeMermaidCode(code) {
+  // Replace problematic characters in node labels
+  // Mermaid doesn't like certain characters in labels without quotes
+
+  // Split into lines
+  let lines = code.split('\n');
+
+  lines = lines.map(line => {
+    // Match node definitions like: A[text] or A(text) or A{text}
+    // Replace with quoted versions if they contain special chars
+    line = line.replace(/(\w+)\[(.*?)\]/g, (match, nodeId, label) => {
+      // Remove or escape problematic characters
+      let cleanLabel = label
+        .replace(/\(/g, '')
+        .replace(/\)/g, '')
+        .replace(/\[/g, '')
+        .replace(/\]/g, '')
+        .replace(/\{/g, '')
+        .replace(/\}/g, '')
+        .replace(/"/g, "'")
+        .replace(/\|/g, '-')
+        .replace(/\\/g, '/')
+        .trim();
+
+      // Limit label length
+      if (cleanLabel.length > 50) {
+        cleanLabel = cleanLabel.substring(0, 47) + '...';
+      }
+
+      return `${nodeId}["${cleanLabel}"]`;
+    });
+
+    // Handle parentheses nodes
+    line = line.replace(/(\w+)\((.*?)\)/g, (match, nodeId, label) => {
+      let cleanLabel = label
+        .replace(/\(/g, '')
+        .replace(/\)/g, '')
+        .replace(/\[/g, '')
+        .replace(/\]/g, '')
+        .replace(/"/g, "'")
+        .trim();
+
+      if (cleanLabel.length > 50) {
+        cleanLabel = cleanLabel.substring(0, 47) + '...';
+      }
+
+      return `${nodeId}("${cleanLabel}")`;
+    });
+
+    // Handle curly brace nodes
+    line = line.replace(/(\w+)\{(.*?)\}/g, (match, nodeId, label) => {
+      let cleanLabel = label
+        .replace(/\{/g, '')
+        .replace(/\}/g, '')
+        .replace(/\[/g, '')
+        .replace(/\]/g, '')
+        .replace(/"/g, "'")
+        .trim();
+
+      if (cleanLabel.length > 50) {
+        cleanLabel = cleanLabel.substring(0, 47) + '...';
+      }
+
+      return `${nodeId}{"${cleanLabel}"}`;
+    });
+
+    return line;
+  });
+
+  let result = lines.join('\n');
+
+  // Add color class definitions if they don't exist
+  if (!result.includes('classDef red') && !result.includes('classDef')) {
+    result += `\n\nclassDef red fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px,color:#fff
+classDef orange fill:#ff922b,stroke:#e8590c,stroke-width:2px,color:#fff
+classDef yellow fill:#ffd43b,stroke:#fab005,stroke-width:2px,color:#000
+classDef cyan fill:#22b8cf,stroke:#0c8599,stroke-width:2px,color:#fff
+classDef green fill:#51cf66,stroke:#2f9e44,stroke-width:2px,color:#fff`;
   }
 
-  return { nodes: [], edges: [] };
+  return result;
 }
 
 // Serve static files in production
