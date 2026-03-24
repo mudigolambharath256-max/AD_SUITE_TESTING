@@ -33,10 +33,21 @@ router.post('/export', async (req, res) => {
         return res.status(404).json({ error: 'Report not found. Run the scan first.' });
       }
 
+      // Set proper headers for download
       res.setHeader('Content-Disposition', `attachment; filename="scan_${scanIds[0]}_findings${extMap[format]}"`);
       res.setHeader('Content-Type', contentTypeMap[format]);
+      res.setHeader('Content-Length', fs.statSync(filePath).size);
+      res.setHeader('Cache-Control', 'no-cache');
 
-      fs.createReadStream(filePath).pipe(res);
+      const stream = fs.createReadStream(filePath);
+      stream.on('error', (err) => {
+        console.error('Stream error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to read file' });
+        }
+      });
+
+      stream.pipe(res);
       return;
     }
 
@@ -56,10 +67,21 @@ router.post('/export', async (req, res) => {
       return res.status(500).json({ error: 'Failed to generate merged report' });
     }
 
+    // Set proper headers for download
     res.setHeader('Content-Disposition', `attachment; filename="merged_report${extMap[format]}"`);
     res.setHeader('Content-Type', contentTypeMap[format]);
+    res.setHeader('Content-Length', fs.statSync(mergedFile).size);
+    res.setHeader('Cache-Control', 'no-cache');
 
     const stream = fs.createReadStream(mergedFile);
+
+    stream.on('error', (err) => {
+      console.error('Stream error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to read file' });
+      }
+    });
+
     stream.pipe(res);
 
     res.on('finish', () => {

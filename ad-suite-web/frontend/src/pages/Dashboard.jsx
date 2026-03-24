@@ -67,6 +67,8 @@ const Dashboard = () => {
 
   const handleDownloadScan = async (scanId, format = 'json') => {
     try {
+      console.log('Starting download for scan:', scanId, 'format:', format);
+
       const response = await fetch('/api/reports/export', {
         method: 'POST',
         headers: {
@@ -78,19 +80,39 @@ const Dashboard = () => {
         })
       });
 
+      console.log('Response status:', response.status, response.statusText);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error('Failed to download scan');
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
+        throw new Error(`Failed to download scan: ${response.status} ${errorText}`);
       }
 
       const blob = await response.blob();
+      console.log('Blob created:', blob.size, 'bytes, type:', blob.type);
+
+      if (blob.size === 0) {
+        throw new Error('Downloaded file is empty');
+      }
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `scan_${scanId.substring(0, 8)}_findings.${format}`;
+      a.style.display = 'none';
       document.body.appendChild(a);
+
+      console.log('Triggering download...');
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+
+      // Clean up after a delay to ensure download starts
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        console.log('Download cleanup complete');
+      }, 100);
+
     } catch (error) {
       console.error('Download error:', error);
       alert('Failed to download scan: ' + error.message);

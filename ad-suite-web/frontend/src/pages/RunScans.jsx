@@ -180,23 +180,46 @@ const RunScans = () => {
     if (!activeScanId) return;
 
     try {
+      console.log('Starting export for scan:', activeScanId, 'format:', format);
+
       const response = await fetch('/api/reports/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scanId: activeScanId, format })
+        body: JSON.stringify({ scanIds: [activeScanId], format })
       });
 
-      if (!response.ok) throw new Error('Export failed');
+      console.log('Export response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Export error response:', errorText);
+        throw new Error(`Export failed: ${response.status} ${errorText}`);
+      }
 
       const blob = await response.blob();
+      console.log('Export blob created:', blob.size, 'bytes');
+
+      if (blob.size === 0) {
+        throw new Error('Downloaded file is empty');
+      }
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `ad-suite-scan-${activeScanId}.${format}`;
+      a.download = `ad-suite-scan-${activeScanId.substring(0, 8)}.${format}`;
+      a.style.display = 'none';
       document.body.appendChild(a);
+
+      console.log('Triggering export download...');
       a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+
+      // Clean up after a delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        console.log('Export cleanup complete');
+      }, 100);
+
     } catch (error) {
       console.error('Export failed:', error);
       alert(`Export failed: ${error.message}`);
