@@ -458,7 +458,7 @@ async function runScan({ scanId, checkIds, engine, suiteRoot, domain, serverIp }
       }
     });
 
-    emitSSE(scanId, { type: 'log', line: `\n[${checkId}] Starting — ${scriptPath}` });
+    emitSSE(scanId, { type: 'log', line: `\n[${checkId}] Starting check...` });
 
     // Apply domain/IP injection if specified
     const execScriptPath = (domain || serverIp)
@@ -486,8 +486,23 @@ async function runScan({ scanId, checkIds, engine, suiteRoot, domain, serverIp }
       proc.stdout.on('data', (chunk) => {
         const text = chunk.toString('utf8');
         stdoutBuffer += text;
+
+        // Filter and send only non-JSON lines to terminal for better readability
         text.split('\n').filter(l => l.trim()).forEach(line => {
-          emitSSE(scanId, { type: 'log', line });
+          const trimmed = line.trim();
+
+          // Skip JSON output lines (findings data)
+          if (trimmed.startsWith('{') || trimmed.startsWith('[') ||
+            trimmed.includes('"CheckID"') || trimmed.includes('"Name"') ||
+            trimmed.includes('"Severity"') || trimmed.includes('"MITRE"')) {
+            return; // Don't send JSON to terminal
+          }
+
+          // Skip empty or very short lines
+          if (trimmed.length < 3) return;
+
+          // Send meaningful log lines to terminal
+          emitSSE(scanId, { type: 'log', line: trimmed });
         });
       });
 
@@ -529,7 +544,7 @@ async function runScan({ scanId, checkIds, engine, suiteRoot, domain, serverIp }
 
         emitSSE(scanId, {
           type: 'log',
-          line: `[${checkId}] Done — ${findings.length} findings (exit ${code})`
+          line: `[${checkId}] ✓ Complete — ${findings.length} finding(s) | Exit code: ${code}`
         });
 
         completedCount++;
