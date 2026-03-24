@@ -12,6 +12,42 @@ const formatMap = { json: 'findings.json', csv: 'findings.csv', pdf: 'report.pdf
 const contentTypeMap = { json: 'application/json', csv: 'text/csv', pdf: 'application/pdf' };
 const extMap = { json: '.json', csv: '.csv', pdf: '.pdf' };
 
+// GET /api/reports/export/:scanId/:format - Direct download link (more reliable for remote access)
+router.get('/export/:scanId/:format', async (req, res) => {
+  try {
+    const { scanId, format } = req.params;
+
+    if (!['json', 'csv', 'pdf'].includes(format)) {
+      return res.status(400).json({ error: 'Invalid format. Must be json, csv, or pdf' });
+    }
+
+    const filePath = path.join(REPORTS_DIR, scanId, formatMap[format]);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Report not found. Run the scan first.' });
+    }
+
+    // Set proper headers for download
+    res.setHeader('Content-Disposition', `attachment; filename="scan_${scanId}_findings${extMap[format]}"`);
+    res.setHeader('Content-Type', contentTypeMap[format]);
+    res.setHeader('Content-Length', fs.statSync(filePath).size);
+    res.setHeader('Cache-Control', 'no-cache');
+
+    const stream = fs.createReadStream(filePath);
+    stream.on('error', (err) => {
+      console.error('Stream error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to read file' });
+      }
+    });
+
+    stream.pipe(res);
+  } catch (error) {
+    console.error('Export error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/reports/export - Export scan results
 router.post('/export', async (req, res) => {
   try {

@@ -65,52 +65,27 @@ const Dashboard = () => {
   const totalFindings = Object.values(severityData).reduce((sum, count) => sum + count, 0);
   const criticalFindings = severityData.critical || 0;
 
-  const handleDownloadScan = async (scanId, format = 'json') => {
+  const handleDownloadScan = (scanId, format = 'json') => {
     try {
       console.log('Starting download for scan:', scanId, 'format:', format);
 
-      const response = await fetch('/api/reports/export', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          scanIds: [scanId],
-          format: format
-        })
-      });
+      // Use GET endpoint with direct link - more reliable for remote access
+      const downloadUrl = `/api/reports/export/${scanId}/${format}`;
 
-      console.log('Response status:', response.status, response.statusText);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response error:', errorText);
-        throw new Error(`Failed to download scan: ${response.status} ${errorText}`);
-      }
-
-      const blob = await response.blob();
-      console.log('Blob created:', blob.size, 'bytes, type:', blob.type);
-
-      if (blob.size === 0) {
-        throw new Error('Downloaded file is empty');
-      }
-
-      const url = window.URL.createObjectURL(blob);
+      // Create hidden link and trigger download
       const a = document.createElement('a');
-      a.href = url;
+      a.href = downloadUrl;
       a.download = `scan_${scanId.substring(0, 8)}_findings.${format}`;
       a.style.display = 'none';
       document.body.appendChild(a);
 
-      console.log('Triggering download...');
+      console.log('Triggering download via GET:', downloadUrl);
       a.click();
 
-      // Clean up after a delay to ensure download starts
+      // Clean up
       setTimeout(() => {
-        window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        console.log('Download cleanup complete');
+        console.log('Download link removed');
       }, 100);
 
     } catch (error) {
