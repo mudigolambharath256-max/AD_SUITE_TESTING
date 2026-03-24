@@ -18,35 +18,29 @@ const RunScans = () => {
   const [validation, setValidation] = useState(null);
   const [targetValidation, setTargetValidation] = useState(null);
   const [showTerminal, setShowTerminal] = useState(false);
-  const [isStoreReady, setIsStoreReady] = useState(false);
 
-  // Wait for store hydration
-  useEffect(() => {
-    // Set store ready immediately since Zustand handles hydration internally
-    // The loading state will be brief but prevents the flash of empty content
-    const timer = setTimeout(() => setIsStoreReady(true), 50);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Show loading state during store hydration
-  if (!isStoreReady) {
+  // Safety check: if store is not initialized, show loading
+  if (!store) {
     return (
       <div className="p-6 flex flex-col h-full">
         <div className="flex items-center justify-center flex-1">
           <div className="flex items-center gap-3 text-text-secondary">
             <Loader2 className="w-6 h-6 animate-spin" />
-            <span>Loading scan configuration...</span>
+            <span>Initializing...</span>
           </div>
         </div>
       </div>
     );
   }
 
-  // Ensure store values are initialized
-  const suiteRoot = store.suiteRoot || '';
-  const domain = store.domain || '';
-  const serverIp = store.serverIp || '';
-  const selectedCheckIds = Array.isArray(store.selectedCheckIds) ? store.selectedCheckIds : [];
+  // Ensure store values are initialized with safe defaults
+  const suiteRoot = store?.suiteRoot || '';
+  const domain = store?.domain || '';
+  const serverIp = store?.serverIp || '';
+  const selectedCheckIds = Array.isArray(store?.selectedCheckIds) ? store.selectedCheckIds : [];
+  const engine = store?.engine || 'adsi';
+  const suiteRootValid = store?.suiteRootValid || false;
+  const availableChecks = Array.isArray(store?.availableChecks) ? store.availableChecks : [];
 
   // FQDN to DN conversion helper
   const fqdnToDN = (fqdn) => {
@@ -55,14 +49,14 @@ const RunScans = () => {
 
   // Connection mode badge logic
   const getConnectionMode = () => {
-    if (store.serverIp && store.domain) {
-      return { icon: Target, text: 'Explicit', desc: `LDAP://${store.serverIp}/${fqdnToDN(store.domain)}` };
+    if (serverIp && domain) {
+      return { icon: Target, text: 'Explicit', desc: `LDAP://${serverIp}/${fqdnToDN(domain)}` };
     }
-    if (store.serverIp && !store.domain) {
-      return { icon: Zap, text: 'Direct', desc: `LDAP://${store.serverIp}/[auto-discovered NC]` };
+    if (serverIp && !domain) {
+      return { icon: Zap, text: 'Direct', desc: `LDAP://${serverIp}/[auto-discovered NC]` };
     }
-    if (!store.serverIp && store.domain) {
-      return { icon: Search, text: 'Domain-targeted', desc: `LDAP://[DC from DNS]/${fqdnToDN(store.domain)}` };
+    if (!serverIp && domain) {
+      return { icon: Search, text: 'Domain-targeted', desc: `LDAP://[DC from DNS]/${fqdnToDN(domain)}` };
     }
     return { icon: ZapOff, text: 'Auto-discover', desc: "uses machine's default domain (LDAP://RootDSE)" };
   };
@@ -93,7 +87,7 @@ const RunScans = () => {
       const response = await fetch('/api/scan/validate-target', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain: store.domain, serverIp: store.serverIp })
+        body: JSON.stringify({ domain: domain, serverIp: serverIp })
       });
       const result = await response.json();
       if (result.valid) {
@@ -151,12 +145,12 @@ const RunScans = () => {
       return;
     }
 
-    if (!store.suiteRootValid) {
+    if (!suiteRootValid) {
       alert('Please validate suite root path before running scans');
       return;
     }
 
-    if (store.engine === 'cmd' && (store.domain || store.serverIp)) {
+    if (engine === 'cmd' && (domain || serverIp)) {
       alert('Domain/IP targeting is not supported for CMD engine.\nSwitch to ADSI, PowerShell, or Combined for targeted scans.');
       return;
     }
@@ -230,7 +224,7 @@ const RunScans = () => {
           <div className="card min-w-0">
             <div className="flex items-center justify-between mb-3 min-w-0">
               <h3 className="font-semibold text-text-primary truncate mr-2">Suite Root Path</h3>
-              {store.suiteRootValid && (
+              {suiteRootValid && (
                 <div className="text-sm text-severity-low whitespace-nowrap">
                   ✓ Valid
                 </div>
@@ -242,7 +236,7 @@ const RunScans = () => {
                 placeholder="C:\\ADSuite\\AD-Suite-scripts-main"
                 value={suiteRoot}
                 onChange={(e) => store.setSuiteRoot(e.target.value)}
-                className={`input ${store.suiteRootValid ? 'border-severity-low' : ''}`}
+                className={`input ${suiteRootValid ? 'border-severity-low' : ''}`}
                 disabled={!!activeScanId}
               />
               <div className="flex gap-2">
@@ -378,11 +372,11 @@ const RunScans = () => {
             <div className="flex items-center justify-between mb-3 min-w-0">
               <h3 className="font-semibold text-text-primary truncate mr-2">Execution Engine</h3>
               <div className="text-sm text-text-secondary whitespace-nowrap">
-                {store.engine}
+                {engine}
               </div>
             </div>
             <EngineSelector
-              selectedEngine={store.engine}
+              selectedEngine={engine}
               onEngineChange={(engine) => store.setEngine(engine)}
               disabled={!!activeScanId}
             />
@@ -403,11 +397,11 @@ const RunScans = () => {
                 {selectedCheckIds.length} selected
               </div>
             </div>
-            {!store.suiteRootValid ? (
+            {!suiteRootValid ? (
               <div className="text-center py-8 text-text-muted">
                 <p>Please validate the Suite Root Path first to load available checks</p>
               </div>
-            ) : store.availableChecks.length === 0 ? (
+            ) : availableChecks.length === 0 ? (
               <div className="text-center py-8 text-text-muted">
                 <p>No checks found. Please verify your Suite Root Path.</p>
               </div>
@@ -416,7 +410,7 @@ const RunScans = () => {
                 selectedChecks={new Set(selectedCheckIds)}
                 onSelectionChange={(checks) => store.setSelectedCheckIds(Array.from(checks))}
                 disabled={!!activeScanId}
-                availableChecks={store.availableChecks}
+                availableChecks={availableChecks}
               />
             )}
           </div>
@@ -434,7 +428,7 @@ const RunScans = () => {
                 </p>
                 <button
                   onClick={handleRunScan}
-                  disabled={!store.suiteRootValid || selectedCheckIds.length === 0}
+                  disabled={!suiteRootValid || selectedCheckIds.length === 0}
                   className="btn-primary inline-flex items-center gap-2"
                 >
                   <Play className="w-4 h-4" />

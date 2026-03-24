@@ -9,6 +9,23 @@ export function useScan() {
   const historyStore = useHistoryStore();
   const sseRef = useRef(null);
 
+  // Safety check: ensure stores are initialized
+  if (!store || !findingsStore || !historyStore) {
+    console.warn('Stores not yet initialized');
+    return {
+      scanStatus: 'idle',
+      progress: { current: 0, total: 0, currentCheckId: '', currentCheckName: '' },
+      findings: [],
+      logLines: [],
+      scanSummary: null,
+      scanError: null,
+      activeScanId: null,
+      startScan: async () => { throw new Error('Store not ready'); },
+      abortScan: async () => { },
+      resetScan: () => { },
+    };
+  }
+
   const connectSSE = useCallback((scanId) => {
     if (sseRef.current) sseRef.current.close();
 
@@ -65,14 +82,15 @@ export function useScan() {
 
   // On mount: if a scan was running when page last unloaded, reconnect
   useEffect(() => {
-    if (store.activeScanId && store.scanStatus === 'running') {
+    // Safety check: ensure store is hydrated before accessing properties
+    if (store?.activeScanId && store?.scanStatus === 'running') {
       connectSSE(store.activeScanId);
     }
-  }, [store.activeScanId, store.scanStatus, connectSSE]);
+  }, [store?.activeScanId, store?.scanStatus, connectSSE]);
 
   const startScan = useCallback(async () => {
-    if (!store.suiteRootValid) throw new Error('Suite root not validated');
-    if (store.selectedCheckIds.length === 0) throw new Error('No checks selected');
+    if (!store?.suiteRootValid) throw new Error('Suite root not validated');
+    if (!store?.selectedCheckIds || store.selectedCheckIds.length === 0) throw new Error('No checks selected');
 
     findingsStore.clearFindings();
 
@@ -81,7 +99,7 @@ export function useScan() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         checkIds: store.selectedCheckIds,
-        engine: store.engine,
+        engine: store.engine || 'adsi',
         suiteRoot: store.suiteRoot,
         domain: store.domain || null,
         serverIp: store.serverIp || null,
@@ -101,25 +119,28 @@ export function useScan() {
   }, [store, findingsStore, connectSSE]);
 
   const abortScan = useCallback(async () => {
-    if (store.activeScanId) {
+    if (store?.activeScanId) {
       await fetch(`/api/scan/abort/${store.activeScanId}`, { method: 'POST' });
     }
     if (sseRef.current) sseRef.current.close();
-    store.setScanStatus('aborted');
+    store?.setScanStatus('aborted');
   }, [store]);
 
   return {
-    // State
-    scanStatus: store.scanStatus,
-    progress: store.progress,
-    findings: findingsStore.findings,
-    logLines: findingsStore.logLines,
-    scanSummary: store.scanSummary,
-    scanError: store.scanError,
-    activeScanId: store.activeScanId,
+    // State - with safe defaults
+    scanStatus: store?.scanStatus || 'idle',
+    progress: store?.progress || { current: 0, total: 0, currentCheckId: '', currentCheckName: '' },
+    findings: findingsStore?.findings || [],
+    logLines: findingsStore?.logLines || [],
+    scanSummary: store?.scanSummary || null,
+    scanError: store?.scanError || null,
+    activeScanId: store?.activeScanId || null,
     // Actions
     startScan,
     abortScan,
-    resetScan: () => { store.resetScan(); findingsStore.clearFindings(); },
+    resetScan: () => {
+      store?.resetScan();
+      findingsStore?.clearFindings();
+    },
   };
 }
