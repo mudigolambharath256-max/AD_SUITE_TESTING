@@ -223,9 +223,9 @@ const RunScans = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 flex-1 overflow-hidden">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 flex-1 overflow-hidden">
         {/* Left Panel - Configuration */}
-        <div className="xl:col-span-1 lg:col-span-2 space-y-4 overflow-y-auto min-w-0">
+        <div className="xl:col-span-1 lg:col-span-1 space-y-4 overflow-y-auto min-w-0">
           {/* Suite Root Path */}
           <div className="card min-w-0">
             <div className="flex items-center justify-between mb-3 min-w-0">
@@ -423,7 +423,7 @@ const RunScans = () => {
         </div>
 
         {/* Right Panel - Execution & Results */}
-        <div className="xl:col-span-3 lg:col-span-1 space-y-4 overflow-y-auto min-w-0">
+        <div className="xl:col-span-2 lg:col-span-1 space-y-4 overflow-y-auto min-w-0">
           {scanStatus === 'idle' && (
             <div className="card">
               <div className="text-center py-12">

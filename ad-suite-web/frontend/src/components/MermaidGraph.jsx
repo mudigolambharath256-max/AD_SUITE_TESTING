@@ -360,11 +360,149 @@ const MermaidGraph = ({ chart, findings = [], onNodeClick }) => {
                                 {nodeFindings.map((finding, index) => (
                                     <div
                                         key={index}
+                                        onClick={() => {
+                                            // Show detailed finding info
+                                            const detailsHtml = `
+                                                <div style="background: #1a1612; padding: 20px; border-radius: 8px; max-width: 600px;">
+                                                    <h3 style="color: #F5F1ED; margin-bottom: 15px; font-size: 18px;">${finding.checkName || finding.name}</h3>
+                                                    
+                                                    <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px; margin-bottom: 15px;">
+                                                        <div style="color: #999; font-size: 12px;">Object Name:</div>
+                                                        <div style="color: #F5F1ED; font-size: 13px; font-family: monospace;">${finding.name || 'N/A'}</div>
+                                                        
+                                                        <div style="color: #999; font-size: 12px;">Check ID:</div>
+                                                        <div style="color: #F5F1ED; font-size: 13px;">${finding.checkId || 'N/A'}</div>
+                                                        
+                                                        <div style="color: #999; font-size: 12px;">Category:</div>
+                                                        <div style="color: #F5F1ED; font-size: 13px;">${(finding.category || 'Unknown').replace(/_/g, ' ')}</div>
+                                                        
+                                                        <div style="color: #999; font-size: 12px;">Severity:</div>
+                                                        <div><span style="background: ${getSeverityColor(finding.severity)}; color: white; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">${finding.severity || 'INFO'}</span></div>
+                                                        
+                                                        ${finding.mitre ? `
+                                                        <div style="color: #999; font-size: 12px;">MITRE ATT&CK:</div>
+                                                        <div><a href="https://attack.mitre.org/techniques/${finding.mitre}/" target="_blank" style="color: #4A90E2; text-decoration: none; font-size: 13px;">${finding.mitre} ↗</a></div>
+                                                        ` : ''}
+                                                        
+                                                        ${finding.riskScore ? `
+                                                        <div style="color: #999; font-size: 12px;">Risk Score:</div>
+                                                        <div style="color: #F5F1ED; font-size: 13px;">${finding.riskScore}/10</div>
+                                                        ` : ''}
+                                                    </div>
+                                                    
+                                                    ${finding.distinguishedName ? `
+                                                    <div style="margin-bottom: 15px;">
+                                                        <div style="color: #999; font-size: 12px; margin-bottom: 5px;">Distinguished Name:</div>
+                                                        <div style="background: #2a2420; padding: 8px; border-radius: 4px; color: #C9BFB5; font-size: 11px; font-family: monospace; word-break: break-all;">${finding.distinguishedName}</div>
+                                                    </div>
+                                                    ` : ''}
+                                                    
+                                                    ${finding.description ? `
+                                                    <div style="margin-bottom: 15px;">
+                                                        <div style="color: #999; font-size: 12px; margin-bottom: 5px;">Description:</div>
+                                                        <div style="background: #2a2420; padding: 10px; border-radius: 4px; color: #C9BFB5; font-size: 12px; line-height: 1.6;">${finding.description}</div>
+                                                    </div>
+                                                    ` : ''}
+                                                    
+                                                    ${finding.detailsJson ? `
+                                                    <div>
+                                                        <div style="color: #999; font-size: 12px; margin-bottom: 5px;">Additional Details:</div>
+                                                        <div style="background: #2a2420; padding: 10px; border-radius: 4px; color: #C9BFB5; font-size: 11px; font-family: monospace; max-height: 200px; overflow-y: auto;">
+                                                            <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;">${JSON.stringify(JSON.parse(finding.detailsJson || '{}'), null, 2)}</pre>
+                                                        </div>
+                                                    </div>
+                                                    ` : ''}
+                                                </div>
+                                            `;
+
+                                            // Create modal overlay
+                                            const modal = document.createElement('div');
+                                            modal.style.cssText = `
+                                                position: fixed;
+                                                top: 0;
+                                                left: 0;
+                                                right: 0;
+                                                bottom: 0;
+                                                background: rgba(0, 0, 0, 0.8);
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                                z-index: 10000;
+                                                padding: 20px;
+                                                animation: fadeIn 0.2s ease;
+                                            `;
+
+                                            const modalContent = document.createElement('div');
+                                            modalContent.style.cssText = `
+                                                position: relative;
+                                                max-height: 90vh;
+                                                overflow-y: auto;
+                                                animation: slideUp 0.3s ease;
+                                            `;
+                                            modalContent.innerHTML = detailsHtml;
+
+                                            const closeBtn = document.createElement('button');
+                                            closeBtn.innerHTML = '×';
+                                            closeBtn.style.cssText = `
+                                                position: absolute;
+                                                top: 10px;
+                                                right: 10px;
+                                                background: #3d3530;
+                                                border: none;
+                                                color: #F5F1ED;
+                                                font-size: 24px;
+                                                width: 32px;
+                                                height: 32px;
+                                                border-radius: 4px;
+                                                cursor: pointer;
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                                z-index: 1;
+                                            `;
+                                            closeBtn.onclick = () => document.body.removeChild(modal);
+
+                                            modalContent.appendChild(closeBtn);
+                                            modal.appendChild(modalContent);
+                                            modal.onclick = (e) => {
+                                                if (e.target === modal) document.body.removeChild(modal);
+                                            };
+
+                                            // Add animations
+                                            const style = document.createElement('style');
+                                            style.textContent = `
+                                                @keyframes fadeIn {
+                                                    from { opacity: 0; }
+                                                    to { opacity: 1; }
+                                                }
+                                                @keyframes slideUp {
+                                                    from { transform: translateY(20px); opacity: 0; }
+                                                    to { transform: translateY(0); opacity: 1; }
+                                                }
+                                            `;
+                                            document.head.appendChild(style);
+
+                                            document.body.appendChild(modal);
+                                        }}
                                         style={{
                                             backgroundColor: '#2a2420',
                                             padding: '12px',
                                             borderRadius: '6px',
-                                            borderLeft: `3px solid ${getSeverityColor(finding.severity)}`
+                                            borderLeft: `3px solid ${getSeverityColor(finding.severity)}`,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            ':hover': {
+                                                backgroundColor: '#3d3530',
+                                                transform: 'translateX(2px)'
+                                            }
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#3d3530';
+                                            e.currentTarget.style.transform = 'translateX(2px)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#2a2420';
+                                            e.currentTarget.style.transform = 'translateX(0)';
                                         }}
                                     >
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
@@ -404,11 +542,9 @@ const MermaidGraph = ({ chart, findings = [], onNodeClick }) => {
                                             </div>
                                         )}
 
-                                        {finding.description && (
-                                            <div style={{ color: '#999', fontSize: '11px', marginTop: '8px', lineHeight: '1.4' }}>
-                                                {finding.description}
-                                            </div>
-                                        )}
+                                        <div style={{ color: '#4A90E2', fontSize: '11px', marginTop: '8px', fontStyle: 'italic' }}>
+                                            Click for full details →
+                                        </div>
                                     </div>
                                 ))}
                             </div>

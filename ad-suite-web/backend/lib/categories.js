@@ -1,5 +1,6 @@
 const CATEGORIES = [
     { id: "Access_Control", display: "Access Control", prefix: "ACC", checkCount: 45 },
+    { id: "ACL_Permissions", display: "ACL Permissions", prefix: "ACL", checkCount: 20 },
     { id: "Advanced_Security", display: "Advanced Security", prefix: "ADV", checkCount: 10 },
     { id: "Authentication", display: "Authentication", prefix: "AUTH", checkCount: 33 },
     { id: "Azure_AD_Integration", display: "Azure AD Integration", prefix: "AAD", checkCount: 42 },

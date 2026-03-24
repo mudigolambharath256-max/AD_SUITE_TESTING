@@ -7,7 +7,7 @@
 
 $root     = [ADSI]'LDAP://RootDSE'
 $domainNC = $root.Properties['defaultNamingContext'].Value
-$searcher = New-Object System.DirectoryServices.DirectorySearcher([ADSI]"LDAP://"CN=Policies,CN=System,$domainNC"")
+$searcher = New-Object System.DirectoryServices.DirectorySearcher([ADSI]"LDAP://CN=Policies,CN=System,$domainNC")
 $searcher.Filter = '(objectClass=groupPolicyContainer)'
 $searcher.SecurityMasks = [System.DirectoryServices.SecurityMasks]::Dacl
 $searcher.PropertiesToLoad.Add('distinguishedName') | Out-Null

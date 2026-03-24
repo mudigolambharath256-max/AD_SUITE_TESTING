@@ -163,7 +163,7 @@ const CheckSelector = ({ selectedChecks, onSelectionChange, disabled = false, av
                   />
 
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-text-primary truncate" title={category.display}>{category.display}</div>
+                    <div className="font-medium text-text-primary" title={category.display}>{category.display}</div>
                     <div className="text-xs text-text-muted">
                       {category.checks.length} checks
                     </div>

@@ -1078,6 +1078,132 @@ ${mermaidChart}
               <div dangerouslySetInnerHTML={{ __html: narrative.replace(/\n/g, '<br>') }} />
             </div>
           </div>
+
+          {/* Findings Data Table */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-text-primary text-lg">
+                Compromised/Vulnerable Objects ({findings.length})
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const csv = [
+                      ['Name', 'Check', 'Category', 'Severity', 'MITRE', 'Distinguished Name', 'Description'].join(','),
+                      ...findings.map(f => [
+                        f.name || '',
+                        f.checkName || '',
+                        f.category || '',
+                        f.severity || '',
+                        f.mitre || '',
+                        f.distinguishedName || '',
+                        (f.description || '').replace(/,/g, ';')
+                      ].join(','))
+                    ].join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'findings-data.csv';
+                    a.click();
+                  }}
+                  className="btn-secondary text-sm"
+                >
+                  <Download className="w-3 h-3 mr-1" />
+                  Export CSV
+                </button>
+                <button
+                  onClick={() => {
+                    const json = JSON.stringify(findings, null, 2);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'findings-data.json';
+                    a.click();
+                  }}
+                  className="btn-secondary text-sm"
+                >
+                  <Download className="w-3 h-3 mr-1" />
+                  Export JSON
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Object Name</th>
+                    <th>Check</th>
+                    <th>Category</th>
+                    <th>Severity</th>
+                    <th>MITRE</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {findings.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center py-8 text-text-muted">
+                        No findings data available
+                      </td>
+                    </tr>
+                  ) : (
+                    findings.map((finding, index) => (
+                      <tr key={index}>
+                        <td>
+                          <div className="font-mono text-sm text-accent-primary">
+                            {finding.name || 'N/A'}
+                          </div>
+                          {finding.distinguishedName && (
+                            <div className="text-xs text-text-muted mt-1 truncate max-w-xs" title={finding.distinguishedName}>
+                              {finding.distinguishedName}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <div className="text-sm">{finding.checkName || finding.checkId || 'N/A'}</div>
+                          {finding.checkId && finding.checkName && (
+                            <div className="text-xs text-text-muted">{finding.checkId}</div>
+                          )}
+                        </td>
+                        <td>
+                          <span className="text-sm">
+                            {(finding.category || 'Unknown').replace(/_/g, ' ')}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`severity-badge severity-${(finding.severity || 'info').toLowerCase()}`}>
+                            {(finding.severity || 'INFO').toUpperCase()}
+                          </span>
+                        </td>
+                        <td>
+                          {finding.mitre ? (
+                            <a
+                              href={`https://attack.mitre.org/techniques/${finding.mitre}/`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-accent-primary hover:underline text-sm font-mono"
+                            >
+                              {finding.mitre}
+                            </a>
+                          ) : (
+                            <span className="text-text-muted text-sm">-</span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="text-sm text-text-secondary max-w-md">
+                            {finding.description || 'No description available'}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
     </div>

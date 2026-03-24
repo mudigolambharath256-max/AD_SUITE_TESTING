@@ -7,7 +7,8 @@ import {
   Clock,
   Play,
   TrendingUp,
-  Eye
+  Eye,
+  Download
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { getSeveritySummary, getCategorySummary, getRecentScans } from '../lib/api';
@@ -63,6 +64,38 @@ const Dashboard = () => {
 
   const totalFindings = Object.values(severityData).reduce((sum, count) => sum + count, 0);
   const criticalFindings = severityData.critical || 0;
+
+  const handleDownloadScan = async (scanId, format = 'json') => {
+    try {
+      const response = await fetch('http://localhost:3001/api/reports/export', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scanIds: [scanId],
+          format: format
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download scan');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `scan_${scanId.substring(0, 8)}_findings.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Failed to download scan: ' + error.message);
+    }
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -241,9 +274,21 @@ const Dashboard = () => {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-text-primary">Recent Scans</h3>
-          <Link to="/reports" className="btn-secondary text-sm">
-            View All
-          </Link>
+          <div className="flex gap-2">
+            {recentScans.length > 0 && (
+              <button
+                onClick={() => handleDownloadScan(recentScans[0].id, 'json')}
+                className="btn-primary text-sm flex items-center gap-2"
+                title="Download most recent scan"
+              >
+                <Download className="w-4 h-4" />
+                Download Latest
+              </button>
+            )}
+            <Link to="/reports" className="btn-secondary text-sm">
+              View All
+            </Link>
+          </div>
         </div>
 
         {recentScans.length > 0 ? (
@@ -283,12 +328,22 @@ const Dashboard = () => {
                       </div>
                     </td>
                     <td>
-                      <Link
-                        to={`/scans?scanId=${scan.id}`}
-                        className="btn-secondary text-sm px-2 py-1"
-                      >
-                        <Eye className="w-3 h-3" />
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/scans?scanId=${scan.id}`}
+                          className="btn-secondary text-sm px-2 py-1"
+                          title="View scan details"
+                        >
+                          <Eye className="w-3 h-3" />
+                        </Link>
+                        <button
+                          onClick={() => handleDownloadScan(scan.id, 'json')}
+                          className="btn-secondary text-sm px-2 py-1"
+                          title="Download scan"
+                        >
+                          <Download className="w-3 h-3" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
