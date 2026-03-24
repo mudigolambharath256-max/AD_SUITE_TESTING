@@ -283,6 +283,13 @@ async function callAnthropicAPI(findings, apiKey, model = 'claude-3-sonnet-20240
 
   const systemPrompt = `You are an Active Directory penetration tester. Analyze the findings and identify attack chains.
 
+CRITICAL RULES FOR NODE NAMING:
+1. Use ACTUAL object names from the findings (usernames, computer names, group names)
+2. DO NOT use generic labels like "Exploit SPN", "Priv User", "Check Ticket"
+3. Extract the "name" field from each finding and use it in the graph
+4. For attack techniques, combine with the actual object: "ASREPRoast sansa" not just "ASREPRoast"
+5. Keep labels under 30 characters but prioritize actual names over generic terms
+
 Format your response in two parts:
 
 1. **Narrative Analysis** (Markdown format):
@@ -292,22 +299,41 @@ Format your response in two parts:
    - Include MITRE ATT&CK techniques
 
 2. **Mermaid Diagram** (at the end):
-   - Create a Mermaid flowchart showing the attack path
-   - IMPORTANT: Keep node labels SHORT and SIMPLE (max 30 characters)
+   - Create a Mermaid flowchart showing the attack path with COLOR CODING
+   - IMPORTANT: Use ACTUAL object names from findings (usernames, computers, groups)
+   - Keep node labels SHORT and SIMPLE (max 30 characters)
    - Use ONLY alphanumeric characters, spaces, and hyphens in labels
    - NO special characters like parentheses, brackets, pipes, backslashes
-   - Use this format:
+   
+   COLOR CODING RULES:
+   - Use :::red for HIGH RISK nodes (Domain Admin, Enterprise Admin, final objectives)
+   - Use :::orange for MEDIUM RISK nodes (privilege escalation steps, exploitation)
+   - Use :::yellow for LOW RISK nodes (reconnaissance, initial access)
+   - Use :::cyan for INFORMATION nodes (discovered assets, enumeration results)
+   - Use :::green for STARTING POINT (attacker position)
+   
+   EXAMPLE with ACTUAL names from findings:
    \`\`\`mermaid
-   graph TD
-       A["Attacker"] --> B["Initial Access"]
-       B --> C["Privilege Escalation"]
-       C --> D["Domain Admin"]
+   graph LR
+       A["Attacker"]:::green --> B["sansa.stark"]:::yellow
+       B --> C["ASREPRoast"]:::orange
+       C --> D["sql_svc"]:::yellow
+       D --> E["Kerberoast"]:::orange
+       E --> F["Domain Admins"]:::red
+       
+       classDef red fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px,color:#fff
+       classDef orange fill:#ff922b,stroke:#e8590c,stroke-width:2px,color:#fff
+       classDef yellow fill:#ffd43b,stroke:#fab005,stroke-width:2px,color:#000
+       classDef cyan fill:#22b8cf,stroke:#0c8599,stroke-width:2px,color:#fff
+       classDef green fill:#51cf66,stroke:#2f9e44,stroke-width:2px,color:#fff
    \`\`\`
-   - Use descriptive but SHORT node labels
+   
+   - Use ACTUAL object names from the findings data
    - Show the attack flow from initial access to final objective
-   - Use different node shapes: ["text"] for objects, ("text") for actions, {"text"} for outcomes
-   - Example good labels: "ASREPRoast User", "Kerberoast SPN", "Exploit Delegation"
-   - Example bad labels: "sansa.stark (No Kerberos Pre-Auth Required)" - TOO LONG`;
+   - Use graph LR (left to right) or TD (top to bottom) based on complexity
+   - Apply appropriate color classes to each node
+   - GOOD: "Administrator", "vagrant", "sql_svc", "Domain Admins"
+   - BAD: "Priv User", "Exploit SPN", "Check Ticket" (too generic)`;
 
   const userPrompt = `Analyze these Active Directory findings and create an attack path diagram:\n\n${JSON.stringify(findings, null, 2)}`;
 
@@ -340,6 +366,13 @@ async function callOpenAIAPI(findings, apiKey, model = 'gpt-4') {
 
   const systemPrompt = `You are an Active Directory penetration tester. Analyze the findings and identify attack chains.
 
+CRITICAL RULES FOR NODE NAMING:
+1. Use ACTUAL object names from the findings (usernames, computer names, group names)
+2. DO NOT use generic labels like "Exploit SPN", "Priv User", "Check Ticket"
+3. Extract the "name" field from each finding and use it in the graph
+4. For attack techniques, combine with the actual object: "ASREPRoast sansa" not just "ASREPRoast"
+5. Keep labels under 30 characters but prioritize actual names over generic terms
+
 Format your response in two parts:
 
 1. **Narrative Analysis** (Markdown format):
@@ -350,7 +383,8 @@ Format your response in two parts:
 
 2. **Mermaid Diagram** (at the end):
    - Create a Mermaid flowchart showing the attack path with COLOR CODING
-   - IMPORTANT: Keep node labels SHORT and SIMPLE (max 30 characters)
+   - IMPORTANT: Use ACTUAL object names from findings (usernames, computers, groups)
+   - Keep node labels SHORT and SIMPLE (max 30 characters)
    - Use ONLY alphanumeric characters, spaces, and hyphens in labels
    - NO special characters like parentheses, brackets, pipes, backslashes
    
@@ -361,14 +395,14 @@ Format your response in two parts:
    - Use :::cyan for INFORMATION nodes (discovered assets, enumeration results)
    - Use :::green for STARTING POINT (attacker position)
    
-   Use this format:
+   EXAMPLE with ACTUAL names from findings:
    \`\`\`mermaid
    graph LR
-       A["Attacker"]:::green --> B["Find vulnerable user"]:::cyan
-       B --> C["ASREPRoast attack"]:::orange
-       C --> D["Crack hash"]:::orange
-       D --> E["User compromised"]:::red
-       E --> F["Domain Admin"]:::red
+       A["Attacker"]:::green --> B["sansa.stark"]:::yellow
+       B --> C["ASREPRoast"]:::orange
+       C --> D["sql_svc"]:::yellow
+       D --> E["Kerberoast"]:::orange
+       E --> F["Domain Admins"]:::red
        
        classDef red fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px,color:#fff
        classDef orange fill:#ff922b,stroke:#e8590c,stroke-width:2px,color:#fff
@@ -377,12 +411,12 @@ Format your response in two parts:
        classDef green fill:#51cf66,stroke:#2f9e44,stroke-width:2px,color:#fff
    \`\`\`
    
-   - Use descriptive but SHORT node labels
+   - Use ACTUAL object names from the findings data
    - Show the attack flow from initial access to final objective
    - Use graph LR (left to right) or TD (top to bottom) based on complexity
    - Apply appropriate color classes to each node
-   - Example good labels: "ASREPRoast User", "Kerberoast SPN", "Exploit Delegation"
-   - Example bad labels: "sansa.stark (No Kerberos Pre-Auth Required)" - TOO LONG`;
+   - GOOD: "Administrator", "vagrant", "sql_svc", "Domain Admins"
+   - BAD: "Priv User", "Exploit SPN", "Check Ticket" (too generic)`;
 
   const userPrompt = `Analyze these Active Directory findings and create an attack path diagram:\n\n${JSON.stringify(findings, null, 2)}`;
 

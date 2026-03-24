@@ -466,7 +466,7 @@ const RunScans = () => {
 
               {/* Live Terminal */}
               <div className="card">
-                <Terminal lines={logLines} isRunning={true} height={320} />
+                <Terminal lines={logLines} isRunning={true} height={600} />
               </div>
             </>
           )}
@@ -586,7 +586,7 @@ const RunScans = () => {
                   </button>
                   {showTerminal && (
                     <div className="mt-3">
-                      <Terminal lines={logLines} isRunning={false} height={240} />
+                      <Terminal lines={logLines} isRunning={false} height={600} />
                     </div>
                   )}
                 </div>

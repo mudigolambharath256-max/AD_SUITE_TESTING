@@ -38,16 +38,15 @@ $results | ForEach-Object {
     
     # Fix R07: Standardized 5-field output schema
     $obj = [PSCustomObject]@{
-        Name              = if ($sam) { $sam } elseif ($cn) { $cn } else { $name }
-        DistinguishedName = [string]$dn.ToUpper()  # Fix R09: DN normalization
-        SamAccountName    = [string]$sam
-        Domain            = $domain
-        Engine            = 'ADSI'
-    }
-    
-    # Fix R13: Add relevant detection data to output
-        displayName = ($p['displayname'] | Select-Object -First 1)
+        Name                = if ($sam) { $sam } elseif ($cn) { $cn } else { $name }
+        DistinguishedName   = [string]$dn.ToUpper()  # Fix R09: DN normalization
+        SamAccountName      = [string]$sam
+        Domain              = $domain
+        Engine              = 'ADSI'
+        # Fix R13: Add relevant detection data to output
+        displayName         = ($p['displayname'] | Select-Object -First 1)
         pKIExtendedKeyUsage = ($p['pkiextendedkeyusage'] | Select-Object -First 1)
+    }
     
     $output += $obj
 }

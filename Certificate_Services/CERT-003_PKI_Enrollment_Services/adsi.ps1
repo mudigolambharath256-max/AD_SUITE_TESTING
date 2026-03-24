@@ -43,10 +43,9 @@ $results | ForEach-Object {
         SamAccountName    = [string]$sam
         Domain            = $domain
         Engine            = 'ADSI'
+        # Fix R13: Add relevant detection data to output
+        dNSHostName       = ($p['dnshostname'] | Select-Object -First 1)
     }
-    
-    # Fix R13: Add relevant detection data to output
-        dNSHostName = ($p['dnshostname'] | Select-Object -First 1)
     
     $output += $obj
 }

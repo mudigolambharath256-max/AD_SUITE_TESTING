@@ -132,10 +132,30 @@ const MermaidGraph = ({ chart, findings = [], onNodeClick }) => {
 
         const cleanLabel = nodeLabel.toLowerCase().replace(/['"]/g, '').trim();
 
+        // Technique to category/check mapping for generic attack labels
+        const techniqueMap = {
+            'asreproast': ['AUTH-001', 'authentication', 'kerberos', 'pre-auth'],
+            'kerberoast': ['USR-002', 'AUTH-002', 'spn', 'service principal'],
+            'dcsync': ['DC-001', 'replication', 'domain controller'],
+            'delegation': ['ACC-001', 'unconstrained', 'constrained', 'resource-based'],
+            'golden ticket': ['AUTH-005', 'krbtgt'],
+            'silver ticket': ['AUTH-006', 'service ticket'],
+            'password spray': ['AUTH-003', 'password'],
+            'domain admin': ['USR-019', 'domain admins', 'enterprise admins'],
+            'privileged': ['ACC-001', 'ACC-002', 'admincount'],
+            'exploit spn': ['USR-002', 'spn', 'kerberoast', 'service'],
+            'priv user': ['ACC-001', 'privileged', 'admincount'],
+            'check ticket': ['AUTH', 'kerberos', 'ticket'],
+            'crack': ['password', 'hash', 'ntlm'],
+            'access vigilant': ['ACC', 'access', 'control'],
+            'escalate': ['privilege', 'escalation', 'elevation']
+        };
+
         return allFindings.filter(finding => {
             const searchableText = `
         ${finding.name || ''} 
         ${finding.checkName || ''} 
+        ${finding.checkId || ''}
         ${finding.category || ''} 
         ${finding.description || ''}
         ${finding.distinguishedName || ''}
@@ -148,7 +168,17 @@ const MermaidGraph = ({ chart, findings = [], onNodeClick }) => {
             const findingName = (finding.name || '').toLowerCase();
             if (findingName && cleanLabel.includes(findingName)) return true;
 
-            // Strategy 3: Split node label and check each part (min 3 chars to avoid false positives)
+            // Strategy 3: Technique mapping - check if node label matches a known technique
+            for (const [technique, keywords] of Object.entries(techniqueMap)) {
+                if (cleanLabel.includes(technique)) {
+                    // Check if any keyword matches the finding
+                    if (keywords.some(keyword => searchableText.includes(keyword))) {
+                        return true;
+                    }
+                }
+            }
+
+            // Strategy 4: Split node label and check each part (min 3 chars to avoid false positives)
             const labelParts = cleanLabel.split(/\s+/).filter(part => part.length >= 3);
             for (const part of labelParts) {
                 // Check if this part appears in searchable text
@@ -159,7 +189,7 @@ const MermaidGraph = ({ chart, findings = [], onNodeClick }) => {
                 if (partWithSpaces !== part && searchableText.includes(partWithSpaces)) return true;
             }
 
-            // Strategy 4: Check for attack technique keywords
+            // Strategy 5: Check for attack technique keywords
             const attackKeywords = ['asrep', 'kerberoast', 'delegation', 'dcsync', 'admin', 'privileged', 'unconstrained'];
             for (const keyword of attackKeywords) {
                 if (cleanLabel.includes(keyword) && searchableText.includes(keyword)) return true;
