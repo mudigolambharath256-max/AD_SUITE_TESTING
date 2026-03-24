@@ -67,7 +67,7 @@ const Dashboard = () => {
 
   const handleDownloadScan = async (scanId, format = 'json') => {
     try {
-      const response = await fetch('http://localhost:3001/api/reports/export', {
+      const response = await fetch('/api/reports/export', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

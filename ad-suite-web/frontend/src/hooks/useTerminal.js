@@ -16,10 +16,8 @@ export function useTerminal({ containerRef, isOpen, domain, serverIp }) {
     function buildWsUrl() {
         const isHttps = window.location.protocol === 'https:';
         const proto = isHttps ? 'wss' : 'ws';
-        // In dev (port 5173), Vite proxies /terminal to 3001
-        // In prod, the server serves everything from 3001
-        return `${proto}://${window.location.hostname}:${window.location.port === '5173' ? window.location.port : '3001'
-            }/terminal`;
+        // Always use the current host and port - Vite proxy will handle routing
+        return `${proto}://${window.location.host}/terminal`;
     }
 
     // ── Initialise xterm.js (once, when container is available) ─────────────
