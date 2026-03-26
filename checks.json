@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "defaults": {
+    "pageSize": 1000,
+    "engine": "ldap",
+    "searchScope": "Subtree"
+  },
+  "checks": [
+    {
+      "id": "ACC-001",
+      "name": "Privileged Users adminCount1",
+      "category": "Access_Control",
+      "engine": "ldap",
+      "searchBase": "Domain",
+      "searchScope": "Subtree",
+      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "adminCount",
+        "userAccountControl",
+        "objectClass",
+        "whenCreated",
+        "whenChanged"
+      ],
+      "outputProperties": {
+        "Name": "name",
+        "DistinguishedName": "distinguishedName",
+        "SamAccountName": "samAccountName",
+        "AdminCount": "adminCount",
+        "UserAccountControl": "userAccountControl",
+        "ObjectClass": "objectClass",
+        "WhenCreated": "whenCreated",
+        "WhenChanged": "whenChanged"
+      },
+      "sourcePath": "Access_Control/ACC-001_Privileged_Users_adminCount1/adsi.ps1"
+    },
+    {
+      "id": "KRB-002",
+      "name": "AS-REP Roastable Accounts",
+      "category": "Kerberos_Security",
+      "engine": "ldap",
+      "searchBase": "Domain",
+      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=4194304))",
+      "propertiesToLoad": ["name", "distinguishedName", "samAccountName", "userAccountControl"],
+      "outputProperties": {
+        "Name": "name",
+        "DistinguishedName": "distinguishedName",
+        "SamAccountName": "samAccountName",
+        "UserAccountControl": "userAccountControl"
+      }
+    },
+    {
+      "id": "DC-003",
+      "name": "Forest Functional Level",
+      "category": "Domain_Configuration",
+      "engine": "ldap",
+      "searchBase": "Configuration",
+      "ldapFilter": "(objectClass=crossRefContainer)",
+      "propertiesToLoad": ["name", "distinguishedName", "msDS-Behavior-Version"],
+      "outputProperties": {
+        "Name": "name",
+        "DistinguishedName": "distinguishedName",
+        "MsDSBehaviorVersion": "msDS-Behavior-Version"
+      }
+    },
+    {
+      "id": "DC-008",
+      "name": "Schema Master (dMD FSMO holder)",
+      "category": "Domain_Controllers",
+      "engine": "ldap",
+      "searchBase": "SchemaContainer",
+      "searchScope": "Subtree",
+      "ldapFilter": "(objectClass=dMD)",
+      "propertiesToLoad": ["name", "distinguishedName", "fSMORoleOwner"],
+      "outputProperties": {
+        "Name": "name",
+        "DistinguishedName": "distinguishedName",
+        "FsmoRoleOwner": "fSMORoleOwner"
+      }
+    },
+    {
+      "id": "LDAP-001",
+      "name": "Example: all user objects (domain partition)",
+      "category": "LDAP_Security",
+      "engine": "ldap",
+      "searchBase": "Domain",
+      "ldapFilter": "(&(objectCategory=person)(objectClass=user))",
+      "propertiesToLoad": ["samAccountName", "distinguishedName", "userAccountControl"],
+      "userAccountControlMustExclude": 2,
+      "outputProperties": {
+        "SamAccountName": "samAccountName",
+        "DistinguishedName": "distinguishedName",
+        "UserAccountControl": "userAccountControl"
+      }
+    },
+    {
+      "id": "SAMPLE-SCHEMA-NC",
+      "name": "Example: schema partition root search",
+      "category": "Documentation",
+      "engine": "ldap",
+      "searchBase": "Schema",
+      "searchScope": "OneLevel",
+      "ldapFilter": "(objectClass=*)",
+      "propertiesToLoad": ["name", "distinguishedName"],
+      "outputProperties": {
+        "Name": "name",
+        "DistinguishedName": "distinguishedName"
+      }
+    },
+    {
+      "id": "SAMPLE-NON-LDAP",
+      "name": "Placeholder for non-LDAP engine",
+      "category": "Documentation",
+      "engine": "filesystem",
+      "searchBase": "Domain",
+      "ldapFilter": "(objectClass=*)",
+      "propertiesToLoad": []
+    }
+  ]
+}
