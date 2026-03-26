@@ -147,9 +147,11 @@ function Test-UserAccountControlMask {
     if (-not [int]::TryParse([string]$UserAccountControlValue, [ref]$uac)) {
         return $false
     }
+    # MustInclude: every bit set in the mask must be set on UAC (typical for one flag, e.g. DONT_REQ_PREAUTH).
     if ($MustInclude -ne 0 -and (($uac -band $MustInclude) -ne $MustInclude)) {
         return $false
     }
+    # MustExclude: object must not have any of these bits (e.g. exclude disabled accounts with ADS_UF_ACCOUNTDISABLE = 2).
     if ($MustExclude -ne 0 -and (($uac -band $MustExclude) -ne 0)) {
         return $false
     }

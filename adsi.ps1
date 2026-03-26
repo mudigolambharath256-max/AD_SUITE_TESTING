@@ -19,6 +19,22 @@
     .\adsi.ps1 -CheckId ACC-001
 .EXAMPLE
     .\adsi.ps1 -CheckId ACC-001 -SourcePath 'C:\Repo\Access_Control\ACC-001\adsi.ps1'
+
+.PARAMETER PassThru
+    Emit finding rows as objects to the pipeline instead of formatting with Format-Table (use for automation; avoids format noise in files).
+
+.PARAMETER Quiet
+    Suppress host status lines (still writes errors to stderr when failing).
+
+.PARAMETER FailOnFindings
+    Exit with code 3 when FindingCount is greater than zero (for automation / CI). Successful pass (no findings) exits 0.
+
+.PARAMETER CompactOutput
+    Show only AD object properties in output, exclude metadata columns (CheckId, CheckName, FindingCount, Result, SourcePath) for cleaner display.
+
+.EXAMPLE
+    .\adsi.ps1 -CheckId ACC-001 -CompactOutput
+    Shows only the AD object properties (name, distinguishedName, etc.) without metadata columns.
 #>
 [CmdletBinding()]
 param(
@@ -29,10 +45,23 @@ param(
 
     [string]$ServerName,
 
-    [string]$SourcePath
+    [string]$SourcePath,
+
+    [switch]$PassThru,
+
+    [switch]$Quiet,
+
+    [switch]$FailOnFindings,
+
+    [switch]$CompactOutput
 )
 
 $ErrorActionPreference = 'Continue'
+
+function Write-AdsiStderr {
+    param([string]$Message)
+    [Console]::Error.WriteLine($Message)
+}
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ChecksJsonPath) {
@@ -40,13 +69,13 @@ if (-not $ChecksJsonPath) {
 }
 
 if (-not (Test-Path -LiteralPath $ChecksJsonPath)) {
-    Write-Error "Checks file not found: $ChecksJsonPath"
+    Write-AdsiStderr "Checks file not found: $ChecksJsonPath"
     exit 1
 }
 
 $modulePath = Join-Path $scriptDir 'Modules\ADSuite.Adsi.psm1'
 if (-not (Test-Path -LiteralPath $modulePath)) {
-    Write-Error "Module not found: $modulePath"
+    Write-AdsiStderr "Module not found: $modulePath"
     exit 1
 }
 Import-Module $modulePath -Force -ErrorAction Stop
@@ -95,15 +124,20 @@ try {
     $jsonText = Get-Content -LiteralPath $ChecksJsonPath -Raw -Encoding UTF8
     $doc = $jsonText | ConvertFrom-Json
 } catch {
-    Write-Error "Failed to read checks.json: $_"
+    Write-AdsiStderr "Failed to read checks.json: $_"
     exit 1
 }
 
-$check = $doc.checks | Where-Object { $_.id -eq $CheckId }
-if (-not $check) {
-    Write-Error "Unknown CheckId: $CheckId"
+$checkMatches = @($doc.checks | Where-Object { $_.id -eq $CheckId })
+if ($checkMatches.Count -eq 0) {
+    Write-AdsiStderr "Unknown CheckId: $CheckId"
     exit 1
 }
+if ($checkMatches.Count -gt 1) {
+    Write-AdsiStderr "Duplicate CheckId '$CheckId' in JSON ($($checkMatches.Count) entries); keep a single definition."
+    exit 1
+}
+$check = $checkMatches[0]
 
 $check = Merge-CheckDefaults -Defaults $doc.defaults -Check $check
 
@@ -116,14 +150,19 @@ if ($PSBoundParameters.ContainsKey('SourcePath') -and -not [string]::IsNullOrWhi
 
 $engine = if ($check.engine) { $check.engine.ToLowerInvariant() } else { 'ldap' }
 if ($engine -ne 'ldap') {
-    Write-Error "Check '$CheckId' uses engine '$engine', not ldap. Use the engine-specific runner for this check."
+    Write-AdsiStderr "Check '$CheckId' uses engine '$engine', not ldap. Use the engine-specific runner for this check."
     exit 2
+}
+
+if (-not $check.searchBase) {
+    Write-AdsiStderr "Check '$CheckId' is missing required field 'searchBase'."
+    exit 1
 }
 
 try {
     $rootDse = Get-ADSuiteRootDse -ServerName $ServerName
 } catch {
-    Write-Error $_
+    Write-AdsiStderr $_.Exception.Message
     exit 1
 }
 
@@ -135,7 +174,7 @@ if ($check.PSObject.Properties.Name -contains 'searchBaseDn') {
 try {
     $searchRoot = Resolve-ADSuiteSearchRoot -SearchBase $check.searchBase -SearchBaseDn $searchBaseDn -RootDse $rootDse -ServerName $ServerName
 } catch {
-    Write-Error $_
+    Write-AdsiStderr $_.Exception.Message
     exit 1
 }
 
@@ -151,23 +190,26 @@ if ($check.propertiesToLoad) {
 }
 [void]$propsToLoad.Add('distinguishedName')
 
+$mustInc = 0
+$mustExc = 0
+if ($null -ne $check.userAccountControlMustInclude) { $mustInc = [int]$check.userAccountControlMustInclude }
+if ($null -ne $check.userAccountControlMustExclude) { $mustExc = [int]$check.userAccountControlMustExclude }
+if ($mustInc -ne 0 -or $mustExc -ne 0) {
+    [void]$propsToLoad.Add('userAccountControl')
+}
+
 $ldapFilter = $check.ldapFilter
 if (-not $ldapFilter) {
-    Write-Error "Check '$CheckId' has no ldapFilter."
+    Write-AdsiStderr "Check '$CheckId' has no ldapFilter."
     exit 1
 }
 
 try {
     $results = Invoke-ADSuiteLdapQuery -LdapFilter $ldapFilter -SearchRoot $searchRoot -SearchScope $scope -PropertiesToLoad @($propsToLoad) -PageSize $pageSize
 } catch {
-    Write-Error "LDAP query failed: $_"
+    Write-AdsiStderr "LDAP query failed: $($_.Exception.Message)"
     exit 1
 }
-
-$mustInc = 0
-$mustExc = 0
-if ($null -ne $check.userAccountControlMustInclude) { $mustInc = [int]$check.userAccountControlMustInclude }
-if ($null -ne $check.userAccountControlMustExclude) { $mustExc = [int]$check.userAccountControlMustExclude }
 
 $filtered = [System.Collections.Generic.List[object]]::new()
 foreach ($sr in $results) {
@@ -187,20 +229,24 @@ if ($outputMap.Count -eq 0) {
     }
 }
 
-Write-Host "Check $($check.id): $($check.name) - Found $($filtered.Count) object(s)" -ForegroundColor Cyan
-if ($resolvedSourcePath) {
-    Write-Host "SourcePath: $resolvedSourcePath" -ForegroundColor DarkGray
+# Semantics: each LDAP row is a *finding* (misconfiguration / risk) when the filter targets bad state.
+# FindingCount 0 => Pass (no issue). FindingCount > 0 => Fail (review rows).
+$findingCount = $filtered.Count
+$resultWord = if ($findingCount -eq 0) { 'Pass' } else { 'Fail' }
+
+if (-not $Quiet) {
+    Write-Host "Check $($check.id): $($check.name)" -ForegroundColor Cyan
+    Write-Host "  FindingCount: $findingCount  Result: $resultWord  (rows match LDAP filter; 0 = no misconfiguration detected)" -ForegroundColor $(if ($findingCount -eq 0) { 'Green' } else { 'Yellow' })
+    if ($resolvedSourcePath) {
+        Write-Host "  SourcePath: $resolvedSourcePath" -ForegroundColor DarkGray
+    }
 }
 
 $rows = foreach ($sr in $filtered) {
     $props = $sr.Properties
-    $row = [ordered]@{
-        CheckId   = $check.id
-        CheckName = $check.name
-    }
-    if ($resolvedSourcePath) {
-        $row['SourcePath'] = $resolvedSourcePath
-    }
+    $row = [ordered]@{}
+    
+    # Add AD object properties FIRST (most important)
     foreach ($entry in $outputMap.GetEnumerator()) {
         $colName = $entry.Key
         $attrName = $entry.Value
@@ -208,14 +254,35 @@ $rows = foreach ($sr in $filtered) {
         if ($null -eq $val) { $val = 'N/A' }
         $row[$colName] = $val
     }
+    
+    # Add metadata columns AFTER (less important)
+    $row['CheckId'] = $check.id
+    $row['CheckName'] = $check.name
+    $row['FindingCount'] = $findingCount
+    $row['Result'] = $resultWord
+    
+    if ($resolvedSourcePath) {
+        $row['SourcePath'] = $resolvedSourcePath
+    }
+    
     [PSCustomObject]$row
 }
 
 $rowsOut = @($rows)
-if ($rowsOut.Count -gt 0) {
-    $rowsOut | Format-Table -AutoSize
-} else {
-    Write-Host 'No findings' -ForegroundColor Gray
+if ($PassThru) {
+    $rowsOut
+} elseif ($rowsOut.Count -gt 0) {
+    if ($CompactOutput) {
+        # Show only AD object properties, exclude metadata
+        $rowsOut | Select-Object -Property * -ExcludeProperty CheckId, CheckName, FindingCount, Result, SourcePath | Format-Table -AutoSize
+    } else {
+        $rowsOut | Format-Table -AutoSize
+    }
+} elseif (-not $Quiet) {
+    Write-Host 'No finding rows (Pass).' -ForegroundColor Green
 }
 
+if ($FailOnFindings -and $findingCount -gt 0) {
+    exit 3
+}
 exit 0
