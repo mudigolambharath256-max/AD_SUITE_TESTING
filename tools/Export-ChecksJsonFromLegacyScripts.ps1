@@ -12,6 +12,7 @@
 
 .NOTES
     Heuristic parsing: review and fix multi-line filters, non-LDAP checks, and Custom search bases manually.
+    Every exported check uses engine inventory by default (unreviewed). Promote rules via checks.json or checks.overrides.json before treating them as production risk scans.
 #>
 [CmdletBinding()]
 param(
@@ -81,6 +82,17 @@ function Get-CheckIdFromFolderName([string]$FolderName) {
     return $null
 }
 
+function Get-DefaultEngineFromLegacyFolder {
+    <#
+    Legacy export stubs are unreviewed: default inventory until promoted to risk (checks.json / overrides).
+    #>
+    param(
+        [string]$FolderName,
+        [string]$LdapFilter
+    )
+    return 'inventory'
+}
+
 function Get-DisplayNameFromFolderName([string]$FolderName, [string]$CheckId) {
     if (-not $CheckId) { return $FolderName }
     $rest = $FolderName -replace [regex]::Escape($CheckId), '' -replace '^_+', ''
@@ -115,11 +127,13 @@ foreach ($file in $files) {
         $category = $parts[0]
     }
 
+    $engineDefault = Get-DefaultEngineFromLegacyFolder -FolderName $folderName -LdapFilter $filter
+
     $entry = [ordered]@{
         id            = $checkId
         name          = (Get-DisplayNameFromFolderName -FolderName $folderName -CheckId $checkId)
         category      = $category
-        engine        = 'ldap'
+        engine        = $engineDefault
         searchBase    = $searchBase
         searchScope   = 'Subtree'
         ldapFilter    = $filter
@@ -132,8 +146,9 @@ foreach ($file in $files) {
 $doc = [ordered]@{
     schemaVersion = 1
     defaults      = @{
-        pageSize = 1000
-        engine   = 'ldap'
+        pageSize    = 1000
+        engine      = 'inventory'
+        searchScope = 'Subtree'
     }
     checks        = @($checks)
     meta          = @{

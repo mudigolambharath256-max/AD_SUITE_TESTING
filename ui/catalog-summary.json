@@ -1,0 +1,179 @@
+﻿{
+    "schemaVersion":  1,
+    "sourceCatalog":  "C:\\Users\\acer\\Music\\AD_SUITE\\checks.json",
+    "meta":  {
+                 "packVersion":  "1.1.0",
+                 "packDateUtc":  "2026-03-27T12:00:00Z",
+                 "packName":  "AD Suite curated risk pack"
+             },
+    "categories":  [
+                       {
+                           "name":  "Access_Control",
+                           "checks":  [
+                                          {
+                                              "id":  "ACC-001",
+                                              "name":  "Privileged Users adminCount1",
+                                              "engine":  "ldap",
+                                              "severity":  "high",
+                                              "category":  "Access_Control"
+                                          },
+                                          {
+                                              "id":  "ACC-002",
+                                              "name":  "Privileged Groups adminCount1",
+                                              "engine":  "ldap",
+                                              "severity":  "high",
+                                              "category":  "Access_Control"
+                                          },
+                                          {
+                                              "id":  "ACC-003",
+                                              "name":  "Privileged Computers adminCount1",
+                                              "engine":  "ldap",
+                                              "severity":  "high",
+                                              "category":  "Access_Control"
+                                          },
+                                          {
+                                              "id":  "ACC-004",
+                                              "name":  "Users with SIDHistory",
+                                              "engine":  "ldap",
+                                              "severity":  "medium",
+                                              "category":  "Access_Control"
+                                          },
+                                          {
+                                              "id":  "ACC-006",
+                                              "name":  "Computers with RBCD",
+                                              "engine":  "ldap",
+                                              "severity":  "high",
+                                              "category":  "Access_Control"
+                                          },
+                                          {
+                                              "id":  "ACC-007",
+                                              "name":  "Users with RBCD",
+                                              "engine":  "ldap",
+                                              "severity":  "high",
+                                              "category":  "Access_Control"
+                                          },
+                                          {
+                                              "id":  "ACC-034",
+                                              "name":  "Kerberoastable Accounts",
+                                              "engine":  "ldap",
+                                              "severity":  "high",
+                                              "category":  "Access_Control"
+                                          }
+                                      ]
+                       },
+                       {
+                           "name":  "Kerberos_Security",
+                           "checks":  [
+                                          {
+                                              "id":  "KRB-001",
+                                              "name":  "Kerberoastable User Accounts",
+                                              "engine":  "ldap",
+                                              "severity":  "high",
+                                              "category":  "Kerberos_Security"
+                                          },
+                                          {
+                                              "id":  "KRB-002",
+                                              "name":  "AS-REP Roastable Accounts",
+                                              "engine":  "ldap",
+                                              "severity":  "critical",
+                                              "category":  "Kerberos_Security"
+                                          },
+                                          {
+                                              "id":  "KRB-003",
+                                              "name":  "Unconstrained Delegation Computers",
+                                              "engine":  "ldap",
+                                              "severity":  "critical",
+                                              "category":  "Kerberos_Security"
+                                          },
+                                          {
+                                              "id":  "KRB-004",
+                                              "name":  "Unconstrained Delegation Users",
+                                              "engine":  "ldap",
+                                              "severity":  "critical",
+                                              "category":  "Kerberos_Security"
+                                          },
+                                          {
+                                              "id":  "KRB-005",
+                                              "name":  "Constrained Delegation Computers",
+                                              "engine":  "ldap",
+                                              "severity":  "high",
+                                              "category":  "Kerberos_Security"
+                                          },
+                                          {
+                                              "id":  "KRB-006",
+                                              "name":  "Constrained Delegation Users",
+                                              "engine":  "ldap",
+                                              "severity":  "high",
+                                              "category":  "Kerberos_Security"
+                                          },
+                                          {
+                                              "id":  "KRB-009",
+                                              "name":  "DES-Only Kerberos Users",
+                                              "engine":  "ldap",
+                                              "severity":  "high",
+                                              "category":  "Kerberos_Security"
+                                          }
+                                      ]
+                       },
+                       {
+                           "name":  "Group_Policy",
+                           "checks":  [
+                                          {
+                                              "id":  "GPO-ACL-001",
+                                              "name":  "SYSVOL Policies insecure ACLs",
+                                              "engine":  "filesystem",
+                                              "severity":  "high",
+                                              "category":  "Group_Policy"
+                                          }
+                                      ]
+                       },
+                       {
+                           "name":  "Domain_Configuration",
+                           "checks":  [
+                                          {
+                                              "id":  "DC-003",
+                                              "name":  "Forest Functional Level",
+                                              "engine":  "inventory",
+                                              "severity":  "info",
+                                              "category":  "Domain_Configuration"
+                                          }
+                                      ]
+                       },
+                       {
+                           "name":  "Domain_Controllers",
+                           "checks":  [
+                                          {
+                                              "id":  "DC-008",
+                                              "name":  "Schema Master (dMD FSMO holder)",
+                                              "engine":  "inventory",
+                                              "severity":  "info",
+                                              "category":  "Domain_Controllers"
+                                          }
+                                      ]
+                       },
+                       {
+                           "name":  "LDAP_Security",
+                           "checks":  [
+                                          {
+                                              "id":  "LDAP-001",
+                                              "name":  "Example: all user objects (domain partition)",
+                                              "engine":  "inventory",
+                                              "severity":  "info",
+                                              "category":  "LDAP_Security"
+                                          }
+                                      ]
+                       },
+                       {
+                           "name":  "Documentation",
+                           "checks":  [
+                                          {
+                                              "id":  "SAMPLE-SCHEMA-NC",
+                                              "name":  "Example: schema partition root search",
+                                              "engine":  "inventory",
+                                              "severity":  "info",
+                                              "category":  "Documentation"
+                                          }
+                                      ]
+                       }
+                   ]
+}

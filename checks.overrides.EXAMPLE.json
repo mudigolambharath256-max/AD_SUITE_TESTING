@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "checks": [
+    {
+      "id": "ACC-001",
+      "engine": "ldap",
+      "severity": "high",
+      "description": "Promoted rule: review accounts with adminCount=1 (protected objects) for inappropriate persistence."
+    }
+  ]
+}

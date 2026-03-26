@@ -98,6 +98,40 @@ $PSVersionTable.PSVersion
 
 ---
 
+## Full catalog scan (HTML + JSON + CSV)
+
+Runs checks whose `engine` is **`ldap`**, **`filesystem`**, or **`registry`** (registry stubs return “not implemented” until extended). Checks marked **`engine: "inventory"`** are **skipped** by the risk scanner (they are for documentation or raw LDAP listings, not pass/fail misconfiguration).
+
+**Production (recommended):** use **`-ChecksJsonPath .\checks.json`** for risk scans—this is the curated, Ping Castle–style rule set. The large **`checks.generated.json`** file is legacy-derived and is **all inventory by default** (nothing runs in the risk scan until you promote specific check IDs via **`checks.overrides.json`** or move definitions into `checks.json`). See [docs/RISK_PACK.md](docs/RISK_PACK.md) and `checks.overrides.EXAMPLE.json`.
+
+| Output file | Contents |
+|-------------|----------|
+| `scan-results.json` | Full structured results, **globalScore** / **globalRiskBand**, **CheckScore** per check |
+| `findings.csv` | Flattened finding rows (uniform columns) |
+| `report.html` | Global risk score, **Top 10 risks**, summary and per-check tables |
+
+```powershell
+# All runnable checks in checks.json
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json
+
+# Optional: target DC, limit category, fixed output folder, scoring tuning
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -ServerName dc01.domain.local -Category Access_Control -OutputDirectory .\out\latest -ScoringNormalizer 5 -FindingCapPerCheck 10
+```
+
+**Engines:** `ldap` = misconfiguration LDAP query; `inventory` = excluded from risk scan (default for `checks.generated.json` stubs); `filesystem` = e.g. SYSVOL ACL sample `GPO-ACL-001`; `registry` = reserved. In **`checks.json`**, `defaults.engine` is often `ldap` for explicit risk rules.
+
+Optional catalog fields per check: `severity` (`info` \| `low` \| `medium` \| `high` \| `critical`), `description`, `remediation`, `references` (string or array), `scoreWeight` (multiplier for scoring, default `1`), and for filesystem checks `filesystemKind` (e.g. `SysvolPoliciesInsecureAcl`).
+
+**Overrides:** place `checks.overrides.json` next to the scripts (or pass `-ChecksOverridesPath`) to patch base catalog entries by `id` without duplicating full definitions. See [docs/RISK_PACK.md](docs/RISK_PACK.md).
+
+**Catalog validation:** run `.\Test-ADSuiteCatalog.ps1 -CatalogPath .\checks.json` before release. Use `-LiveScan` to run a full scan after validation (requires a domain). Duplicate `CheckId` values are rejected; use `tools\Deduplicate-CheckIdsInCatalog.ps1` on generated catalogs if needed.
+
+**Enterprise workflow:** [docs/REVIEW_CHECKLIST.md](docs/REVIEW_CHECKLIST.md) (promotion sign-off), [docs/LAB_VALIDATION.md](docs/LAB_VALIDATION.md) (lab gate), [docs/COVERAGE.md](docs/COVERAGE.md) (which IDs are in the curated pack). Scan output includes `meta.packVersion` / `meta.packName` when defined in the catalog.
+
+**How to read the global score:** each contributing check adds `severityWeight × min(FindingCount, FindingCapPerCheck) × scoreWeight` (errors/skipped checks add 0). The sum is divided by `ScoringNormalizer` and capped at 100. This is a **relative workload** indicator, not CVSS. Tune `-FindingCapPerCheck` and `-ScoringNormalizer` after your rule pack is curated.
+
+---
+
 ## 🔥 Step 5: Popular Security Checks
 
 ### Kerberos Attacks
