@@ -10,7 +10,9 @@ A comprehensive Active Directory security auditing framework using pure ADSI/Dir
 
 - ✅ **756 Security Checks** across 26 categories
 - ✅ **Pure ADSI Implementation** - No AD module dependency
-- ✅ **Multiple Execution Modes** - Interactive, automation, CI/CD
+- ✅ **Three Execution Modes** - Single check, batch scanner, UI dashboard
+- ✅ **Purple Knight-Style Dashboard** - Interactive visual analysis
+- ✅ **Risk Scoring System** - Global 0-100 score with severity weighting
 - ✅ **GOAD Lab Compatible** - Perfect for penetration testing practice
 - ✅ **JSON-Based Configuration** - Easy to extend and customize
 - ✅ **Comprehensive Coverage** - Kerberos, ADCS, Delegation, Trusts, and more
@@ -106,35 +108,70 @@ Set-ExecutionPolicy Bypass -Scope Process -Force
 
 ## 📋 Execution Modes
 
-### 1. Interactive Mode (Default)
-```powershell
-.\adsi.ps1 -CheckId ACC-001
-```
-Displays formatted table with colored output.
+AD Suite has **three distinct execution modes** for different use cases:
 
-### 2. Compact Mode (Recommended)
+### Mode 1: Single Check Runner (`adsi.ps1`)
+**Purpose:** Execute individual security checks interactively or in automation
+
 ```powershell
+# Interactive with clean output (recommended)
 .\adsi.ps1 -CheckId ACC-001 -CompactOutput
-```
-Shows only AD object properties, hides metadata columns.
 
-### 3. Automation Mode
-```powershell
-.\adsi.ps1 -CheckId ACC-001 -PassThru | Export-Csv results.csv -NoTypeInformation
-```
-Outputs objects to pipeline for further processing.
+# Automation pipeline
+.\adsi.ps1 -CheckId ACC-001 -PassThru | Export-Csv results.csv
 
-### 4. Silent Mode
-```powershell
-.\adsi.ps1 -CheckId ACC-001 -Quiet -PassThru
-```
-Suppresses host output, only returns objects.
-
-### 5. CI/CD Mode
-```powershell
-.\adsi.ps1 -CheckId ACC-001 -FailOnFindings
+# CI/CD security gate
+.\adsi.ps1 -CheckId ACC-001 -Quiet -FailOnFindings
 # Exit code 0 = Pass, 3 = Findings detected
 ```
+
+**Use Cases:** Pentesting, targeted checks, CI/CD gates, learning
+
+### Mode 2: Batch Scanner (`Invoke-ADSuiteScan.ps1`)
+**Purpose:** Comprehensive risk assessments with Purple Knight-style scoring
+
+```powershell
+# Full AD security assessment
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -OutputDirectory .\out\latest
+
+# Category-scoped scan
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -Category Kerberos_Security,Certificate_Services
+
+# Specific checks only
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -IncludeCheckId KRB-002,ACC-034
+```
+
+**Outputs:**
+- `scan-results.json` - Complete scan data with scores and findings
+- `findings.csv` - Flattened CSV for spreadsheet analysis
+- `report.html` - HTML summary with dashboard link
+
+**Use Cases:** Full audits, compliance reporting, scheduled scans, risk trending
+
+### Mode 3: UI Dashboard (`ui/dashboard.html`)
+**Purpose:** Interactive visual analysis and scan planning
+
+```powershell
+# 1. Run a scan
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -OutputDirectory .\out\latest
+
+# 2. Open dashboard
+start .\ui\dashboard.html
+
+# 3. Load scan-results.json from browser
+# 4. Optionally load catalog-summary.json for scan planner
+```
+
+**Features:**
+- Global risk score visualization (0-100)
+- Category breakdown table
+- Top 10 risks by score
+- Sortable, filterable checks table
+- Expandable finding details
+- Scan planner (generates commands)
+- 100% client-side (no data leaves browser)
+
+**Use Cases:** Executive reporting, interactive analysis, scan planning, offline review
 
 ## 🤖 Automated Testing
 
@@ -165,10 +202,22 @@ foreach ($check in $criticalChecks) {
 
 ## 📚 Documentation
 
+### Main Documentation
+- **[COMPLETE_ARCHITECTURE.md](COMPLETE_ARCHITECTURE.md)** - Complete system architecture and all three modes
 - **[QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)** - Complete command reference
-- **[REAL_WORLD_SCENARIO_TEST.md](REAL_WORLD_SCENARIO_TEST.md)** - Detailed scenario with 10 checks
-- **[EXECUTION_SUMMARY.md](EXECUTION_SUMMARY.md)** - Framework analysis and summary
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[FINAL_SUMMARY.md](FINAL_SUMMARY.md)** - Complete project summary
+
+### Testing and Validation
+- **[REAL_WORLD_SCENARIO_TEST.md](REAL_WORLD_SCENARIO_TEST.md)** - Detailed scenario with 10 checks
+- **[EXECUTION_SUMMARY.md](EXECUTION_SUMMARY.md)** - Framework analysis
+
+### Advanced Topics
+- **[docs/RISK_PACK.md](docs/RISK_PACK.md)** - Risk pack contract and engine types
+- **[docs/COVERAGE.md](docs/COVERAGE.md)** - Rule pack coverage documentation
+- **[docs/LAB_VALIDATION.md](docs/LAB_VALIDATION.md)** - Lab validation procedures
+- **[docs/REVIEW_CHECKLIST.md](docs/REVIEW_CHECKLIST.md)** - Risk rule promotion checklist
+- **[ui/README.md](ui/README.md)** - UI dashboard documentation
 
 ## 🎯 Use Cases
 
@@ -191,27 +240,43 @@ foreach ($check in $criticalChecks) {
 
 ## 📊 Architecture
 
+AD Suite has three complementary execution modes. See [COMPLETE_ARCHITECTURE.md](COMPLETE_ARCHITECTURE.md) for full details.
+
+### Single Check Runner Flow
 ```
-User Command
-    ↓
-adsi.ps1 (Parameter Validation)
-    ↓
-Load checks.json/checks.generated.json
-    ↓
-Import ADSuite.Adsi.psm1
-    ↓
-Get-ADSuiteRootDse (Connect to RootDSE)
-    ↓
-Resolve-ADSuiteSearchRoot (Get search base DN)
-    ↓
-Invoke-ADSuiteLdapQuery (DirectorySearcher)
-    ↓
-Test-UserAccountControlMask (Optional UAC filtering)
-    ↓
-Format Results (Table or PassThru)
-    ↓
-Output & Exit Code
+User → adsi.ps1 → Load check → Execute LDAP → Format output → Exit
 ```
+
+### Batch Scanner Flow
+```
+User → Invoke-ADSuiteScan.ps1
+  → Load catalog + overrides
+  → Filter checks (category/include/exclude)
+  → Execute all checks
+  → Calculate scores (per-check + global)
+  → Generate outputs (JSON/CSV/HTML)
+  → Exit
+```
+
+### UI Dashboard Flow
+```
+Browser → dashboard.html
+  → Load scan-results.json
+  → Render visualizations
+  → Interactive filtering/sorting
+  → Export/print
+```
+
+### Check Catalog Hierarchy
+```
+checks.json (curated risk pack)
+  ↓
+checks.overrides.json (patches)
+  ↓
+checks.generated.json (full inventory, engine=inventory by default)
+```
+
+**Key Point:** Use `checks.json` for production risk scans. Use `checks.overrides.json` to promote checks from inventory to production without duplicating full definitions.
 
 ## 🔍 Available Checks
 
@@ -237,7 +302,7 @@ $config.checks | Group-Object category | Sort-Object Count -Descending
 
 ## 🎓 Examples
 
-### Example 1: Quick Security Assessment
+### Example 1: Quick Security Assessment (Single Check Runner)
 ```powershell
 # Top 5 critical checks
 $checks = @('ACC-001', 'ACC-034', 'KRB-002', 'ACC-037', 'CERT-002')
@@ -247,20 +312,56 @@ foreach ($c in $checks) {
 }
 ```
 
-### Example 2: Export All Findings
+### Example 2: Full Risk Assessment (Batch Scanner)
 ```powershell
-$checks = @('ACC-001', 'ACC-014', 'ACC-034', 'KRB-002')
-$allResults = @()
+# Complete AD security audit with risk scoring
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -OutputDirectory .\out\latest
 
-foreach ($check in $checks) {
-    $results = .\adsi.ps1 -CheckId $check -ServerName dc01.domain.local -PassThru
-    $allResults += $results
-}
-
-$allResults | Export-Csv "AD_Audit_$(Get-Date -Format 'yyyyMMdd').csv" -NoTypeInformation
+# Open dashboard for analysis
+start .\ui\dashboard.html
+# Then load .\out\latest\scan-results.json in browser
 ```
 
-### Example 3: Interactive Exploration
+### Example 3: Category-Scoped Audit (Batch Scanner)
+```powershell
+# Focus on Kerberos and Certificate Services
+.\Invoke-ADSuiteScan.ps1 `
+    -ChecksJsonPath .\checks.json `
+    -Category Kerberos_Security,Certificate_Services `
+    -OutputDirectory .\out\kerberos-adcs
+```
+
+### Example 4: CI/CD Security Gate (Single Check Runner)
+```powershell
+# Fail build if critical vulnerabilities found
+$criticalChecks = @('KRB-002', 'ACC-034', 'ACC-037', 'CERT-002')
+foreach ($check in $criticalChecks) {
+    .\adsi.ps1 -CheckId $check -Quiet -FailOnFindings
+    if ($LASTEXITCODE -eq 3) {
+        Write-Error "Critical security issue: $check"
+        exit 1
+    }
+}
+```
+
+### Example 5: Scheduled Weekly Audit (Batch Scanner)
+```powershell
+# Schedule this script to run weekly
+$timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$outputPath = "\\share\audits\$timestamp"
+
+.\Invoke-ADSuiteScan.ps1 `
+    -ChecksJsonPath .\checks.json `
+    -OutputDirectory $outputPath
+
+# Email the report.html to security team
+Send-MailMessage -To "security@company.com" `
+    -Subject "Weekly AD Security Audit - $timestamp" `
+    -Attachments "$outputPath\report.html" `
+    -Body "See attached report. Open dashboard for interactive analysis."
+```
+
+### Example 6: Interactive Exploration (Single Check Runner)
 ```powershell
 # View in grid
 .\adsi.ps1 -CheckId ACC-001 -PassThru | Out-GridView
