@@ -1,13 +1,17 @@
 {
   "schemaVersion": 1,
   "meta": {
+    "generatedFrom": "checks.generated.json",
+    "curatedFrom": "checks.json",
+    "excludedCategories": [
+      "Certificate_Services",
+      "Azure_AD_Integration"
+    ],
     "phase": "B1",
     "waves": [
       "Kerberos_Security",
       "Access_Control"
-    ],
-    "generatedFrom": "checks.generated.json",
-    "curatedFrom": "checks.json"
+    ]
   },
   "checks": [
     {
@@ -81,10 +85,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: KeyCredentialLink on Computers. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate KeyCredentialLink on Computers per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate KeyCredentialLink on Computers per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -92,10 +96,10 @@
       "engine": "ldap",
       "severity": "critical",
       "description": "Misconfiguration or exposure: Trust Accounts for Delegation. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Trust Accounts for Delegation per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Trust Accounts for Delegation per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -103,10 +107,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Users Can Create DNS Records. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Users Can Create DNS Records per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Users Can Create DNS Records per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -114,32 +118,32 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: GPO Folder Rights Review. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate GPO Folder Rights Review per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate GPO Folder Rights Review per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
       "id": "ACC-014",
       "engine": "ldap",
-      "severity": "medium",
+      "severity": "high",
       "description": "Misconfiguration or exposure: Domain Admins Group Members. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Domain Admins Group Members per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Domain Admins Group Members per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
       "id": "ACC-015",
       "engine": "ldap",
-      "severity": "medium",
+      "severity": "high",
       "description": "Misconfiguration or exposure: Enterprise Admins Group Members. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Enterprise Admins Group Members per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Enterprise Admins Group Members per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -147,10 +151,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Backup Operators Group Members. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Backup Operators Group Members per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Backup Operators Group Members per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -158,10 +162,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Print Operators Group Members. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Print Operators Group Members per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Print Operators Group Members per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -169,10 +173,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: DNS Admins Group Members. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate DNS Admins Group Members per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate DNS Admins Group Members per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -180,10 +184,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Users Can Add Computers to Domain. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Users Can Add Computers to Domain per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Users Can Add Computers to Domain per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -191,10 +195,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Accounts with Reversible Encryption Enabled. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Accounts with Reversible Encryption Enabled per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Accounts with Reversible Encryption Enabled per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -202,21 +206,21 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Accounts with Not Delegated Flag. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Accounts with Not Delegated Flag per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Accounts with Not Delegated Flag per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
       "id": "ACC-031",
       "engine": "ldap",
-      "severity": "medium",
+      "severity": "high",
       "description": "Misconfiguration or exposure: Shortest Path to Domain Admin. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Shortest Path to Domain Admin per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Shortest Path to Domain Admin per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -234,10 +238,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Shadow Credentials Detection. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Shadow Credentials Detection per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Shadow Credentials Detection per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -245,10 +249,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Constrained Delegation Targets. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Constrained Delegation Targets per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Constrained Delegation Targets per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -256,10 +260,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Resource Based Constrained Delegation. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Resource Based Constrained Delegation per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Resource Based Constrained Delegation per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -267,10 +271,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Constrained Delegation Principals. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Constrained Delegation Principals per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Constrained Delegation Principals per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -278,10 +282,10 @@
       "engine": "ldap",
       "severity": "critical",
       "description": "Misconfiguration or exposure: Admin SDHolder Template. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Admin SDHolder Template per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Admin SDHolder Template per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -289,10 +293,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Privileged Access Workstation PAW Computers. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Privileged Access Workstation PAW Computers per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Privileged Access Workstation PAW Computers per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -370,10 +374,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Protocol Transition S4U2Self. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Protocol Transition S4U2Self per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Protocol Transition S4U2Self per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -381,10 +385,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Resource-Based Constrained Delegation. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Resource-Based Constrained Delegation per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Resource-Based Constrained Delegation per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -403,10 +407,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: DES-Only Kerberos Computers. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate DES-Only Kerberos Computers per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate DES-Only Kerberos Computers per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -414,10 +418,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Accounts Supporting DES Encryption. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Accounts Supporting DES Encryption per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Accounts Supporting DES Encryption per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -425,10 +429,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Accounts Without Explicit Encryption Types. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Accounts Without Explicit Encryption Types per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Accounts Without Explicit Encryption Types per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -436,10 +440,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: KRBTGT Account. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate KRBTGT Account per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate KRBTGT Account per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -447,10 +451,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Domain Kerberos Policy. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Domain Kerberos Policy per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Domain Kerberos Policy per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -458,10 +462,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Accounts Not Delegated Privileged. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Accounts Not Delegated Privileged per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Accounts Not Delegated Privileged per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -469,10 +473,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Admin Accounts Without Delegation Protection. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Admin Accounts Without Delegation Protection per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Admin Accounts Without Delegation Protection per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -480,10 +484,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: gMSA Accounts. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate gMSA Accounts per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate gMSA Accounts per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -491,10 +495,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: sMSA Accounts Legacy. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate sMSA Accounts Legacy per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate sMSA Accounts Legacy per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -502,10 +506,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Kerberoastable Accounts with Old Password. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Kerberoastable Accounts with Old Password per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Kerberoastable Accounts with Old Password per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -513,10 +517,10 @@
       "engine": "ldap",
       "severity": "critical",
       "description": "Misconfiguration or exposure: AS-REP Roastable SPN Double Risk. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate AS-REP Roastable SPN Double Risk per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate AS-REP Roastable SPN Double Risk per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -524,10 +528,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Non-Expiring Password SPN. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Non-Expiring Password SPN per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Non-Expiring Password SPN per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -535,10 +539,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Protected Users Group Members. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Protected Users Group Members per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Protected Users Group Members per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -546,10 +550,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Accounts with AES256 Only. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Accounts with AES256 Only per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Accounts with AES256 Only per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -557,10 +561,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Domain Controllers Encryption Types. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Domain Controllers Encryption Types per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Domain Controllers Encryption Types per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -568,10 +572,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Computers with Protocol Transition. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Computers with Protocol Transition per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Computers with Protocol Transition per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -579,10 +583,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Trust Accounts TDOs. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Trust Accounts TDOs per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Trust Accounts TDOs per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -590,10 +594,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Sensitive Accounts Without AES. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Sensitive Accounts Without AES per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Sensitive Accounts Without AES per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -601,10 +605,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: SPN Duplicates Check Computers. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate SPN Duplicates Check Computers per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate SPN Duplicates Check Computers per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -612,10 +616,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Authentication Policy Silos. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Authentication Policy Silos per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Authentication Policy Silos per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -623,10 +627,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Authentication Policies. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Authentication Policies per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Authentication Policies per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -634,10 +638,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Bronze Bit Attack Vulnerable Accounts. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Bronze Bit Attack Vulnerable Accounts per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Bronze Bit Attack Vulnerable Accounts per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -645,10 +649,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Kerberos Encryption Downgrade Risk. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Kerberos Encryption Downgrade Risk per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Kerberos Encryption Downgrade Risk per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -656,10 +660,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: PAC Validation Disabled. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate PAC Validation Disabled per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate PAC Validation Disabled per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -667,10 +671,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: S4U2Self Abuse Detection. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate S4U2Self Abuse Detection per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate S4U2Self Abuse Detection per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -678,10 +682,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: S4U2Proxy Abuse Detection. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate S4U2Proxy Abuse Detection per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate S4U2Proxy Abuse Detection per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -689,10 +693,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Kerberos AES Not Enforced. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Kerberos AES Not Enforced per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Kerberos AES Not Enforced per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -700,10 +704,10 @@
       "engine": "ldap",
       "severity": "critical",
       "description": "Misconfiguration or exposure: Unconstrained Delegation Computers. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Unconstrained Delegation Computers per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Unconstrained Delegation Computers per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -711,10 +715,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Kerberos Ticket Lifetime Excessive. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Kerberos Ticket Lifetime Excessive per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Kerberos Ticket Lifetime Excessive per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -722,10 +726,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: KRBTGT Password Age. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate KRBTGT Password Age per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate KRBTGT Password Age per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -733,10 +737,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Kerberos Armoring Not Enabled. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Kerberos Armoring Not Enabled per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Kerberos Armoring Not Enabled per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -744,10 +748,10 @@
       "engine": "ldap",
       "severity": "critical",
       "description": "Misconfiguration or exposure: Service Accounts with Unconstrained Delegation. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Service Accounts with Unconstrained Delegation per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Service Accounts with Unconstrained Delegation per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -755,10 +759,10 @@
       "engine": "ldap",
       "severity": "critical",
       "description": "Misconfiguration or exposure: Kerberos Pre Auth Not Required Computers. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Kerberos Pre Auth Not Required Computers per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Kerberos Pre Auth Not Required Computers per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -766,10 +770,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Duplicate SPNs. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Duplicate SPNs per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Duplicate SPNs per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -777,10 +781,10 @@
       "engine": "ldap",
       "severity": "medium",
       "description": "Misconfiguration or exposure: Kerberos Clock Skew Issues. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Kerberos Clock Skew Issues per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Kerberos Clock Skew Issues per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     },
     {
@@ -788,10 +792,10 @@
       "engine": "ldap",
       "severity": "high",
       "description": "Misconfiguration or exposure: Protected Users Group Not Used. Each returned object matches the LDAP rule; review for business justification and false positives.",
-      "remediation": "Review and remediate Protected Users Group Not Used per org baseline: tighten AD attributes, remove unnecessary delegation or weak crypto, and validate with domain owners.",
+      "remediation": "Review and remediate Protected Users Group Not Used per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.",
       "references": [
         "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
-        "MITRE ATT&CK — Credential Access (T1558)"
+        "MITRE ATT&CK — Enterprise (Windows)"
       ]
     }
   ]
