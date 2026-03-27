@@ -115,9 +115,15 @@ Import-Module $modulePath -Force -ErrorAction Stop
 $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
 if (-not $OutputDirectory) {
     $OutputDirectory = Join-Path $scriptDir "out\scan-$ts"
+} else {
+    # Convert relative path to absolute path based on script directory
+    if (-not [System.IO.Path]::IsPathRooted($OutputDirectory)) {
+        $OutputDirectory = Join-Path $scriptDir $OutputDirectory
+    }
 }
 if (-not (Test-Path -LiteralPath $OutputDirectory)) {
     New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+}
 }
 
 $defaultOv = Join-Path $scriptDir 'checks.overrides.json'

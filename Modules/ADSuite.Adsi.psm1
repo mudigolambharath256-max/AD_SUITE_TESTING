@@ -1020,8 +1020,10 @@ section.check{margin:1.5rem 0;padding:1rem;border:1px solid #e0e0e0;border-radiu
                     ([System.Net.WebUtility]::HtmlEncode([string]$t.CheckId)),
                     ([System.Net.WebUtility]::HtmlEncode([string]$t.CheckName)),
                     ([System.Net.WebUtility]::HtmlEncode([string]$t.Category)),
-                    $sc, $sev,
-                    $t.FindingCount, $t.CheckScore)
+                    $sc,
+                    $sev,
+                    $t.FindingCount,
+                    $t.CheckScore)
             }
             $null = $sb.AppendLine('</tbody></table>')
         }
