@@ -124,7 +124,6 @@ if (-not $OutputDirectory) {
 if (-not (Test-Path -LiteralPath $OutputDirectory)) {
     New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 }
-}
 
 $defaultOv = Join-Path $scriptDir 'checks.overrides.json'
 if (-not $ChecksOverridesPath -and (Test-Path -LiteralPath $defaultOv)) {
