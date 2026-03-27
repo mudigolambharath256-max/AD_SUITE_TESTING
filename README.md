@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 
-A comprehensive Active Directory security auditing framework using pure ADSI/DirectorySearcher. No ActiveDirectory PowerShell module required!
+**AD Suite** is a Windows PowerShell AD assessment toolkit. It reads check definitions from JSON catalogs, runs LDAP (and filesystem) checks using ADSI/DirectorySearcher—**no ActiveDirectory module required**. Results can be JSON, CSV, HTML, and optionally viewed in a static browser UI.
 
 ## 🎯 Features
 
@@ -32,6 +32,11 @@ A comprehensive Active Directory security auditing framework using pure ADSI/Dir
 
 ## 🚀 Quick Start
 
+### Prerequisites
+- Windows with PowerShell 5.1+
+- LDAP access to Active Directory (typically domain-joined machine)
+- No additional modules required
+
 ### Installation
 
 ```powershell
@@ -40,23 +45,28 @@ git clone -b mod https://github.com/mudigolambharath256-max/AD_SUITE_TESTING.git
 cd AD_SUITE_TESTING
 
 # Set execution policy
-Set-ExecutionPolicy Bypass -Scope Process -Force
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 ```
 
 ### Basic Usage
 
 ```powershell
-# Run a single check (local domain)
+# Single check (curated catalog)
 .\adsi.ps1 -CheckId ACC-001
+.\adsi.ps1 -CheckId ACC-001 -ServerName dc01.contoso.local -CompactOutput
 
-# Run against specific DC
-.\adsi.ps1 -CheckId ACC-001 -ServerName dc01.domain.local
+# Full risk scan (curated checks.json)
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -OutputDirectory .\out\latest
 
-# Run against GOAD lab
-.\adsi.ps1 -CheckId KRB-002 -ServerName kingslanding.sevenkingdoms.local
+# Full scan using generated catalog + Phase B overrides (hundreds of checks)
+.\Invoke-ADSuiteScan.ps1 `
+    -ChecksJsonPath .\checks.generated.json `
+    -ChecksOverridesPath .\checks.overrides.phaseB-complete.json `
+    -OutputDirectory .\out\latest
 
-# Clean output (recommended)
-.\adsi.ps1 -CheckId ACC-001 -CompactOutput
+# Validate catalog
+.\Test-ADSuiteCatalog.ps1 -CatalogPath .\checks.json
 ```
 
 ## 🔥 Popular Security Checks
@@ -108,34 +118,39 @@ Set-ExecutionPolicy Bypass -Scope Process -Force
 
 ## 📋 Execution Modes
 
-AD Suite has **three distinct execution modes** for different use cases:
-
 ### Mode 1: Single Check Runner (`adsi.ps1`)
-**Purpose:** Execute individual security checks interactively or in automation
+Execute individual security checks interactively or in automation.
 
 ```powershell
-# Interactive with clean output (recommended)
-.\adsi.ps1 -CheckId ACC-001 -CompactOutput
-
-# Automation pipeline
-.\adsi.ps1 -CheckId ACC-001 -PassThru | Export-Csv results.csv
+# Basic usage
+.\adsi.ps1 -CheckId ACC-001
+.\adsi.ps1 -CheckId ACC-001 -ServerName dc01.contoso.local -CompactOutput
 
 # CI/CD security gate
 .\adsi.ps1 -CheckId ACC-001 -Quiet -FailOnFindings
 # Exit code 0 = Pass, 3 = Findings detected
+
+# Pipeline processing
+.\adsi.ps1 -CheckId ACC-001 -PassThru | Export-Csv results.csv
 ```
 
-**Use Cases:** Pentesting, targeted checks, CI/CD gates, learning
+**Use Cases:** Pentesting, targeted checks, CI/CD gates, debugging
 
 ### Mode 2: Batch Scanner (`Invoke-ADSuiteScan.ps1`)
-**Purpose:** Comprehensive risk assessments with Purple Knight-style scoring
+Comprehensive risk assessments with Purple Knight-style scoring.
 
 ```powershell
-# Full AD security assessment
+# Curated production scan
 .\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -OutputDirectory .\out\latest
 
+# Wide LDAP coverage (hundreds of checks)
+.\Invoke-ADSuiteScan.ps1 `
+    -ChecksJsonPath .\checks.generated.json `
+    -ChecksOverridesPath .\checks.overrides.phaseB-complete.json `
+    -OutputDirectory .\out\latest
+
 # Category-scoped scan
-.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -Category Kerberos_Security,Certificate_Services
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -Category Kerberos_Security
 
 # Specific checks only
 .\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -IncludeCheckId KRB-002,ACC-034
@@ -149,7 +164,7 @@ AD Suite has **three distinct execution modes** for different use cases:
 **Use Cases:** Full audits, compliance reporting, scheduled scans, risk trending
 
 ### Mode 3: UI Dashboard (`ui/dashboard.html`)
-**Purpose:** Interactive visual analysis and scan planning
+Interactive visual analysis and scan planning.
 
 ```powershell
 # 1. Run a scan
@@ -158,20 +173,19 @@ AD Suite has **three distinct execution modes** for different use cases:
 # 2. Open dashboard
 start .\ui\dashboard.html
 
-# 3. Load scan-results.json from browser
-# 4. Optionally load catalog-summary.json for scan planner
+# 3. In browser: Load out\latest\scan-results.json
+# 4. Optional: Load catalog-summary.json for scan planner
 ```
 
 **Features:**
-- Global risk score visualization (0-100)
-- Category breakdown table
-- Top 10 risks by score
+- Global risk score (0-100) with risk band
+- Category breakdown and top 10 risks
 - Sortable, filterable checks table
 - Expandable finding details
 - Scan planner (generates commands)
 - 100% client-side (no data leaves browser)
 
-**Use Cases:** Executive reporting, interactive analysis, scan planning, offline review
+**Use Cases:** Executive reporting, interactive analysis, scan planning
 
 ## 🤖 Automated Testing
 
@@ -238,45 +252,46 @@ foreach ($check in $criticalChecks) {
 - **Dependencies:** None (pure ADSI implementation)
 - **Permissions:** Domain user account (some checks require elevated privileges)
 
-## 📊 Architecture
+## 📊 How It Works
 
-AD Suite has three complementary execution modes. See [COMPLETE_ARCHITECTURE.md](COMPLETE_ARCHITECTURE.md) for full details.
+### Catalog System (Source of Truth)
 
-### Single Check Runner Flow
-```
-User → adsi.ps1 → Load check → Execute LDAP → Format output → Exit
-```
+1. **`checks.json`** — Curated risk pack with real `ldap`/`filesystem` rules for production scans
+2. **`checks.generated.json`** — Large legacy export (756 checks); by default all `engine: inventory` (skipped by scanner until promoted)
+3. **`checks.overrides.json`** — Optional patches by check `id` (severity, engine, filters, text)
+   - Auto-loaded by `Invoke-ADSuiteScan.ps1` and `adsi.ps1` if exists
+4. **`checks.overrides.phaseB-complete.json`** — Bulk promotion file (661 checks)
+   - Merges with `checks.generated.json` to run many checks as `ldap`
+   - Excludes Phase C/D categories (Certificate_Services, Azure_AD_Integration)
 
-### Batch Scanner Flow
-```
-User → Invoke-ADSuiteScan.ps1
-  → Load catalog + overrides
-  → Filter checks (category/include/exclude)
-  → Execute all checks
-  → Calculate scores (per-check + global)
-  → Generate outputs (JSON/CSV/HTML)
-  → Exit
-```
+### Workflow
 
-### UI Dashboard Flow
 ```
-Browser → dashboard.html
-  → Load scan-results.json
-  → Render visualizations
-  → Interactive filtering/sorting
-  → Export/print
-```
-
-### Check Catalog Hierarchy
-```
-checks.json (curated risk pack)
-  ↓
-checks.overrides.json (patches)
-  ↓
-checks.generated.json (full inventory, engine=inventory by default)
+1. Load catalog (checks.json or checks.generated.json)
+   ↓
+2. Apply defaults and overrides
+   ↓
+3. Validate structure (Test-ADSuiteCatalog.ps1)
+   ↓
+4. Filter checks (exclude engine=inventory for risk scans)
+   ↓
+5. Execute checks via ADSI/DirectorySearcher
+   ↓
+6. Calculate scores (severity-weighted)
+   ↓
+7. Generate outputs (JSON/CSV/HTML)
 ```
 
-**Key Point:** Use `checks.json` for production risk scans. Use `checks.overrides.json` to promote checks from inventory to production without duplicating full definitions.
+### Execution Modes
+
+- **Single check:** `adsi.ps1` — One CheckId, good for debugging
+- **Full scan:** `Invoke-ADSuiteScan.ps1` — All non-inventory checks, scoring, reports
+- **UI:** `ui/dashboard.html` — Load scan-results.json for interactive analysis
+
+### Engine Types
+
+- **`ldap` / `filesystem` / `registry`** — Scanner attempts them (registry may stub)
+- **`inventory`** — NOT part of risk scan; documentation/listing only
 
 ## 🔍 Available Checks
 
