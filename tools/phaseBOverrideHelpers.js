@@ -6,10 +6,7 @@ const path = require('path');
 
 const EXCLUDED_PHASE_B_CATEGORIES = new Set(['Certificate_Services', 'Azure_AD_Integration']);
 
-const GENERIC_REFS = [
-  'https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites',
-  'MITRE ATT&CK — Enterprise (Windows)',
-];
+const { getSyntheticMetadata } = require('./phaseBVulnMetadata.js');
 
 function guessSeverity(c) {
   const f = (c.ldapFilter || '').toLowerCase();
@@ -50,9 +47,10 @@ function buildOverrideForCheck(c, curMap) {
     if (ch.excludeSamAccountName) o.excludeSamAccountName = ch.excludeSamAccountName;
   } else {
     o.severity = guessSeverity(c);
-    o.description = `Misconfiguration or exposure: ${c.name}. Each returned object matches the LDAP rule; review for business justification and false positives.`;
-    o.remediation = `Review and remediate ${c.name} per org baseline: align with tiering, least privilege, and Microsoft AD security guidance; validate with domain owners.`;
-    o.references = GENERIC_REFS;
+    const syn = getSyntheticMetadata(c);
+    o.description = syn.description;
+    o.remediation = syn.remediation;
+    o.references = syn.references;
   }
   return o;
 }
@@ -79,6 +77,7 @@ function generateOverrides(options) {
       generatedFrom: path.basename(genPath),
       curatedFrom: path.basename(curPath),
       excludedCategories: [...EXCLUDED_PHASE_B_CATEGORIES],
+      metadataMode: 'vulnerability-style',
       ...options.metaExtra,
     },
     checks: out,
@@ -90,6 +89,7 @@ function generateOverrides(options) {
 module.exports = {
   EXCLUDED_PHASE_B_CATEGORIES,
   guessSeverity,
+  getSyntheticMetadata,
   buildOverrideForCheck,
   generateOverrides,
 };

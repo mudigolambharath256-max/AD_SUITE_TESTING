@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "meta": {
-    "packVersion": "1.2.0",
+    "packVersion": "1.3.0",
     "packName": "AD Suite curated risk pack",
-    "packDateUtc": "2026-03-27T12:00:00Z"
+    "packDateUtc": "2026-03-27T18:00:00Z"
   },
   "defaults": {
     "pageSize": 1000,
@@ -500,7 +500,12 @@
         "MsDSBehaviorVersion": "msDS-Behavior-Version"
       },
       "severity": "info",
-      "description": "Inventory: forest/FFL-related objects (not a pass/fail misconfiguration by itself). Use for reporting; excluded from risk scan."
+      "description": "Informational inventory: forest / functional-level related objects in the configuration partition. Not a pass/fail misconfiguration by itself; excluded from risk scoring.",
+      "remediation": "Use only for reporting and change tracking. Do not treat matches as automatic vulnerabilities. Exclude from executive risk rollups if your workflow scores only LDAP risk checks.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-active-directory-functional-levels",
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/manage/raise-forest-function-levels"
+      ]
     },
     {
       "id": "DC-008",
@@ -521,7 +526,12 @@
         "FsmoRoleOwner": "fSMORoleOwner"
       },
       "severity": "info",
-      "description": "Inventory: schema partition / FSMO holder (informational). Excluded from risk scan."
+      "description": "Informational inventory: schema partition root (dMD) and Schema Master FSMO holder. Excluded from risk scoring.",
+      "remediation": "Use for documentation and DR planning (who holds Schema Master). Not a security finding by itself; remove from risk dashboards if only misconfiguration checks should appear.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-schema",
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/manage/operations-roles"
+      ]
     },
     {
       "id": "LDAP-001",
@@ -542,7 +552,12 @@
         "UserAccountControl": "userAccountControl"
       },
       "severity": "info",
-      "description": "Inventory demo: enabled user listing. Excluded from risk scan."
+      "description": "Demo inventory: lists enabled user objects in the domain partition. For learning and query validation only; excluded from risk scoring.",
+      "remediation": "Do not use as a security control. Replace with targeted risk checks (e.g. stale accounts, weak UAC flags) for assessments; omit from risk summaries.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/manage/understand-default-user-and-computer-containers",
+        "https://learn.microsoft.com/windows/win32/adsi/search-filter-syntax"
+      ]
     },
     {
       "id": "SAMPLE-SCHEMA-NC",
@@ -561,7 +576,12 @@
         "DistinguishedName": "distinguishedName"
       },
       "severity": "info",
-      "description": "Inventory: schema NC sample. Excluded from risk scan."
+      "description": "Demo inventory: one-level search at the schema naming context root. For documentation and tooling examples only; excluded from risk scoring.",
+      "remediation": "Use only to validate connectivity and schema NC visibility. Not a vulnerability; exclude from automated risk scoring pipelines.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-schema",
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview"
+      ]
     }
   ]
 }
