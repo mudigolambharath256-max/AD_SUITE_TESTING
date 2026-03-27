@@ -12,6 +12,14 @@ This document defines how check definitions behave in the **risk scan** (Ping Ca
 
 **Production vs staging:** run risk scans with `-ChecksJsonPath .\checks.json` (plus optional overrides). Pointing the scanner at `checks.generated.json` alone will **skip all checks** for risk (all inventory) unless you patch specific IDs to `ldap` or `filesystem` via `checks.overrides.json`.
 
+### Promoting many stubs from `checks.generated.json`
+
+Overrides **merge into the base file** by `id`; every `id` in `checks.overrides.json` must already exist in the base catalog (`Merge-ADSuiteCatalogOverrides` skips unknown ids with a warning). Typical workflows:
+
+1. **Curated-only:** keep production rules in `checks.json` and use `checks.overrides.json` only for small patches (severity, `ldapFilter` fixes, metadata).
+2. **Large generated catalog + promotions:** use `-ChecksJsonPath .\checks.generated.json` and put partial promotions (e.g. `"engine": "ldap"`, `severity`, `remediation`) in `checks.overrides.json` for IDs that exist in the generated file. That promotes individual rules without duplicating the full 700+ rows into `checks.json`.
+3. **Classification before promotion:** run `tools\Classify-GeneratedCatalogStubs.ps1` to see counts by category/engine and buckets (e.g. `Certificate_Services`, `Azure_AD_Integration`) for Phase B LDAP-first work.
+
 To bulk-reset a generated file to inventory defaults (after editing), use `tools\Set-GeneratedCatalogInventoryDefault.ps1`.
 
 Load order: read base JSON → merge `defaults` per check → apply overrides by `id` → run validation (`Test-ADSuiteCatalog.ps1`).

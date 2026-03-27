@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "meta": {
-    "packVersion": "1.1.0",
+    "packVersion": "1.2.0",
     "packName": "AD Suite curated risk pack",
     "packDateUtc": "2026-03-27T12:00:00Z"
   },
@@ -19,7 +19,16 @@
       "searchBase": "Domain",
       "searchScope": "Subtree",
       "ldapFilter": "(&(objectCategory=person)(objectClass=user)(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
-      "propertiesToLoad": ["name", "distinguishedName", "samAccountName", "adminCount", "userAccountControl", "objectClass", "whenCreated", "whenChanged"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "adminCount",
+        "userAccountControl",
+        "objectClass",
+        "whenCreated",
+        "whenChanged"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -32,7 +41,12 @@
       },
       "sourcePath": "Access_Control/ACC-001_Privileged_Users_adminCount1/adsi.ps1",
       "severity": "high",
-      "description": "Misconfiguration: user accounts with adminCount=1 (protected object flag); review for inappropriate persistence of admin protection."
+      "description": "Misconfiguration: user accounts with adminCount=1 (protected object flag); review for inappropriate persistence of admin protection.",
+      "remediation": "Remove inappropriate adminSDHolder protection; relocate accounts to correct OUs with least-privilege delegation; investigate unexpected adminCount=1 on non-privileged users.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
+        "Persistence via adminSDHolder (MITRE T1484.002)"
+      ]
     },
     {
       "id": "ACC-002",
@@ -41,7 +55,14 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectClass=group)(adminCount=1))",
-      "propertiesToLoad": ["name", "distinguishedName", "objectClass", "whenCreated", "whenChanged", "adminCount"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "objectClass",
+        "whenCreated",
+        "whenChanged",
+        "adminCount"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -52,7 +73,12 @@
       },
       "sourcePath": "Access_Control/ACC-002_Privileged_Groups_adminCount1/adsi.ps1",
       "severity": "high",
-      "description": "Misconfiguration: security groups with adminCount=1; review membership and whether protection is expected."
+      "description": "Misconfiguration: security groups with adminCount=1; review membership and whether protection is expected.",
+      "remediation": "Validate each group is an intentional protected group; remove nested or unintended memberships; replace ad-hoc protected groups with delegated OU structure where possible.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
+        "Protected groups (Microsoft Docs)"
+      ]
     },
     {
       "id": "ACC-003",
@@ -61,7 +87,15 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=computer)(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
-      "propertiesToLoad": ["name", "distinguishedName", "objectClass", "whenCreated", "whenChanged", "adminCount", "userAccountControl"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "objectClass",
+        "whenCreated",
+        "whenChanged",
+        "adminCount",
+        "userAccountControl"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -73,7 +107,12 @@
       },
       "sourcePath": "Access_Control/ACC-003_Privileged_Computers_adminCount1/adsi.ps1",
       "severity": "high",
-      "description": "Misconfiguration: computer accounts with adminCount=1; validate each is an intentional protected object."
+      "description": "Misconfiguration: computer accounts with adminCount=1; validate each is an intentional protected object.",
+      "remediation": "Confirm Tier0/Tier1 systems only; remove adminCount=1 from non-DC servers that should not be adminSDHolder-protected; align with tiering model.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
+        "Persistence on domain infrastructure (MITRE T1098)"
+      ]
     },
     {
       "id": "ACC-004",
@@ -82,7 +121,16 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=person)(objectClass=user)(sIDHistory=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
-      "propertiesToLoad": ["name", "distinguishedName", "objectClass", "whenCreated", "whenChanged", "sIDHistory", "userAccountControl", "samAccountName"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "objectClass",
+        "whenCreated",
+        "whenChanged",
+        "sIDHistory",
+        "userAccountControl",
+        "samAccountName"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -95,7 +143,12 @@
       },
       "sourcePath": "Access_Control/ACC-004_Users_with_SIDHistory/adsi.ps1",
       "severity": "medium",
-      "description": "Exposure: user accounts with sIDHistory populated (migration or attack persistence); validate legitimacy."
+      "description": "Exposure: user accounts with sIDHistory populated (migration or attack persistence); validate legitimacy.",
+      "remediation": "Remove stale sIDHistory values after migration cutover; investigate unexpected values; restrict who can write sIDHistory (e.g. domain admin only).",
+      "references": [
+        "https://learn.microsoft.com/windows/win32/ad/sid-history",
+        "SID-History injection (MITRE T1134.005)"
+      ]
     },
     {
       "id": "ACC-006",
@@ -104,7 +157,15 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=computer)(msDS-AllowedToActOnBehalfOfOtherIdentity=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
-      "propertiesToLoad": ["name", "distinguishedName", "objectClass", "whenCreated", "whenChanged", "msDS-AllowedToActOnBehalfOfOtherIdentity", "userAccountControl"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "objectClass",
+        "whenCreated",
+        "whenChanged",
+        "msDS-AllowedToActOnBehalfOfOtherIdentity",
+        "userAccountControl"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -116,7 +177,12 @@
       },
       "sourcePath": "Access_Control/ACC-006_Computers_with_RBCD/adsi.ps1",
       "severity": "high",
-      "description": "Misconfiguration: resource-based constrained delegation (RBCD) on computers; review msDS-AllowedToActOnBehalfOfOtherIdentity."
+      "description": "Misconfiguration: resource-based constrained delegation (RBCD) on computers; review msDS-AllowedToActOnBehalfOfOtherIdentity.",
+      "remediation": "Clear msDS-AllowedToActOnBehalfOfOtherIdentity where not required; scope principals to least privilege; monitor changes to RBCD attributes.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/resource-based-constrained-delegation-overview",
+        "Resource-based constrained delegation abuse (MITRE T1558.001)"
+      ]
     },
     {
       "id": "ACC-007",
@@ -125,7 +191,16 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=person)(objectClass=user)(msDS-AllowedToActOnBehalfOfOtherIdentity=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
-      "propertiesToLoad": ["name", "distinguishedName", "objectClass", "whenCreated", "whenChanged", "msDS-AllowedToActOnBehalfOfOtherIdentity", "userAccountControl", "samAccountName"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "objectClass",
+        "whenCreated",
+        "whenChanged",
+        "msDS-AllowedToActOnBehalfOfOtherIdentity",
+        "userAccountControl",
+        "samAccountName"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -138,7 +213,12 @@
       },
       "sourcePath": "Access_Control/ACC-007_Users_with_RBCD/adsi.ps1",
       "severity": "high",
-      "description": "Misconfiguration: RBCD on user accounts; review delegation to constrained targets."
+      "description": "Misconfiguration: RBCD on user accounts; review delegation to constrained targets.",
+      "remediation": "Remove RBCD from user objects unless required; prefer computer-based delegation patterns; audit who can modify these attributes.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/resource-based-constrained-delegation-overview",
+        "Resource-based constrained delegation abuse (MITRE T1558.001)"
+      ]
     },
     {
       "id": "ACC-034",
@@ -147,7 +227,15 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=person)(objectClass=user)(servicePrincipalName=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(!(samAccountName=krbtgt)))",
-      "propertiesToLoad": ["name", "distinguishedName", "whenCreated", "whenChanged", "servicePrincipalName", "samAccountName", "userAccountControl"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "whenCreated",
+        "whenChanged",
+        "servicePrincipalName",
+        "samAccountName",
+        "userAccountControl"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -161,7 +249,9 @@
       "severity": "high",
       "description": "Misconfiguration: user accounts with SPNs (Kerberoastable); review SPNs and use group managed service accounts where possible.",
       "remediation": "Remove unnecessary SPNs from user accounts; prefer gMSA for services; enforce strong password policy for remaining SPN owners.",
-      "references": ["Kerberoasting (MITRE T1558.003)"]
+      "references": [
+        "Kerberoasting (MITRE T1558.003)"
+      ]
     },
     {
       "id": "KRB-001",
@@ -170,7 +260,15 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))",
-      "propertiesToLoad": ["name", "distinguishedName", "samAccountName", "servicePrincipalName", "pwdLastSet", "description", "userAccountControl"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "servicePrincipalName",
+        "pwdLastSet",
+        "description",
+        "userAccountControl"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -180,10 +278,17 @@
         "Description": "description",
         "UserAccountControl": "userAccountControl"
       },
-      "excludeSamAccountName": ["krbtgt"],
+      "excludeSamAccountName": [
+        "krbtgt"
+      ],
       "sourcePath": "Kerberos_Security/KRB-001_Kerberoastable_User_Accounts/adsi.ps1",
       "severity": "high",
-      "description": "Misconfiguration: Kerberoastable user accounts (SPN on user); overlaps conceptually with ACC-034 — use for Kerberos category reporting."
+      "description": "Misconfiguration: Kerberoastable user accounts (SPN on user); overlaps conceptually with ACC-034 — use for Kerberos category reporting.",
+      "remediation": "Remove unnecessary SPNs from user accounts; prefer gMSA for services; enforce strong password policy for remaining SPN owners (same as ACC-034).",
+      "references": [
+        "Kerberoasting (MITRE T1558.003)"
+      ],
+      "scoreWeight": 0
     },
     {
       "id": "KRB-002",
@@ -192,7 +297,12 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=4194304))",
-      "propertiesToLoad": ["name", "distinguishedName", "samAccountName", "userAccountControl"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "userAccountControl"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -215,7 +325,14 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288)(!(primaryGroupID=516)))",
-      "propertiesToLoad": ["name", "distinguishedName", "samAccountName", "operatingSystem", "userAccountControl", "primaryGroupID"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "operatingSystem",
+        "userAccountControl",
+        "primaryGroupID"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -227,7 +344,11 @@
       "sourcePath": "Kerberos_Security/KRB-003_Unconstrained_Delegation_Computers/adsi.ps1",
       "severity": "critical",
       "description": "Misconfiguration: non-DC computers with unconstrained delegation (TGT exposure risk).",
-      "remediation": "Remove unconstrained delegation or constrain to required services; treat as Tier0 adjacent."
+      "remediation": "Remove unconstrained delegation or constrain to required services; treat as Tier0 adjacent.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-unconstrained",
+        "Unconstrained delegation (MITRE T1558.001)"
+      ]
     },
     {
       "id": "KRB-004",
@@ -236,7 +357,12 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288))",
-      "propertiesToLoad": ["name", "distinguishedName", "samAccountName", "userAccountControl"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "userAccountControl"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -245,7 +371,12 @@
       },
       "sourcePath": "Kerberos_Security/KRB-004_Unconstrained_Delegation_Users/adsi.ps1",
       "severity": "critical",
-      "description": "Misconfiguration: user accounts with unconstrained delegation enabled."
+      "description": "Misconfiguration: user accounts with unconstrained delegation enabled.",
+      "remediation": "Remove unconstrained delegation from user accounts unless business-critical; use constrained or resource-based delegation; treat as credential theft risk.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-unconstrained",
+        "Unconstrained delegation (MITRE T1558.001)"
+      ]
     },
     {
       "id": "KRB-005",
@@ -254,7 +385,14 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToDelegateTo=*))",
-      "propertiesToLoad": ["name", "distinguishedName", "samAccountName", "msDS-AllowedToDelegateTo", "operatingSystem", "userAccountControl"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "msDS-AllowedToDelegateTo",
+        "operatingSystem",
+        "userAccountControl"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -265,7 +403,12 @@
       },
       "sourcePath": "Kerberos_Security/KRB-005_Constrained_Delegation_Computers/adsi.ps1",
       "severity": "high",
-      "description": "Exposure: computers with constrained delegation (msDS-AllowedToDelegateTo); validate SPN targets."
+      "description": "Exposure: computers with constrained delegation (msDS-AllowedToDelegateTo); validate SPN targets.",
+      "remediation": "Restrict msDS-AllowedToDelegateTo to required SPNs; remove stale delegation; prefer resource-based delegation where possible.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-constrained",
+        "Constrained delegation (MITRE T1558.001)"
+      ]
     },
     {
       "id": "KRB-006",
@@ -274,7 +417,13 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToDelegateTo=*))",
-      "propertiesToLoad": ["name", "distinguishedName", "samAccountName", "msDS-AllowedToDelegateTo", "userAccountControl"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "msDS-AllowedToDelegateTo",
+        "userAccountControl"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -284,7 +433,12 @@
       },
       "sourcePath": "Kerberos_Security/KRB-006_Constrained_Delegation_Users/adsi.ps1",
       "severity": "high",
-      "description": "Exposure: users with constrained delegation; review allowed SPNs."
+      "description": "Exposure: users with constrained delegation; review allowed SPNs.",
+      "remediation": "Tighten allowed SPNs; remove user-based constrained delegation if not required; monitor changes to msDS-AllowedToDelegateTo.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-constrained",
+        "Constrained delegation (MITRE T1558.001)"
+      ]
     },
     {
       "id": "KRB-009",
@@ -293,7 +447,12 @@
       "engine": "ldap",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=2097152))",
-      "propertiesToLoad": ["name", "distinguishedName", "samAccountName", "userAccountControl"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "userAccountControl"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -302,7 +461,12 @@
       },
       "sourcePath": "Kerberos_Security/KRB-009_DES-Only_Kerberos_Users/adsi.ps1",
       "severity": "high",
-      "description": "Weak crypto: accounts allowed DES-only Kerberos (UAC bit); disable DES for the domain and clear per-account use of DES-only."
+      "description": "Weak crypto: accounts allowed DES-only Kerberos (UAC bit); disable DES for the domain and clear per-account use of DES-only.",
+      "remediation": "Disable DES for Kerberos at domain level; clear the Use Kerberos DES encryption types only flag on accounts; migrate legacy apps off DES.",
+      "references": [
+        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-encryption-types",
+        "Weak encryption (MITRE T1558)"
+      ]
     },
     {
       "id": "GPO-ACL-001",
@@ -311,7 +475,12 @@
       "engine": "filesystem",
       "filesystemKind": "SysvolPoliciesInsecureAcl",
       "severity": "high",
-      "description": "Misconfiguration: GPO folders under SYSVOL\\\\Policies where Everyone or Authenticated Users have Modify/Write/FullControl (review and tighten)."
+      "description": "Misconfiguration: GPO folders under SYSVOL\\\\Policies where Everyone or Authenticated Users have Modify/Write/FullControl (review and tighten).",
+      "remediation": "Remove excessive Modify/Write/FullControl from SYSVOL\\\\Policies subfolders; grant Domain Admins/Creator Owner and required DC groups only; validate GPO delegation.",
+      "references": [
+        "https://learn.microsoft.com/previous-versions/windows/it-pro/windows-server-2003/cc770880(v=ws.10)",
+        "Group Policy abuse (MITRE T1484.001)"
+      ]
     },
     {
       "id": "DC-003",
@@ -320,7 +489,11 @@
       "engine": "inventory",
       "searchBase": "Configuration",
       "ldapFilter": "(objectClass=crossRefContainer)",
-      "propertiesToLoad": ["name", "distinguishedName", "msDS-Behavior-Version"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "msDS-Behavior-Version"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -337,7 +510,11 @@
       "searchBase": "SchemaContainer",
       "searchScope": "Subtree",
       "ldapFilter": "(objectClass=dMD)",
-      "propertiesToLoad": ["name", "distinguishedName", "fSMORoleOwner"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName",
+        "fSMORoleOwner"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName",
@@ -353,7 +530,11 @@
       "engine": "inventory",
       "searchBase": "Domain",
       "ldapFilter": "(&(objectCategory=person)(objectClass=user))",
-      "propertiesToLoad": ["samAccountName", "distinguishedName", "userAccountControl"],
+      "propertiesToLoad": [
+        "samAccountName",
+        "distinguishedName",
+        "userAccountControl"
+      ],
       "userAccountControlMustExclude": 2,
       "outputProperties": {
         "SamAccountName": "samAccountName",
@@ -371,7 +552,10 @@
       "searchBase": "Schema",
       "searchScope": "OneLevel",
       "ldapFilter": "(objectClass=*)",
-      "propertiesToLoad": ["name", "distinguishedName"],
+      "propertiesToLoad": [
+        "name",
+        "distinguishedName"
+      ],
       "outputProperties": {
         "Name": "name",
         "DistinguishedName": "distinguishedName"
