@@ -1014,16 +1014,16 @@ section.check{margin:1.5rem 0;padding:1rem;border:1px solid #e0e0e0;border-radiu
                     '^low$' { $sc = 'sev-low' }
                     '^info$' { $sc = 'sev-info' }
                 }
-                $null = $sb.AppendLine((
-                        "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td class='{3}'>{4}</td><td>{5}</td><td>{6}</td></tr>"
-                    ) -f
-                    ([System.Net.WebUtility]::HtmlEncode([string]$t.CheckId)),
-                    ([System.Net.WebUtility]::HtmlEncode([string]$t.CheckName)),
-                    ([System.Net.WebUtility]::HtmlEncode([string]$t.Category)),
-                    $sc,
-                    $sev,
-                    $t.FindingCount,
-                    $t.CheckScore)
+                # [string]::Format: multiline "-f" in PS 5.1 binds only the first RHS value, breaking {1}..{6}.
+                $null = $sb.AppendLine([string]::Format(
+                        '<tr><td>{0}</td><td>{1}</td><td>{2}</td><td class=''{3}''>{4}</td><td>{5}</td><td>{6}</td></tr>',
+                        [System.Net.WebUtility]::HtmlEncode([string]$t.CheckId),
+                        [System.Net.WebUtility]::HtmlEncode([string]$t.CheckName),
+                        [System.Net.WebUtility]::HtmlEncode([string]$t.Category),
+                        $sc,
+                        $sev,
+                        $t.FindingCount,
+                        $t.CheckScore))
             }
             $null = $sb.AppendLine('</tbody></table>')
         }
