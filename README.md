@@ -216,18 +216,15 @@ foreach ($check in $criticalChecks) {
 
 ## 📚 Documentation
 
-### Main Documentation
-- **[COMPLETE_ARCHITECTURE.md](COMPLETE_ARCHITECTURE.md)** - Complete system architecture and all three modes
+### Essential Documentation
+- **[README.md](README.md)** - This file (main documentation)
+- **[COMPLETE_ARCHITECTURE.md](COMPLETE_ARCHITECTURE.md)** - Complete system architecture
+- **[EXECUTION_MODES_QUICK_REFERENCE.md](EXECUTION_MODES_QUICK_REFERENCE.md)** - Quick reference for all modes
 - **[QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)** - Complete command reference
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
-- **[FINAL_SUMMARY.md](FINAL_SUMMARY.md)** - Complete project summary
-
-### Testing and Validation
-- **[REAL_WORLD_SCENARIO_TEST.md](REAL_WORLD_SCENARIO_TEST.md)** - Detailed scenario with 10 checks
-- **[EXECUTION_SUMMARY.md](EXECUTION_SUMMARY.md)** - Framework analysis
 
 ### Advanced Topics
-- **[docs/RISK_PACK.md](docs/RISK_PACK.md)** - Risk pack contract and engine types
+- **[docs/RISK_PACK.md](docs/RISK_PACK.md)** - Risk pack contract and engine types (field-level rules)
 - **[docs/COVERAGE.md](docs/COVERAGE.md)** - Rule pack coverage documentation
 - **[docs/LAB_VALIDATION.md](docs/LAB_VALIDATION.md)** - Lab validation procedures
 - **[docs/REVIEW_CHECKLIST.md](docs/REVIEW_CHECKLIST.md)** - Risk rule promotion checklist
@@ -236,13 +233,15 @@ foreach ($check in $criticalChecks) {
 ## 🎯 Use Cases
 
 1. **Penetration Testing** - Enumerate AD without ActiveDirectory module
-2. **Security Auditing** - Comprehensive AD security assessment
-3. **Compliance Checking** - Validate security configurations
+2. **Security Auditing** - Comprehensive AD security assessment with risk scoring
+3. **Compliance Checking** - Validate security configurations across categories
 4. **GOAD Lab Training** - Practice AD enumeration techniques
-5. **CI/CD Integration** - Automated security checks
+5. **CI/CD Integration** - Automated security gates with exit codes
 6. **Incident Response** - Quick AD security posture assessment
-7. **Red Team Operations** - Identify attack paths
-8. **Blue Team Defense** - Detect misconfigurations
+7. **Red Team Operations** - Identify attack paths (Kerberoasting, delegation, etc.)
+8. **Blue Team Defense** - Detect misconfigurations and vulnerabilities
+9. **Executive Reporting** - Visual dashboards with risk scores
+10. **Scheduled Audits** - Automated weekly/monthly assessments
 
 ## 🔧 Requirements
 
@@ -251,6 +250,9 @@ foreach ($check in $criticalChecks) {
 - **Framework:** .NET Framework (built-in)
 - **Dependencies:** None (pure ADSI implementation)
 - **Permissions:** Domain user account (some checks require elevated privileges)
+- **Network:** LDAP access to Active Directory (typically domain-joined machine)
+
+**Note:** Node.js only needed for regenerating Phase B override JSON (`tools/Generate-PhaseB*.js`), not for day-to-day scanning.
 
 ## 📊 How It Works
 
@@ -417,6 +419,18 @@ Send-MailMessage -To "security@company.com" `
 Set-ExecutionPolicy Bypass -Scope Process -Force
 ```
 
+**Issue:** Batch scanner skips all checks  
+**Solution:** Use `checks.json` (not `checks.generated.json` alone, which has all `engine: inventory`)
+```powershell
+# Curated production scan
+.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json
+
+# OR use generated + Phase B overrides for wide coverage
+.\Invoke-ADSuiteScan.ps1 `
+    -ChecksJsonPath .\checks.generated.json `
+    -ChecksOverridesPath .\checks.overrides.phaseB-complete.json
+```
+
 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for complete troubleshooting guide.
 
 ## 📈 Performance
@@ -461,21 +475,32 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📊 Statistics
 
-- **Total Checks:** 756
+- **Total Checks:** 756 (in checks.generated.json)
+- **Curated Checks:** 7 (in checks.json, production-ready)
+- **Phase B Promoted:** 661 (in checks.overrides.phaseB-complete.json)
 - **Categories:** 26
 - **Code Lines:** 19,000+
-- **Documentation:** 5 comprehensive guides
-- **Test Scripts:** Automated testing included
+- **Module Functions:** 14 exported functions
+- **Documentation:** 9 comprehensive guides
+- **Execution Modes:** 3 (single check, batch scanner, UI dashboard)
 
-## 🎯 Roadmap
+## 🔄 Current Status
 
-- [ ] Add more ADCS vulnerability checks
-- [ ] Implement parallel execution for batch checks
-- [ ] Add HTML report generation
-- [ ] Create PowerShell module package
-- [ ] Add support for cross-forest queries
-- [ ] Implement check scheduling
-- [ ] Add baseline comparison features
+### Completed
+- ✅ Pure ADSI implementation (no ActiveDirectory module)
+- ✅ Three execution modes (single check, batch scanner, UI dashboard)
+- ✅ Purple Knight-style risk scoring (0-100)
+- ✅ 756 checks across 26 categories
+- ✅ Phase B metadata and bulk promotion (661 checks)
+- ✅ JSON/CSV/HTML output formats
+- ✅ Interactive browser dashboard
+- ✅ Catalog validation and override system
+- ✅ Comprehensive documentation
+
+### Phase Status
+- ✅ **Phase A:** Curated inventory rows (checks.json)
+- ✅ **Phase B:** Vulnerability-style metadata + bulk LDAP promotion (661 checks, excludes CERT/Azure)
+- ⏳ **Phase C/D:** Certificate_Services and Azure_AD_Integration categories (not yet promoted in bulk file)
 
 ---
 
