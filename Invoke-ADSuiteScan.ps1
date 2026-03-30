@@ -61,7 +61,11 @@ param(
 
     [int]$ScoringNormalizer = 5,
 
-    [switch]$SkipCatalogValidation
+    [switch]$SkipCatalogValidation,
+
+    [switch]$AdcsSkipACLChecks,
+
+    [switch]$AdcsSkipNetworkProbes
 )
 
 function Expand-ObjectsToUniformCsvRows {
@@ -153,7 +157,7 @@ if (-not $SkipCatalogValidation) {
 $candidates = @($doc.checks | Where-Object {
         $e = if ($_.engine) { $_.engine.ToLowerInvariant() } else { 'ldap' }
         if ($e -eq 'inventory') { return $false }
-        $e -in @('ldap', 'filesystem', 'registry')
+        $e -in @('ldap', 'filesystem', 'registry', 'adcs', 'acl')
     })
 
 if ($Category -and $Category.Count -gt 0) {
@@ -188,7 +192,7 @@ foreach ($raw in $candidates) {
     $checksToRun.Add($merged)
 }
 
-Write-Host "AD Suite scan: $($checksToRun.Count) check(s) (ldap/filesystem/registry). Output: $OutputDirectory" -ForegroundColor Cyan
+Write-Host "AD Suite scan: $($checksToRun.Count) check(s) (ldap/filesystem/registry/adcs/acl). Output: $OutputDirectory" -ForegroundColor Cyan
 
 try {
     $rootDse = Get-ADSuiteRootDse -ServerName $ServerName
@@ -211,6 +215,13 @@ foreach ($chk in $checksToRun) {
         }
         'filesystem' {
             $r = Invoke-ADSuiteFilesystemCheck -Check $chk -RootDse $rootDse -ServerName $ServerName -SourcePathOverride $null
+        }
+        'adcs' {
+            $r = Invoke-ADSuiteAdcsCheck -Check $chk -RootDse $rootDse -ServerName $ServerName `
+                -AdcsSkipACLChecks:$AdcsSkipACLChecks -AdcsSkipNetworkProbes:$AdcsSkipNetworkProbes
+        }
+        'acl' {
+            $r = Invoke-ADSuiteAclCheck -Check $chk -RootDse $rootDse -ServerName $ServerName -SourcePathOverride $null
         }
         'registry' {
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -335,6 +346,7 @@ foreach ($r in $results) {
                 Result       = $r.Result
                 FindingCount = $r.FindingCount
                 Error        = $r.Error
+                ScanNote     = if ($r.PSObject.Properties.Name -contains 'ScanNote') { $r.ScanNote } else { $null }
             })
     }
 }

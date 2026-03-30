@@ -1,587 +1,2198 @@
 {
-  "schemaVersion": 1,
-  "meta": {
-    "packVersion": "1.3.0",
-    "packName": "AD Suite curated risk pack",
-    "packDateUtc": "2026-03-27T18:00:00Z"
-  },
-  "defaults": {
-    "pageSize": 1000,
-    "engine": "ldap",
-    "searchScope": "Subtree"
-  },
-  "checks": [
-    {
-      "id": "ACC-001",
-      "name": "Privileged Users adminCount1",
-      "category": "Access_Control",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "searchScope": "Subtree",
-      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "samAccountName",
-        "adminCount",
-        "userAccountControl",
-        "objectClass",
-        "whenCreated",
-        "whenChanged"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "SamAccountName": "samAccountName",
-        "AdminCount": "adminCount",
-        "UserAccountControl": "userAccountControl",
-        "ObjectClass": "objectClass",
-        "WhenCreated": "whenCreated",
-        "WhenChanged": "whenChanged"
-      },
-      "sourcePath": "Access_Control/ACC-001_Privileged_Users_adminCount1/adsi.ps1",
-      "severity": "high",
-      "description": "Misconfiguration: user accounts with adminCount=1 (protected object flag); review for inappropriate persistence of admin protection.",
-      "remediation": "Remove inappropriate adminSDHolder protection; relocate accounts to correct OUs with least-privilege delegation; investigate unexpected adminCount=1 on non-privileged users.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
-        "Persistence via adminSDHolder (MITRE T1484.002)"
-      ]
-    },
-    {
-      "id": "ACC-002",
-      "name": "Privileged Groups adminCount1",
-      "category": "Access_Control",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectClass=group)(adminCount=1))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "objectClass",
-        "whenCreated",
-        "whenChanged",
-        "adminCount"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "ObjectClass": "objectClass",
-        "WhenCreated": "whenCreated",
-        "WhenChanged": "whenChanged",
-        "AdminCount": "adminCount"
-      },
-      "sourcePath": "Access_Control/ACC-002_Privileged_Groups_adminCount1/adsi.ps1",
-      "severity": "high",
-      "description": "Misconfiguration: security groups with adminCount=1; review membership and whether protection is expected.",
-      "remediation": "Validate each group is an intentional protected group; remove nested or unintended memberships; replace ad-hoc protected groups with delegated OU structure where possible.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
-        "Protected groups (Microsoft Docs)"
-      ]
-    },
-    {
-      "id": "ACC-003",
-      "name": "Privileged Computers adminCount1",
-      "category": "Access_Control",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=computer)(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "objectClass",
-        "whenCreated",
-        "whenChanged",
-        "adminCount",
-        "userAccountControl"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "ObjectClass": "objectClass",
-        "WhenCreated": "whenCreated",
-        "WhenChanged": "whenChanged",
-        "AdminCount": "adminCount",
-        "UserAccountControl": "userAccountControl"
-      },
-      "sourcePath": "Access_Control/ACC-003_Privileged_Computers_adminCount1/adsi.ps1",
-      "severity": "high",
-      "description": "Misconfiguration: computer accounts with adminCount=1; validate each is an intentional protected object.",
-      "remediation": "Confirm Tier0/Tier1 systems only; remove adminCount=1 from non-DC servers that should not be adminSDHolder-protected; align with tiering model.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
-        "Persistence on domain infrastructure (MITRE T1098)"
-      ]
-    },
-    {
-      "id": "ACC-004",
-      "name": "Users with SIDHistory",
-      "category": "Access_Control",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(sIDHistory=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "objectClass",
-        "whenCreated",
-        "whenChanged",
-        "sIDHistory",
-        "userAccountControl",
-        "samAccountName"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "ObjectClass": "objectClass",
-        "WhenCreated": "whenCreated",
-        "WhenChanged": "whenChanged",
-        "SidHistory": "sIDHistory",
-        "UserAccountControl": "userAccountControl",
-        "SamAccountName": "samAccountName"
-      },
-      "sourcePath": "Access_Control/ACC-004_Users_with_SIDHistory/adsi.ps1",
-      "severity": "medium",
-      "description": "Exposure: user accounts with sIDHistory populated (migration or attack persistence); validate legitimacy.",
-      "remediation": "Remove stale sIDHistory values after migration cutover; investigate unexpected values; restrict who can write sIDHistory (e.g. domain admin only).",
-      "references": [
-        "https://learn.microsoft.com/windows/win32/ad/sid-history",
-        "SID-History injection (MITRE T1134.005)"
-      ]
-    },
-    {
-      "id": "ACC-006",
-      "name": "Computers with RBCD",
-      "category": "Access_Control",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=computer)(msDS-AllowedToActOnBehalfOfOtherIdentity=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "objectClass",
-        "whenCreated",
-        "whenChanged",
-        "msDS-AllowedToActOnBehalfOfOtherIdentity",
-        "userAccountControl"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "ObjectClass": "objectClass",
-        "WhenCreated": "whenCreated",
-        "WhenChanged": "whenChanged",
-        "AllowedToAct": "msDS-AllowedToActOnBehalfOfOtherIdentity",
-        "UserAccountControl": "userAccountControl"
-      },
-      "sourcePath": "Access_Control/ACC-006_Computers_with_RBCD/adsi.ps1",
-      "severity": "high",
-      "description": "Misconfiguration: resource-based constrained delegation (RBCD) on computers; review msDS-AllowedToActOnBehalfOfOtherIdentity.",
-      "remediation": "Clear msDS-AllowedToActOnBehalfOfOtherIdentity where not required; scope principals to least privilege; monitor changes to RBCD attributes.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/resource-based-constrained-delegation-overview",
-        "Resource-based constrained delegation abuse (MITRE T1558.001)"
-      ]
-    },
-    {
-      "id": "ACC-007",
-      "name": "Users with RBCD",
-      "category": "Access_Control",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(msDS-AllowedToActOnBehalfOfOtherIdentity=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "objectClass",
-        "whenCreated",
-        "whenChanged",
-        "msDS-AllowedToActOnBehalfOfOtherIdentity",
-        "userAccountControl",
-        "samAccountName"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "ObjectClass": "objectClass",
-        "WhenCreated": "whenCreated",
-        "WhenChanged": "whenChanged",
-        "AllowedToAct": "msDS-AllowedToActOnBehalfOfOtherIdentity",
-        "UserAccountControl": "userAccountControl",
-        "SamAccountName": "samAccountName"
-      },
-      "sourcePath": "Access_Control/ACC-007_Users_with_RBCD/adsi.ps1",
-      "severity": "high",
-      "description": "Misconfiguration: RBCD on user accounts; review delegation to constrained targets.",
-      "remediation": "Remove RBCD from user objects unless required; prefer computer-based delegation patterns; audit who can modify these attributes.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/resource-based-constrained-delegation-overview",
-        "Resource-based constrained delegation abuse (MITRE T1558.001)"
-      ]
-    },
-    {
-      "id": "ACC-034",
-      "name": "Kerberoastable Accounts",
-      "category": "Access_Control",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(servicePrincipalName=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(!(samAccountName=krbtgt)))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "whenCreated",
-        "whenChanged",
-        "servicePrincipalName",
-        "samAccountName",
-        "userAccountControl"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "WhenCreated": "whenCreated",
-        "WhenChanged": "whenChanged",
-        "ServicePrincipalName": "servicePrincipalName",
-        "SamAccountName": "samAccountName",
-        "UserAccountControl": "userAccountControl"
-      },
-      "sourcePath": "Access_Control/ACC-034_Kerberoastable_Accounts/adsi.ps1",
-      "severity": "high",
-      "description": "Misconfiguration: user accounts with SPNs (Kerberoastable); review SPNs and use group managed service accounts where possible.",
-      "remediation": "Remove unnecessary SPNs from user accounts; prefer gMSA for services; enforce strong password policy for remaining SPN owners.",
-      "references": [
-        "Kerberoasting (MITRE T1558.003)"
-      ]
-    },
-    {
-      "id": "KRB-001",
-      "name": "Kerberoastable User Accounts",
-      "category": "Kerberos_Security",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "samAccountName",
-        "servicePrincipalName",
-        "pwdLastSet",
-        "description",
-        "userAccountControl"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "SamAccountName": "samAccountName",
-        "ServicePrincipalName": "servicePrincipalName",
-        "PwdLastSet": "pwdLastSet",
-        "Description": "description",
-        "UserAccountControl": "userAccountControl"
-      },
-      "excludeSamAccountName": [
-        "krbtgt"
-      ],
-      "sourcePath": "Kerberos_Security/KRB-001_Kerberoastable_User_Accounts/adsi.ps1",
-      "severity": "high",
-      "description": "Misconfiguration: Kerberoastable user accounts (SPN on user); overlaps conceptually with ACC-034 — use for Kerberos category reporting.",
-      "remediation": "Remove unnecessary SPNs from user accounts; prefer gMSA for services; enforce strong password policy for remaining SPN owners (same as ACC-034).",
-      "references": [
-        "Kerberoasting (MITRE T1558.003)"
-      ],
-      "scoreWeight": 0
-    },
-    {
-      "id": "KRB-002",
-      "name": "AS-REP Roastable Accounts",
-      "category": "Kerberos_Security",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=4194304))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "samAccountName",
-        "userAccountControl"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "SamAccountName": "samAccountName",
-        "UserAccountControl": "userAccountControl"
-      },
-      "severity": "critical",
-      "description": "Misconfiguration: accounts with Kerberos pre-authentication disabled (AS-REP roastable).",
-      "remediation": "Enable Kerberos pre-authentication for affected accounts (or disable accounts that do not require interactive logon). Prefer group-based policies over per-account exceptions.",
-      "references": [
-        "https://learn.microsoft.com/windows/security/threat-protection/auditing/event-4768",
-        "AS-REP roasting (MITRE ATT&CK)"
-      ],
-      "scoreWeight": 1
-    },
-    {
-      "id": "KRB-003",
-      "name": "Unconstrained Delegation Computers",
-      "category": "Kerberos_Security",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288)(!(primaryGroupID=516)))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "samAccountName",
-        "operatingSystem",
-        "userAccountControl",
-        "primaryGroupID"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "SamAccountName": "samAccountName",
-        "OperatingSystem": "operatingSystem",
-        "UserAccountControl": "userAccountControl",
-        "PrimaryGroupID": "primaryGroupID"
-      },
-      "sourcePath": "Kerberos_Security/KRB-003_Unconstrained_Delegation_Computers/adsi.ps1",
-      "severity": "critical",
-      "description": "Misconfiguration: non-DC computers with unconstrained delegation (TGT exposure risk).",
-      "remediation": "Remove unconstrained delegation or constrain to required services; treat as Tier0 adjacent.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-unconstrained",
-        "Unconstrained delegation (MITRE T1558.001)"
-      ]
-    },
-    {
-      "id": "KRB-004",
-      "name": "Unconstrained Delegation Users",
-      "category": "Kerberos_Security",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "samAccountName",
-        "userAccountControl"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "SamAccountName": "samAccountName",
-        "UserAccountControl": "userAccountControl"
-      },
-      "sourcePath": "Kerberos_Security/KRB-004_Unconstrained_Delegation_Users/adsi.ps1",
-      "severity": "critical",
-      "description": "Misconfiguration: user accounts with unconstrained delegation enabled.",
-      "remediation": "Remove unconstrained delegation from user accounts unless business-critical; use constrained or resource-based delegation; treat as credential theft risk.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-unconstrained",
-        "Unconstrained delegation (MITRE T1558.001)"
-      ]
-    },
-    {
-      "id": "KRB-005",
-      "name": "Constrained Delegation Computers",
-      "category": "Kerberos_Security",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToDelegateTo=*))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "samAccountName",
-        "msDS-AllowedToDelegateTo",
-        "operatingSystem",
-        "userAccountControl"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "SamAccountName": "samAccountName",
-        "AllowedToDelegateTo": "msDS-AllowedToDelegateTo",
-        "OperatingSystem": "operatingSystem",
-        "UserAccountControl": "userAccountControl"
-      },
-      "sourcePath": "Kerberos_Security/KRB-005_Constrained_Delegation_Computers/adsi.ps1",
-      "severity": "high",
-      "description": "Exposure: computers with constrained delegation (msDS-AllowedToDelegateTo); validate SPN targets.",
-      "remediation": "Restrict msDS-AllowedToDelegateTo to required SPNs; remove stale delegation; prefer resource-based delegation where possible.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-constrained",
-        "Constrained delegation (MITRE T1558.001)"
-      ]
-    },
-    {
-      "id": "KRB-006",
-      "name": "Constrained Delegation Users",
-      "category": "Kerberos_Security",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToDelegateTo=*))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "samAccountName",
-        "msDS-AllowedToDelegateTo",
-        "userAccountControl"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "SamAccountName": "samAccountName",
-        "AllowedToDelegateTo": "msDS-AllowedToDelegateTo",
-        "UserAccountControl": "userAccountControl"
-      },
-      "sourcePath": "Kerberos_Security/KRB-006_Constrained_Delegation_Users/adsi.ps1",
-      "severity": "high",
-      "description": "Exposure: users with constrained delegation; review allowed SPNs.",
-      "remediation": "Tighten allowed SPNs; remove user-based constrained delegation if not required; monitor changes to msDS-AllowedToDelegateTo.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-constrained",
-        "Constrained delegation (MITRE T1558.001)"
-      ]
-    },
-    {
-      "id": "KRB-009",
-      "name": "DES-Only Kerberos Users",
-      "category": "Kerberos_Security",
-      "engine": "ldap",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=2097152))",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "samAccountName",
-        "userAccountControl"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "SamAccountName": "samAccountName",
-        "UserAccountControl": "userAccountControl"
-      },
-      "sourcePath": "Kerberos_Security/KRB-009_DES-Only_Kerberos_Users/adsi.ps1",
-      "severity": "high",
-      "description": "Weak crypto: accounts allowed DES-only Kerberos (UAC bit); disable DES for the domain and clear per-account use of DES-only.",
-      "remediation": "Disable DES for Kerberos at domain level; clear the Use Kerberos DES encryption types only flag on accounts; migrate legacy apps off DES.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-encryption-types",
-        "Weak encryption (MITRE T1558)"
-      ]
-    },
-    {
-      "id": "GPO-ACL-001",
-      "name": "SYSVOL Policies insecure ACLs",
-      "category": "Group_Policy",
-      "engine": "filesystem",
-      "filesystemKind": "SysvolPoliciesInsecureAcl",
-      "severity": "high",
-      "description": "Misconfiguration: GPO folders under SYSVOL\\\\Policies where Everyone or Authenticated Users have Modify/Write/FullControl (review and tighten).",
-      "remediation": "Remove excessive Modify/Write/FullControl from SYSVOL\\\\Policies subfolders; grant Domain Admins/Creator Owner and required DC groups only; validate GPO delegation.",
-      "references": [
-        "https://learn.microsoft.com/previous-versions/windows/it-pro/windows-server-2003/cc770880(v=ws.10)",
-        "Group Policy abuse (MITRE T1484.001)"
-      ]
-    },
-    {
-      "id": "DC-003",
-      "name": "Forest Functional Level",
-      "category": "Domain_Configuration",
-      "engine": "inventory",
-      "searchBase": "Configuration",
-      "ldapFilter": "(objectClass=crossRefContainer)",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "msDS-Behavior-Version"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "MsDSBehaviorVersion": "msDS-Behavior-Version"
-      },
-      "severity": "info",
-      "description": "Informational inventory: forest / functional-level related objects in the configuration partition. Not a pass/fail misconfiguration by itself; excluded from risk scoring.",
-      "remediation": "Use only for reporting and change tracking. Do not treat matches as automatic vulnerabilities. Exclude from executive risk rollups if your workflow scores only LDAP risk checks.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-active-directory-functional-levels",
-        "https://learn.microsoft.com/windows-server/identity/ad-ds/manage/raise-forest-function-levels"
-      ]
-    },
-    {
-      "id": "DC-008",
-      "name": "Schema Master (dMD FSMO holder)",
-      "category": "Domain_Controllers",
-      "engine": "inventory",
-      "searchBase": "SchemaContainer",
-      "searchScope": "Subtree",
-      "ldapFilter": "(objectClass=dMD)",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName",
-        "fSMORoleOwner"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName",
-        "FsmoRoleOwner": "fSMORoleOwner"
-      },
-      "severity": "info",
-      "description": "Informational inventory: schema partition root (dMD) and Schema Master FSMO holder. Excluded from risk scoring.",
-      "remediation": "Use for documentation and DR planning (who holds Schema Master). Not a security finding by itself; remove from risk dashboards if only misconfiguration checks should appear.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-schema",
-        "https://learn.microsoft.com/windows-server/identity/ad-ds/manage/operations-roles"
-      ]
-    },
-    {
-      "id": "LDAP-001",
-      "name": "Example: all user objects (domain partition)",
-      "category": "LDAP_Security",
-      "engine": "inventory",
-      "searchBase": "Domain",
-      "ldapFilter": "(&(objectCategory=person)(objectClass=user))",
-      "propertiesToLoad": [
-        "samAccountName",
-        "distinguishedName",
-        "userAccountControl"
-      ],
-      "userAccountControlMustExclude": 2,
-      "outputProperties": {
-        "SamAccountName": "samAccountName",
-        "DistinguishedName": "distinguishedName",
-        "UserAccountControl": "userAccountControl"
-      },
-      "severity": "info",
-      "description": "Demo inventory: lists enabled user objects in the domain partition. For learning and query validation only; excluded from risk scoring.",
-      "remediation": "Do not use as a security control. Replace with targeted risk checks (e.g. stale accounts, weak UAC flags) for assessments; omit from risk summaries.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/identity/ad-ds/manage/understand-default-user-and-computer-containers",
-        "https://learn.microsoft.com/windows/win32/adsi/search-filter-syntax"
-      ]
-    },
-    {
-      "id": "SAMPLE-SCHEMA-NC",
-      "name": "Example: schema partition root search",
-      "category": "Documentation",
-      "engine": "inventory",
-      "searchBase": "Schema",
-      "searchScope": "OneLevel",
-      "ldapFilter": "(objectClass=*)",
-      "propertiesToLoad": [
-        "name",
-        "distinguishedName"
-      ],
-      "outputProperties": {
-        "Name": "name",
-        "DistinguishedName": "distinguishedName"
-      },
-      "severity": "info",
-      "description": "Demo inventory: one-level search at the schema naming context root. For documentation and tooling examples only; excluded from risk scoring.",
-      "remediation": "Use only to validate connectivity and schema NC visibility. Not a vulnerability; exclude from automated risk scoring pipelines.",
-      "references": [
-        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-schema",
-        "https://learn.microsoft.com/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview"
-      ]
-    }
-  ]
+    "schemaVersion":  1,
+    "meta":  {
+                 "packVersion":  "1.6.0",
+                 "packName":  "AD Suite curated risk pack",
+                 "packDateUtc":  "2026-03-27T20:00:00Z"
+             },
+    "defaults":  {
+                     "pageSize":  1000,
+                     "engine":  "ldap",
+                     "searchScope":  "Subtree"
+                 },
+    "checks":  [
+                   {
+                       "id":  "ACC-001",
+                       "name":  "Privileged Users adminCount1",
+                       "category":  "Access_Control",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "samAccountName",
+                                                "adminCount",
+                                                "userAccountControl",
+                                                "objectClass",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "SamAccountName":  "samAccountName",
+                                                "AdminCount":  "adminCount",
+                                                "UserAccountControl":  "userAccountControl",
+                                                "ObjectClass":  "objectClass",
+                                                "WhenCreated":  "whenCreated",
+                                                "WhenChanged":  "whenChanged"
+                                            },
+                       "sourcePath":  "Access_Control/ACC-001_Privileged_Users_adminCount1/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Misconfiguration: user accounts with adminCount=1 (protected object flag); review for inappropriate persistence of admin protection.",
+                       "remediation":  "Remove inappropriate adminSDHolder protection; relocate accounts to correct OUs with least-privilege delegation; investigate unexpected adminCount=1 on non-privileged users.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
+                                          "Persistence via adminSDHolder (MITRE T1484.002)"
+                                      ]
+                   },
+                   {
+                       "id":  "ACC-002",
+                       "name":  "Privileged Groups adminCount1",
+                       "category":  "Access_Control",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectClass=group)(adminCount=1))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "objectClass",
+                                                "whenCreated",
+                                                "whenChanged",
+                                                "adminCount"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "ObjectClass":  "objectClass",
+                                                "WhenCreated":  "whenCreated",
+                                                "WhenChanged":  "whenChanged",
+                                                "AdminCount":  "adminCount"
+                                            },
+                       "sourcePath":  "Access_Control/ACC-002_Privileged_Groups_adminCount1/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Misconfiguration: security groups with adminCount=1; review membership and whether protection is expected.",
+                       "remediation":  "Validate each group is an intentional protected group; remove nested or unintended memberships; replace ad-hoc protected groups with delegated OU structure where possible.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
+                                          "Protected groups (Microsoft Docs)"
+                                      ]
+                   },
+                   {
+                       "id":  "ACC-003",
+                       "name":  "Privileged Computers adminCount1",
+                       "category":  "Access_Control",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=computer)(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "objectClass",
+                                                "whenCreated",
+                                                "whenChanged",
+                                                "adminCount",
+                                                "userAccountControl"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "ObjectClass":  "objectClass",
+                                                "WhenCreated":  "whenCreated",
+                                                "WhenChanged":  "whenChanged",
+                                                "AdminCount":  "adminCount",
+                                                "UserAccountControl":  "userAccountControl"
+                                            },
+                       "sourcePath":  "Access_Control/ACC-003_Privileged_Computers_adminCount1/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Misconfiguration: computer accounts with adminCount=1; validate each is an intentional protected object.",
+                       "remediation":  "Confirm Tier0/Tier1 systems only; remove adminCount=1 from non-DC servers that should not be adminSDHolder-protected; align with tiering model.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
+                                          "Persistence on domain infrastructure (MITRE T1098)"
+                                      ]
+                   },
+                   {
+                       "id":  "ACC-004",
+                       "name":  "Users with SIDHistory",
+                       "category":  "Access_Control",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(sIDHistory=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "objectClass",
+                                                "whenCreated",
+                                                "whenChanged",
+                                                "sIDHistory",
+                                                "userAccountControl",
+                                                "samAccountName"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "ObjectClass":  "objectClass",
+                                                "WhenCreated":  "whenCreated",
+                                                "WhenChanged":  "whenChanged",
+                                                "SidHistory":  "sIDHistory",
+                                                "UserAccountControl":  "userAccountControl",
+                                                "SamAccountName":  "samAccountName"
+                                            },
+                       "sourcePath":  "Access_Control/ACC-004_Users_with_SIDHistory/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Exposure: user accounts with sIDHistory populated (migration or attack persistence); validate legitimacy.",
+                       "remediation":  "Remove stale sIDHistory values after migration cutover; investigate unexpected values; restrict who can write sIDHistory (e.g. domain admin only).",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows/win32/ad/sid-history",
+                                          "SID-History injection (MITRE T1134.005)"
+                                      ]
+                   },
+                   {
+                       "id":  "ACC-006",
+                       "name":  "Computers with RBCD",
+                       "category":  "Access_Control",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=computer)(msDS-AllowedToActOnBehalfOfOtherIdentity=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "objectClass",
+                                                "whenCreated",
+                                                "whenChanged",
+                                                "msDS-AllowedToActOnBehalfOfOtherIdentity",
+                                                "userAccountControl"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "ObjectClass":  "objectClass",
+                                                "WhenCreated":  "whenCreated",
+                                                "WhenChanged":  "whenChanged",
+                                                "AllowedToAct":  "msDS-AllowedToActOnBehalfOfOtherIdentity",
+                                                "UserAccountControl":  "userAccountControl"
+                                            },
+                       "sourcePath":  "Access_Control/ACC-006_Computers_with_RBCD/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Misconfiguration: resource-based constrained delegation (RBCD) on computers; review msDS-AllowedToActOnBehalfOfOtherIdentity.",
+                       "remediation":  "Clear msDS-AllowedToActOnBehalfOfOtherIdentity where not required; scope principals to least privilege; monitor changes to RBCD attributes.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/resource-based-constrained-delegation-overview",
+                                          "Resource-based constrained delegation abuse (MITRE T1558.001)"
+                                      ]
+                   },
+                   {
+                       "id":  "ACC-007",
+                       "name":  "Users with RBCD",
+                       "category":  "Access_Control",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(msDS-AllowedToActOnBehalfOfOtherIdentity=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "objectClass",
+                                                "whenCreated",
+                                                "whenChanged",
+                                                "msDS-AllowedToActOnBehalfOfOtherIdentity",
+                                                "userAccountControl",
+                                                "samAccountName"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "ObjectClass":  "objectClass",
+                                                "WhenCreated":  "whenCreated",
+                                                "WhenChanged":  "whenChanged",
+                                                "AllowedToAct":  "msDS-AllowedToActOnBehalfOfOtherIdentity",
+                                                "UserAccountControl":  "userAccountControl",
+                                                "SamAccountName":  "samAccountName"
+                                            },
+                       "sourcePath":  "Access_Control/ACC-007_Users_with_RBCD/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Misconfiguration: RBCD on user accounts; review delegation to constrained targets.",
+                       "remediation":  "Remove RBCD from user objects unless required; prefer computer-based delegation patterns; audit who can modify these attributes.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/resource-based-constrained-delegation-overview",
+                                          "Resource-based constrained delegation abuse (MITRE T1558.001)"
+                                      ]
+                   },
+                   {
+                       "id":  "ACC-034",
+                       "name":  "Kerberoastable Accounts",
+                       "category":  "Access_Control",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(servicePrincipalName=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(!(samAccountName=krbtgt)))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged",
+                                                "servicePrincipalName",
+                                                "samAccountName",
+                                                "userAccountControl"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenCreated":  "whenCreated",
+                                                "WhenChanged":  "whenChanged",
+                                                "ServicePrincipalName":  "servicePrincipalName",
+                                                "SamAccountName":  "samAccountName",
+                                                "UserAccountControl":  "userAccountControl"
+                                            },
+                       "sourcePath":  "Access_Control/ACC-034_Kerberoastable_Accounts/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Misconfiguration: user accounts with SPNs (Kerberoastable); review SPNs and use group managed service accounts where possible.",
+                       "remediation":  "Remove unnecessary SPNs from user accounts; prefer gMSA for services; enforce strong password policy for remaining SPN owners.",
+                       "references":  [
+                                          "Kerberoasting (MITRE T1558.003)"
+                                      ]
+                   },
+                   {
+                       "id":  "KRB-001",
+                       "name":  "Kerberoastable User Accounts",
+                       "category":  "Kerberos_Security",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "samAccountName",
+                                                "servicePrincipalName",
+                                                "pwdLastSet",
+                                                "description",
+                                                "userAccountControl"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "SamAccountName":  "samAccountName",
+                                                "ServicePrincipalName":  "servicePrincipalName",
+                                                "PwdLastSet":  "pwdLastSet",
+                                                "Description":  "description",
+                                                "UserAccountControl":  "userAccountControl"
+                                            },
+                       "excludeSamAccountName":  [
+                                                     "krbtgt"
+                                                 ],
+                       "sourcePath":  "Kerberos_Security/KRB-001_Kerberoastable_User_Accounts/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Misconfiguration: Kerberoastable user accounts (SPN on user); overlaps conceptually with ACC-034 — use for Kerberos category reporting.",
+                       "remediation":  "Remove unnecessary SPNs from user accounts; prefer gMSA for services; enforce strong password policy for remaining SPN owners (same as ACC-034).",
+                       "references":  [
+                                          "Kerberoasting (MITRE T1558.003)"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "KRB-002",
+                       "name":  "AS-REP Roastable Accounts",
+                       "category":  "Kerberos_Security",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=4194304))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "samAccountName",
+                                                "userAccountControl"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "SamAccountName":  "samAccountName",
+                                                "UserAccountControl":  "userAccountControl"
+                                            },
+                       "severity":  "critical",
+                       "description":  "Misconfiguration: accounts with Kerberos pre-authentication disabled (AS-REP roastable).",
+                       "remediation":  "Enable Kerberos pre-authentication for affected accounts (or disable accounts that do not require interactive logon). Prefer group-based policies over per-account exceptions.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows/security/threat-protection/auditing/event-4768",
+                                          "AS-REP roasting (MITRE ATT\u0026CK)"
+                                      ],
+                       "scoreWeight":  1
+                   },
+                   {
+                       "id":  "KRB-003",
+                       "name":  "Unconstrained Delegation Computers",
+                       "category":  "Kerberos_Security",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288)(!(primaryGroupID=516)))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "samAccountName",
+                                                "operatingSystem",
+                                                "userAccountControl",
+                                                "primaryGroupID"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "SamAccountName":  "samAccountName",
+                                                "OperatingSystem":  "operatingSystem",
+                                                "UserAccountControl":  "userAccountControl",
+                                                "PrimaryGroupID":  "primaryGroupID"
+                                            },
+                       "sourcePath":  "Kerberos_Security/KRB-003_Unconstrained_Delegation_Computers/adsi.ps1",
+                       "severity":  "critical",
+                       "description":  "Misconfiguration: non-DC computers with unconstrained delegation (TGT exposure risk).",
+                       "remediation":  "Remove unconstrained delegation or constrain to required services; treat as Tier0 adjacent.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-unconstrained",
+                                          "Unconstrained delegation (MITRE T1558.001)"
+                                      ]
+                   },
+                   {
+                       "id":  "KRB-004",
+                       "name":  "Unconstrained Delegation Users",
+                       "category":  "Kerberos_Security",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "samAccountName",
+                                                "userAccountControl"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "SamAccountName":  "samAccountName",
+                                                "UserAccountControl":  "userAccountControl"
+                                            },
+                       "sourcePath":  "Kerberos_Security/KRB-004_Unconstrained_Delegation_Users/adsi.ps1",
+                       "severity":  "critical",
+                       "description":  "Misconfiguration: user accounts with unconstrained delegation enabled.",
+                       "remediation":  "Remove unconstrained delegation from user accounts unless business-critical; use constrained or resource-based delegation; treat as credential theft risk.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-unconstrained",
+                                          "Unconstrained delegation (MITRE T1558.001)"
+                                      ]
+                   },
+                   {
+                       "id":  "KRB-005",
+                       "name":  "Constrained Delegation Computers",
+                       "category":  "Kerberos_Security",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToDelegateTo=*))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "samAccountName",
+                                                "msDS-AllowedToDelegateTo",
+                                                "operatingSystem",
+                                                "userAccountControl"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "SamAccountName":  "samAccountName",
+                                                "AllowedToDelegateTo":  "msDS-AllowedToDelegateTo",
+                                                "OperatingSystem":  "operatingSystem",
+                                                "UserAccountControl":  "userAccountControl"
+                                            },
+                       "sourcePath":  "Kerberos_Security/KRB-005_Constrained_Delegation_Computers/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Exposure: computers with constrained delegation (msDS-AllowedToDelegateTo); validate SPN targets.",
+                       "remediation":  "Restrict msDS-AllowedToDelegateTo to required SPNs; remove stale delegation; prefer resource-based delegation where possible.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-constrained",
+                                          "Constrained delegation (MITRE T1558.001)"
+                                      ]
+                   },
+                   {
+                       "id":  "KRB-006",
+                       "name":  "Constrained Delegation Users",
+                       "category":  "Kerberos_Security",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToDelegateTo=*))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "samAccountName",
+                                                "msDS-AllowedToDelegateTo",
+                                                "userAccountControl"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "SamAccountName":  "samAccountName",
+                                                "AllowedToDelegateTo":  "msDS-AllowedToDelegateTo",
+                                                "UserAccountControl":  "userAccountControl"
+                                            },
+                       "sourcePath":  "Kerberos_Security/KRB-006_Constrained_Delegation_Users/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Exposure: users with constrained delegation; review allowed SPNs.",
+                       "remediation":  "Tighten allowed SPNs; remove user-based constrained delegation if not required; monitor changes to msDS-AllowedToDelegateTo.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-constrained",
+                                          "Constrained delegation (MITRE T1558.001)"
+                                      ]
+                   },
+                   {
+                       "id":  "KRB-009",
+                       "name":  "DES-Only Kerberos Users",
+                       "category":  "Kerberos_Security",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=2097152))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "samAccountName",
+                                                "userAccountControl"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "SamAccountName":  "samAccountName",
+                                                "UserAccountControl":  "userAccountControl"
+                                            },
+                       "sourcePath":  "Kerberos_Security/KRB-009_DES-Only_Kerberos_Users/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Weak crypto: accounts allowed DES-only Kerberos (UAC bit); disable DES for the domain and clear per-account use of DES-only.",
+                       "remediation":  "Disable DES for Kerberos at domain level; clear the Use Kerberos DES encryption types only flag on accounts; migrate legacy apps off DES.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-encryption-types",
+                                          "Weak encryption (MITRE T1558)"
+                                      ]
+                   },
+                   {
+                       "id":  "GPO-ACL-001",
+                       "name":  "SYSVOL Policies insecure ACLs",
+                       "category":  "Group_Policy",
+                       "engine":  "filesystem",
+                       "filesystemKind":  "SysvolPoliciesInsecureAcl",
+                       "severity":  "high",
+                       "description":  "Misconfiguration: GPO folders under SYSVOL\\\\Policies where Everyone or Authenticated Users have Modify/Write/FullControl (review and tighten).",
+                       "remediation":  "Remove excessive Modify/Write/FullControl from SYSVOL\\\\Policies subfolders; grant Domain Admins/Creator Owner and required DC groups only; validate GPO delegation.",
+                       "references":  [
+                                          "https://learn.microsoft.com/previous-versions/windows/it-pro/windows-server-2003/cc770880(v=ws.10)",
+                                          "Group Policy abuse (MITRE T1484.001)"
+                                      ]
+                   },
+                   {
+                       "id":  "ADCS-ESC1",
+                       "name":  "ESC1 Enrollee-supplied SAN (certificate template)",
+                       "category":  "Certificate_Services",
+                       "engine":  "adcs",
+                       "adcsCheck":  "ESC1",
+                       "severity":  "critical",
+                       "description":  "Certificate templates with CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT, authentication-capable EKU, no manager approval, and non-privileged enrollment: arbitrary SAN / impersonation risk.",
+                       "remediation":  "Remove EnrolleeSuppliesSubject where not required; enable manager approval; restrict enrollment ACL to least privilege.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)",
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-template-permissions"
+                                      ]
+                   },
+                   {
+                       "id":  "ADCS-ESC2",
+                       "name":  "ESC2 Any Purpose or missing EKU (certificate template)",
+                       "category":  "Certificate_Services",
+                       "engine":  "adcs",
+                       "adcsCheck":  "ESC2",
+                       "severity":  "critical",
+                       "description":  "Templates with Any Purpose EKU or no EKU, no manager approval, enrollable by non-privileged principals — master-key / CRA abuse risk.",
+                       "remediation":  "Restrict pKIExtendedKeyUsage; remove 2.5.29.37.0; enable manager approval.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "ADCS-ESC3",
+                       "name":  "ESC3 Certificate Request Agent chain (templates)",
+                       "category":  "Certificate_Services",
+                       "engine":  "adcs",
+                       "adcsCheck":  "ESC3",
+                       "severity":  "high",
+                       "description":  "CRA template enrollable by non-privileged users and/or templates accepting CRA-signed requests — on-behalf enrollment / impersonation chain.",
+                       "remediation":  "Remove CRA EKU where not required; review msPKI-RA-Application-Policies; enable manager approval.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "ADCS-ESC4",
+                       "name":  "ESC4 Weak template object ACLs",
+                       "category":  "Certificate_Services",
+                       "engine":  "adcs",
+                       "adcsCheck":  "ESC4",
+                       "severity":  "high",
+                       "description":  "Non-privileged principals with write/control on enabled certificate templates — can alter template flags (e.g. ESC1 conditions).",
+                       "remediation":  "Remove GenericWrite/WriteDacl/WriteOwner from non-admin principals on template objects.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-template-permissions"
+                                      ]
+                   },
+                   {
+                       "id":  "ADCS-ESC5",
+                       "name":  "ESC5 Weak ACLs on critical PKI containers",
+                       "category":  "Certificate_Services",
+                       "engine":  "adcs",
+                       "adcsCheck":  "ESC5",
+                       "severity":  "critical",
+                       "description":  "Non-privileged write access to NTAuth, Enrollment Services, AIA, CDP, OID, or PKI roots — trust chain and policy manipulation risk.",
+                       "remediation":  "Restrict write to Enterprise Admins / designated PKI admins; audit object access to CN=Public Key Services.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "ADCS-ESC6",
+                       "name":  "ESC6 CA EDITF_ATTRIBUTESUBJECTALTNAME2 (policy module)",
+                       "category":  "Certificate_Services",
+                       "engine":  "adcs",
+                       "adcsCheck":  "ESC6",
+                       "severity":  "critical",
+                       "description":  "Enterprise CA policy may allow arbitrary SAN in requests (certutil EditFlags). Requires RPC access to CA or running on CA-adjacent host.",
+                       "remediation":  "Disable EDITF_ATTRIBUTESUBJECTALTNAME2; apply KB5014754; validate StrongCertificateBindingEnforcement.",
+                       "references":  [
+                                          "https://support.microsoft.com/topic/kb5014754"
+                                      ]
+                   },
+                   {
+                       "id":  "ADCS-ESC7",
+                       "name":  "ESC7 Weak ACLs on Enterprise CA object",
+                       "category":  "Certificate_Services",
+                       "engine":  "adcs",
+                       "adcsCheck":  "ESC7",
+                       "severity":  "high",
+                       "description":  "Non-privileged GenericWrite/WriteDacl on pKIEnrollmentService — maps to CA management abuse (ManageCA / officer workflows).",
+                       "remediation":  "Tighten CA object ACL in AD and certsrv.msc security; align with tier model.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/managing-permissions-on-the-enterprise-ca"
+                                      ]
+                   },
+                   {
+                       "id":  "ADCS-ESC8",
+                       "name":  "ESC8 Web Enrollment over HTTP / relay surface",
+                       "category":  "Certificate_Services",
+                       "engine":  "adcs",
+                       "adcsCheck":  "ESC8",
+                       "severity":  "critical",
+                       "description":  "HTTP Web Enrollment or NTLM-exposed certsrv increases relay risk; HTTPS-only still needs EPA verification.",
+                       "remediation":  "Require HTTPS; enable EPA on IIS certsrv; restrict NTLM; see KB5005413.",
+                       "references":  [
+                                          "https://support.microsoft.com/topic/kb5005413"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-001",
+                       "name":  "Certificate templates (configuration partition listing)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "pKIExtendedKeyUsage",
+                                                "msPKI-Enrollment-Flag",
+                                                "msPKI-Certificate-Name-Flag",
+                                                "msPKI-RA-Signature"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "Cn":  "cn",
+                                                "MsPKIEnrollmentFlag":  "msPKI-Enrollment-Flag",
+                                                "MsPKIRASignature":  "msPKI-RA-Signature",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "MsPKICertificateNameFlag":  "msPKI-Certificate-Name-Flag",
+                                                "PKIExtendedKeyUsage":  "pKIExtendedKeyUsage",
+                                                "DisplayName":  "displayName"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-001_Certificate_Template_Inventory/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Full LDAP listing of certificate template objects. Use for inventory and to scope ADCS-ESC reviews. Each row is a PKI object, not proof of vulnerability by itself.",
+                       "remediation":  "Use results for inventory and change tracking. Prioritize templates with client-auth EKU and weak enrollment ACLs using ADCS-ESC1–ESC8.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)",
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-006",
+                       "name":  "Templates Allowing Client Authentication",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(pKIExtendedKeyUsage=1.3.6.1.5.5.7.3.2))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "pKIExtendedKeyUsage",
+                                                "msPKI-Certificate-Name-Flag"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "PKIExtendedKeyUsage":  "pKIExtendedKeyUsage",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKICertificateNameFlag":  "msPKI-Certificate-Name-Flag",
+                                                "DisplayName":  "displayName"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-006_Templates_Allowing_Client_Authentication/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Certificate templates that include client authentication EKU (1.3.6.1.5.5.7.3.2). These are common targets for domain authentication abuse when combined with weak enrollment or subject/SAN settings.",
+                       "remediation":  "Restrict enrollment; require manager approval where appropriate; ensure subject/SAN flags and msPKI settings align with least privilege; cross-check ADCS-ESC1–ESC3.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)",
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-template-permissions"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-007",
+                       "name":  "Templates Allowing Smart Card Logon",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(pKIExtendedKeyUsage=1.3.6.1.4.1.311.20.2.2))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "pKIExtendedKeyUsage"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "PKIExtendedKeyUsage":  "pKIExtendedKeyUsage"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-007_Templates_Allowing_Smart_Card_Logon/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Templates granting smart card logon EKU (1.3.6.1.4.1.311.20.2.2). Mis-issued smart card logon certs can support credential abuse paths; review issuance and physical controls.",
+                       "remediation":  "Limit enrollment; validate key archival and issuance policies; ensure smart card issuance aligns with tier model.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-008",
+                       "name":  "Templates Allowing PKINIT Client Auth",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(pKIExtendedKeyUsage=1.3.6.1.5.2.3.4))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "pKIExtendedKeyUsage"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "PKIExtendedKeyUsage":  "pKIExtendedKeyUsage"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-008_Templates_Allowing_PKINIT_Client_Auth/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Templates with PKINIT client authentication EKU (1.3.6.1.5.2.3.4). Certificates can be used in Kerberos PKINIT flows; combined with weak enrollment they raise domain authentication risk.",
+                       "remediation":  "Tighten enrollment ACLs; review PKINIT usage; validate KDC and domain controller certificate binding settings.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)",
+                                          "PKINIT and certificate mapping (Microsoft Docs)"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-009",
+                       "name":  "Templates Allowing Code Signing",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(pKIExtendedKeyUsage=1.3.6.1.5.5.7.3.3))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "pKIExtendedKeyUsage"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "PKIExtendedKeyUsage":  "pKIExtendedKeyUsage"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-009_Templates_Allowing_Code_Signing/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Templates allowing code signing EKU (1.3.6.1.5.5.7.3.3). Abuse can support malware signing or policy bypass if enrollment is too broad.",
+                       "remediation":  "Restrict code signing template enrollment to designated groups; audit issued certificates.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-010",
+                       "name":  "Templates Without Manager Approval",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(!(msPKI-Enrollment-Flag:1.2.840.113556.1.4.803:=2)))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "msPKI-Enrollment-Flag"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKIEnrollmentFlag":  "msPKI-Enrollment-Flag"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-010_Templates_Without_Manager_Approval/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Templates without manager approval (CT_FLAG_PEND_ALL_REQUESTS not set in msPKI-Enrollment-Flag). Speeds issuance and enlarges the window for mis-issued certificates when other controls fail.",
+                       "remediation":  "Enable manager approval for sensitive templates; combine with restricted enrollment and ADCS-ESC reviews.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-011",
+                       "name":  "Templates Without Authorized Signatures Required",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(|(msPKI-RA-Signature=0)(!(msPKI-RA-Signature=*))))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "msPKI-RA-Signature"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "MsPKIRASignature":  "msPKI-RA-Signature",
+                                                "Name":  "name"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-011_Templates_Without_Authorized_Signatures_Required/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Templates with zero or missing required RA signatures (msPKI-RA-Signature). Weakens issuance workflow and can ease abuse when enrollment is misconfigured.",
+                       "remediation":  "Require RA signatures where policy demands; align with PKI officer workflows.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-012",
+                       "name":  "Enterprise Certificate Authorities",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKIEnrollmentService)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "dNSHostName",
+                                                "cACertificate",
+                                                "certificateTemplates"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "CACertificate":  "cACertificate",
+                                                "DNSHostName":  "dNSHostName",
+                                                "CertificateTemplates":  "certificateTemplates"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-012_Enterprise_Certificate_Authorities/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Enterprise CA enrollment service objects (pKIEnrollmentService) in AD. Lists published CAs and template bindings; use for mapping attack surface alongside ADCS-ESC6–ESC8.",
+                       "remediation":  "Validate CA host hardening, Web Enrollment, and RPC exposure; review certificateTemplates published per CA.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/ad-cs-topology"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-013",
+                       "name":  "NTAuth Certificate Store",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=certificationAuthority)(cn=NTAuthCertificates))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "cACertificate"
+                                            ],
+                       "outputProperties":  {
+                                                "CACertificate":  "cACertificate",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-013_NTAuth_Certificate_Store/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "NTAuthCertificates store in AD lists CAs trusted for domain authentication. Unexpected or stale entries can affect trust decisions.",
+                       "remediation":  "Keep NTAuth aligned with intentional enterprise roots; remove retired CAs after migration.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/distribute-certificates-to-clients"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-014",
+                       "name":  "Trusted Root CAs in AD",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=certificationAuthority)(cn=*))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "cACertificate"
+                                            ],
+                       "outputProperties":  {
+                                                "CACertificate":  "cACertificate",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-014_Trusted_Root_CAs_in_AD/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Certification authority objects under the enterprise PKI tree. Broad listing helps identify roots and intermediates published to the forest.",
+                       "remediation":  "Audit CA certificates for lifecycle and trust alignment; remove obsolete publishing.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-015",
+                       "name":  "Templates with No Expiration Validation",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(!(pKIExpirationPeriod=*)))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-015_Templates_with_No_Expiration_Validation/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Templates missing pKIExpirationPeriod (or equivalent validity constraints visible in LDAP). May indicate legacy or inconsistent template definitions worth validating in CA policy.",
+                       "remediation":  "Define and enforce validity periods per template; validate on issuing CA.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-016",
+                       "name":  "Templates Allowing Key Archival",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(msPKI-Enrollment-Flag:1.2.840.113556.1.4.803:=8))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "msPKI-Enrollment-Flag"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKIEnrollmentFlag":  "msPKI-Enrollment-Flag"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-016_Templates_Allowing_Key_Archival/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Templates with key archival enrollment flag set. Increases sensitivity: archived keys require strict access controls on KRA and CA database.",
+                       "remediation":  "Verify KRA configuration, ACLs, and auditing; limit templates with archival to required scenarios.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/key-archival"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-017",
+                       "name":  "Templates with Exportable Private Key",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(msPKI-Private-Key-Flag:1.2.840.113556.1.4.803:=16))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "msPKI-Private-Key-Flag"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKIPrivateKeyFlag":  "msPKI-Private-Key-Flag"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-017_Templates_with_Exportable_Private_Key/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Templates allowing exportable private keys (msPKI-Private-Key-Flag). Eases credential theft if certificates are issued to interactive users or broadly enrolled.",
+                       "remediation":  "Disable exportable keys where not required; prefer hardware protection for high-value use cases.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-018",
+                       "name":  "Templates for Machine Certificates",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(msPKI-Certificate-Name-Flag:1.2.840.113556.1.4.803:=536870912))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "msPKI-Certificate-Name-Flag"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKICertificateNameFlag":  "msPKI-Certificate-Name-Flag"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-018_Templates_for_Machine_Certificates/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Templates with machine/enrollment name flags indicating machine certificate scenarios. Review for unintended domain computer authentication surface.",
+                       "remediation":  "Restrict enrollment to intended device OUs and groups; validate autoenrollment GPO scope.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-019",
+                       "name":  "Templates Allowing Renewal with Different Key",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(msPKI-Enrollment-Flag:1.2.840.113556.1.4.803:=32))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "msPKI-Enrollment-Flag"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKIEnrollmentFlag":  "msPKI-Enrollment-Flag"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-019_Templates_Allowing_Renewal_with_Different_Key/adsi.ps1",
+                       "severity":  "low",
+                       "description":  "Templates allowing renewal with a new key pair. Can complicate revocation and lifecycle tracking if combined with weak identity binding.",
+                       "remediation":  "Ensure renewal policies and revocation workflows cover key-change renewals.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-023",
+                       "name":  "Accounts with Certificate Published",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(userCertificate=*))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "samAccountName",
+                                                "userCertificate"
+                                            ],
+                       "outputProperties":  {
+                                                "SamAccountName":  "samAccountName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Name":  "name",
+                                                "UserCertificate":  "userCertificate"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-023_Accounts_with_Certificate_Published/adsi.ps1",
+                       "severity":  "low",
+                       "description":  "User accounts with userCertificate populated. Published certs may support mapping or smart card scenarios; unexpected entries warrant review for stale or over-published credentials.",
+                       "remediation":  "Validate intentional publication; remove obsolete certificates from the directory.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/key-archival"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-024",
+                       "name":  "Computers with Certificate Published",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Domain",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectCategory=computer)(userCertificate=*))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "samAccountName",
+                                                "userCertificate",
+                                                "operatingSystem"
+                                            ],
+                       "outputProperties":  {
+                                                "SamAccountName":  "samAccountName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Name":  "name",
+                                                "UserCertificate":  "userCertificate",
+                                                "OperatingSystem":  "operatingSystem"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-024_Computers_with_Certificate_Published/adsi.ps1",
+                       "severity":  "low",
+                       "description":  "Computer accounts with userCertificate populated. May reflect domain controller or service certs published to AD; unexpected hosts warrant validation.",
+                       "remediation":  "Confirm published certs match intended roles; rotate and clean up stale entries.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/distribute-certificates-to-clients"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-025",
+                       "name":  "CRL Distribution Points",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=cRLDistributionPoint))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-025_CRL_Distribution_Points/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "CRL distribution point objects in the configuration partition. Use to map revocation publication points and HTTP/S surface.",
+                       "remediation":  "Ensure CDP URLs are reachable and HTTPS where required; monitor expiration and replication.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-revocation"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-026",
+                       "name":  "[DACL review] Certificate templates (nTSecurityDescriptor for enrollment ACL analysis)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "nTSecurityDescriptor"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "NTSecurityDescriptor":  "nTSecurityDescriptor"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-026_Templates_Enrolled_by_Everyone/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Lists templates with security descriptor loaded. LDAP cannot resolve \u0027Everyone\u0027 enrollment in one filter—manually review DACL for Authenticated Users / Domain Users enrollment. Prefer ADCS-ESC4 for write-equivalent abuse on templates.",
+                       "remediation":  "Audit enrollment ACEs on each template; remove broad enrollment where inappropriate; correlate with ADCS-ESC4.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)",
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-template-permissions"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-027",
+                       "name":  "Offline Root CA References",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=certificationAuthority)(cn=*))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "cACertificate",
+                                                "certificateRevocationList"
+                                            ],
+                       "outputProperties":  {
+                                                "CACertificate":  "cACertificate",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "CertificateRevocationList":  "certificateRevocationList"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-027_Offline_Root_CA_References/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "CA objects referencing offline roots or cross-boundary trust material. Use for PKI topology documentation and continuity planning.",
+                       "remediation":  "Validate CRL/AIA publication for offline roots; document trust chains.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/ad-cs-topology"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-028",
+                       "name":  "AIA Authority Information Access Objects",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=container)(cn=AIA))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-028_AIA_Authority_Information_Access_Objects/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "AIA container under Public Key Services. Authority Information Access publication affects chain building for clients.",
+                       "remediation":  "Ensure AIA URLs are correct, reachable, and aligned with issuance hierarchy.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/authority-information-access"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-029",
+                       "name":  "Templates with Subject Name from AD",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(msPKI-Certificate-Name-Flag:1.2.840.113556.1.4.803:=134217728))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "msPKI-Certificate-Name-Flag"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKICertificateNameFlag":  "msPKI-Certificate-Name-Flag"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-029_Templates_with_Subject_Name_from_AD/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Templates with subject name from Active Directory (CT_FLAG_SUBJECT_ALT_REQUIRE_UPN or related name flags in msPKI-Certificate-Name-Flag). Affects how subjects are bound to directory identities.",
+                       "remediation":  "Validate name flags against intended use; cross-check with ESC1-style SAN issues.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-030",
+                       "name":  "[Listing] Template schema version fields (all templates)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "msPKI-Template-Schema-Version",
+                                                "msPKI-Template-Minor-Revision"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "MsPKITemplateMinorRevision":  "msPKI-Template-Minor-Revision",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKITemplateSchemaVersion":  "msPKI-Template-Schema-Version",
+                                                "DisplayName":  "displayName"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-030_Certificate_Templates_Version/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Lists all templates with schema/minor revision attributes. Useful for spotting legacy versions; not a vulnerability by itself.",
+                       "remediation":  "Deprecate legacy templates; migrate to supported schema versions with explicit EKU and ACLs.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-031",
+                       "name":  "[Listing] Certificate templates (full forest set; manual ESC review)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-031_Vulnerable_Certificate_Templates/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Broad listing only—same objects as a full template inventory. Use to drive manual review; does not imply vulnerable configuration without ADCS-ESC and ACL analysis.",
+                       "remediation":  "Cross-reference with ADCS-ESC1–ESC8 and per-template ACL review; retire unused templates.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-032",
+                       "name":  "[Listing] Templates for enrollment rights review (full set)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-032_Certificate_Template_Enrollment_Rights/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Lists every template with timestamps—LDAP does not enumerate enrollment ACEs in this filter. Use for workflow tracking; validate enrollment with ADCS-ESC4 and DACL review.",
+                       "remediation":  "Verify only intended groups may enroll; remove excessive ACEs.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-template-permissions"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-033",
+                       "name":  "Client authentication templates (same LDAP scope as CERT-006)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(pKIExtendedKeyUsage=1.3.6.1.5.5.7.3.2))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "pKIExtendedKeyUsage",
+                                                "msPKI-Certificate-Name-Flag"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "PKIExtendedKeyUsage":  "pKIExtendedKeyUsage",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKICertificateNameFlag":  "msPKI-Certificate-Name-Flag",
+                                                "DisplayName":  "displayName"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-033_Certificates_with_Client_Authentication/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Intentionally the same filter as CERT-006 (client authentication EKU). Retained for checklist parity; findings overlap—do not double-count risk. Scoring suppressed.",
+                       "remediation":  "Use CERT-006 or ADCS-ESC checks for reporting; disable one ID in overrides if duplicates are undesirable.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-034",
+                       "name":  "Certificate Authority Health",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKIEnrollmentService)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-034_Certificate_Authority_Health/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Enterprise CA objects with timestamps for health-style review. LDAP alone does not prove outage; use with monitoring and certutil/CA logs.",
+                       "remediation":  "Monitor CA services, CRL validity, and disk space on CA hosts.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/monitoring-and-logging"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-035",
+                       "name":  "CRL Distribution Point Availability",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=cRLDistributionPoint)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-035_CRL_Distribution_Point_Availability/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "CRL distribution points with change metadata. Supports tracking revocation publication changes.",
+                       "remediation":  "Validate CRL publication schedules and HTTP/S endpoints.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-revocation"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-036",
+                       "name":  "OCSP Responder Status",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKIEnrollmentService)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-036_OCSP_Responder_Status/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Enterprise CA objects relevant to OCSP deployment review. LDAP does not prove OCSP responder health—follow with endpoint tests.",
+                       "remediation":  "Deploy and monitor OCSP responders per Microsoft guidance; align AIA/OCSP URLs.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/ocsp-responder"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-037",
+                       "name":  "[Listing] Templates for version drift review (full set)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-037_Certificate_Template_Version_Mismatch/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Lists all templates—LDAP does not detect \u0027mismatch\u0027 without comparing to published CA policy. Manual review only.",
+                       "remediation":  "Consolidate templates; disable superseded definitions.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-038",
+                       "name":  "[Listing] Templates for autoenrollment policy alignment (full set)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-038_Auto_Enrollment_Misconfigurations/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Broad template listing for GPO/autoenrollment correlation. LDAP alone does not read autoenrollment GPOs.",
+                       "remediation":  "Scope autoenrollment GPOs tightly; review templates granted autoenrollment.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/autoenrollment"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-039",
+                       "name":  "Templates with Certificate Request Agent EKU",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(pKIExtendedKeyUsage=1.3.6.1.4.1.311.20.2.1))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "pKIExtendedKeyUsage"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "PKIExtendedKeyUsage":  "pKIExtendedKeyUsage"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-039_Certificate_Request_Agent_Abuse/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Templates publishing the CRA EKU (1.3.6.1.4.1.311.20.2.1). Overlaps ADCS-ESC3—validate enrollment and manager approval.",
+                       "remediation":  "Remove CRA EKU where unnecessary; enforce manager approval and enrollment restrictions.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-040",
+                       "name":  "Web Enrollment Security",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKIEnrollmentService)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-040_Web_Enrollment_Security/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Enterprise CA objects tied to Web Enrollment attack surface. Correlates with ADCS-ESC8 for HTTP/NTLM exposure—this LDAP check does not replace network verification.",
+                       "remediation":  "Require HTTPS, harden IIS certsrv, restrict NTLM; see KB5005413.",
+                       "references":  [
+                                          "https://support.microsoft.com/topic/kb5005413"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-041",
+                       "name":  "Templates with supersession reference (msPKI-Template-Supersede)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(msPKI-Template-Supersede=*))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "msPKI-Template-Supersede"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKITemplateSupersede":  "msPKI-Template-Supersede"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-041_Certificate_Template_Superseded_Not_Disabled/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Templates that reference another template in the supersession chain. Validate whether superseded templates are disabled where policy requires.",
+                       "remediation":  "Disable superseded templates after migration; enforce supersession links.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-042",
+                       "name":  "CA Certificate Expiration",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKIEnrollmentService)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-042_CA_Certificate_Expiration/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Enterprise CAs for CA certificate lifetime review. Expired or soon-to-expire CA certs break chain validation.",
+                       "remediation":  "Plan CA cert renewal; monitor AIA/CRL publication during rollover.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/renew-a-certification-authority"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-043",
+                       "name":  "Templates with minimal key size at or below 1024 bits (LDAP)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(msPKI-Minimal-Key-Size\u003c=1024))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "msPKI-Minimal-Key-Size"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "MsPKIMinimalKeySize":  "msPKI-Minimal-Key-Size"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-043_Certificate_Key_Length_Weak/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Templates advertising msPKI-Minimal-Key-Size ≤ 1024. Modern baselines typically require ≥2048; confirm algorithm context on issuing CA.",
+                       "remediation":  "Raise minimum key size on templates and CAs; reissue where non-compliant.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/cryptography"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-044",
+                       "name":  "[Listing] Template objects for validity period review (LDAP cannot compare periods)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-044_Certificate_Validity_Period_Excessive/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Broad listing: LDAP does not decode pKIExpirationPeriod for numeric comparison in this check. Manual or CA-policy review required for \u0027excessive\u0027 validity.",
+                       "remediation":  "Reduce validity periods to operational minimums; enforce renewal discipline.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-045",
+                       "name":  "CA Audit Settings",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKIEnrollmentService)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-045_CA_Audit_Settings/adsi.ps1",
+                       "severity":  "low",
+                       "description":  "Enterprise CAs for audit configuration review. LDAP listing does not read local CA audit policy—use CA host baselines.",
+                       "remediation":  "Enable and forward CA audit logs; align with SIEM coverage.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/monitoring-and-logging"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-046",
+                       "name":  "[DACL review] Templates with security descriptor (ACL triage)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "nTSecurityDescriptor",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "NTSecurityDescriptor":  "nTSecurityDescriptor",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-046_Certificate_Template_Permissions_Excessive/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Loads nTSecurityDescriptor for manual or downstream ACL review. Prefer ADCS-ESC4 for automated weak-ACL detection.",
+                       "remediation":  "Remove write-equivalent rights for non-PKI admins; validate ADCS-ESC4 output.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)",
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-template-permissions"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-047",
+                       "name":  "CA Database Backup Status",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKIEnrollmentService)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-047_CA_Database_Backup_Status/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Enterprise CAs for backup posture review. AD LDAP does not prove backup success—follow with backup reports.",
+                       "remediation":  "Back up CA database and keys per Microsoft DR guidance; test restore.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/back-up-and-restore"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-048",
+                       "name":  "Certificate Revocation Reasons",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKIEnrollmentService)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-048_Certificate_Revocation_Reasons/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Enterprise CAs for revocation workflow documentation. Pair with operational CRL/OCSP monitoring.",
+                       "remediation":  "Maintain revocation reason policies and responder availability.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-revocation"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-049",
+                       "name":  "[Listing] Smart card logon template review (full set; see CERT-007 for EKU-specific)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-049_Smart_Card_Logon_Certificate_Issues/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Legacy stub used a broad template list. For EKU-specific smart card templates use CERT-007. This row is listing-oriented; scoring suppressed.",
+                       "remediation":  "Validate smart card templates, KDC certs, and user mappings.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/smart-card-logon"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-050",
+                       "name":  "Templates with Any Purpose or missing EKU (ESC2-style LDAP signal)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(objectClass=pKICertificateTemplate)(|(pKIExtendedKeyUsage=2.5.29.37.0)(!(pKIExtendedKeyUsage=*))))",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "cn",
+                                                "displayName",
+                                                "pKIExtendedKeyUsage"
+                                            ],
+                       "outputProperties":  {
+                                                "DisplayName":  "displayName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "Cn":  "cn",
+                                                "Name":  "name",
+                                                "PKIExtendedKeyUsage":  "pKIExtendedKeyUsage"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-050_Certificate_Template_EKU_Misconfigurations/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Templates with Any Purpose EKU or no EKU—high-risk configuration class. Overlaps ADCS-ESC2; use ESC2 for full logic.",
+                       "remediation":  "Explicitly set required EKUs; remove Any Purpose where not justified.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ]
+                   },
+                   {
+                       "id":  "CERT-051",
+                       "name":  "CA Role Separation",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKIEnrollmentService)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-051_CA_Role_Separation/adsi.ps1",
+                       "severity":  "medium",
+                       "description":  "Enterprise CAs for CA role separation review. Combined CA admin + backup operator on same accounts increases insider risk.",
+                       "remediation":  "Separate CA administration per Microsoft PKI best practices.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/managing-permissions-on-the-enterprise-ca"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-052",
+                       "name":  "[Listing] Subject name policy review (all templates)",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKICertificateTemplate)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-052_Certificate_Template_Subject_Name_Issues/adsi.ps1",
+                       "severity":  "info",
+                       "description":  "Broad listing for subject/SAN flag review. Prefer targeted checks (e.g. CERT-029, ADCS-ESC1) for specific misconfigurations.",
+                       "remediation":  "Tighten subject name flags; disable enrollee-supplied subject where not needed.",
+                       "references":  [
+                                          "SpecterOps Certified Pre-Owned (AD CS)"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "CERT-053",
+                       "name":  "CA Security Descriptor",
+                       "category":  "Certificate_Services",
+                       "engine":  "ldap",
+                       "searchBase":  "Configuration",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=pKIEnrollmentService)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "whenCreated",
+                                                "whenChanged"
+                                            ],
+                       "outputProperties":  {
+                                                "DistinguishedName":  "distinguishedName",
+                                                "WhenChanged":  "whenChanged",
+                                                "Name":  "name",
+                                                "WhenCreated":  "whenCreated"
+                                            },
+                       "sourcePath":  "Certificate_Services/CERT-053_CA_Security_Descriptor/adsi.ps1",
+                       "severity":  "high",
+                       "description":  "Enterprise CA objects for security descriptor review. Weak ACLs on pKIEnrollmentService relate to ADCS-ESC7—use LDAP plus ESC7 for full analysis.",
+                       "remediation":  "Restrict ManageCA and related rights to PKI admins; validate with ADCS-ESC7.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/managing-permissions-on-the-enterprise-ca"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "ACE-001",
+                       "name":  "Dangerous ACE: GenericAll (non-privileged principal)",
+                       "category":  "ACE",
+                       "engine":  "acl",
+                       "searchBase":  "Domain",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(|(objectCategory=person)(objectCategory=computer)(objectCategory=group)(objectClass=organizationalUnit)(objectClass=groupPolicyContainer))(!(objectClass=domainDNS)))",
+                       "dangerousRights":  [
+                                                 "GenericAll"
+                                             ],
+                       "maxObjects":  50000,
+                       "excludePrivilegedPrincipal":  true,
+                       "propertiesToLoad":  [
+                                                "distinguishedName",
+                                                "name",
+                                                "objectClass",
+                                                "dNSHostName"
+                                            ],
+                       "severity":  "high",
+                       "description":  "Objects where a non-baseline principal has Allow GenericAll (full control). Review delegation and group memberships.",
+                       "remediation":  "Remove unnecessary GenericAll; prefer more specific rights; validate nested groups and shadow admins.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/implementing-least-privilege-administrative-models"
+                                      ]
+                   },
+                   {
+                       "id":  "ACE-002",
+                       "name":  "Dangerous ACE: GenericWrite (non-privileged principal)",
+                       "category":  "ACE",
+                       "engine":  "acl",
+                       "searchBase":  "Domain",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(|(objectCategory=person)(objectCategory=computer)(objectCategory=group)(objectClass=organizationalUnit)(objectClass=groupPolicyContainer))(!(objectClass=domainDNS)))",
+                       "dangerousRights":  [
+                                                 "GenericWrite"
+                                             ],
+                       "maxObjects":  50000,
+                       "excludePrivilegedPrincipal":  true,
+                       "propertiesToLoad":  [
+                                                "distinguishedName",
+                                                "name",
+                                                "objectClass",
+                                                "dNSHostName"
+                                            ],
+                       "severity":  "high",
+                       "description":  "Objects where a non-baseline principal has Allow GenericWrite (broad write access). Often enables property takeover or lateral movement.",
+                       "remediation":  "Tighten ACLs; remove GenericWrite from low-trust principals; review OU and GPO delegation.",
+                       "references":  [
+                                          "https://posts.specterops.io/certified-pre-owned-ada1f94c90a2"
+                                      ]
+                   },
+                   {
+                       "id":  "ACE-003",
+                       "name":  "Dangerous ACE: WriteDacl (non-privileged principal)",
+                       "category":  "ACE",
+                       "engine":  "acl",
+                       "searchBase":  "Domain",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(|(objectCategory=person)(objectCategory=computer)(objectCategory=group)(objectClass=organizationalUnit)(objectClass=groupPolicyContainer))(!(objectClass=domainDNS)))",
+                       "dangerousRights":  [
+                                                 "WriteDacl"
+                                             ],
+                       "maxObjects":  50000,
+                       "excludePrivilegedPrincipal":  true,
+                       "propertiesToLoad":  [
+                                                "distinguishedName",
+                                                "name",
+                                                "objectClass",
+                                                "dNSHostName"
+                                            ],
+                       "severity":  "critical",
+                       "description":  "Objects where a non-baseline principal can modify the DACL (grant self further rights).",
+                       "remediation":  "Restrict WriteDacl to Domain Admins / delegated PKI or GPO owners as appropriate; audit nested groups.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows/win32/adschema/a-rights"
+                                      ]
+                   },
+                   {
+                       "id":  "ACE-004",
+                       "name":  "Dangerous ACE: WriteOwner (non-privileged principal)",
+                       "category":  "ACE",
+                       "engine":  "acl",
+                       "searchBase":  "Domain",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(|(objectCategory=person)(objectCategory=computer)(objectCategory=group)(objectClass=organizationalUnit)(objectClass=groupPolicyContainer))(!(objectClass=domainDNS)))",
+                       "dangerousRights":  [
+                                                 "WriteOwner"
+                                             ],
+                       "maxObjects":  50000,
+                       "excludePrivilegedPrincipal":  true,
+                       "propertiesToLoad":  [
+                                                "distinguishedName",
+                                                "name",
+                                                "objectClass",
+                                                "dNSHostName"
+                                            ],
+                       "severity":  "critical",
+                       "description":  "Objects where a non-baseline principal can take ownership (often leading to full control).",
+                       "remediation":  "Remove WriteOwner from untrusted principals; validate sensitive OUs and GPOs.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows/win32/adschema/a-rights"
+                                      ]
+                   },
+                   {
+                       "id":  "ACE-005",
+                       "name":  "Broad ACE: WriteProperty (non-privileged principal)",
+                       "category":  "ACE",
+                       "engine":  "acl",
+                       "searchBase":  "Domain",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(\u0026(|(objectCategory=person)(objectCategory=computer)(objectCategory=group)(objectClass=organizationalUnit)(objectClass=groupPolicyContainer))(!(objectClass=domainDNS)))",
+                       "dangerousRights":  [
+                                                 "WriteProperty"
+                                             ],
+                       "maxObjects":  50000,
+                       "excludePrivilegedPrincipal":  true,
+                       "propertiesToLoad":  [
+                                                "distinguishedName",
+                                                "name",
+                                                "objectClass",
+                                                "dNSHostName"
+                                            ],
+                       "severity":  "info",
+                       "description":  "Objects with Allow WriteProperty for non-baseline principals (noisy; includes targeted property writes). Review ObjectType when present.",
+                       "remediation":  "Narrow rights to required properties; prefer validated admin paths.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows/win32/adschema/a-rights"
+                                      ],
+                       "scoreWeight":  0
+                   },
+                   {
+                       "id":  "DC-003",
+                       "name":  "Forest Functional Level",
+                       "category":  "Domain_Configuration",
+                       "engine":  "inventory",
+                       "searchBase":  "Configuration",
+                       "ldapFilter":  "(objectClass=crossRefContainer)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "msDS-Behavior-Version"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "MsDSBehaviorVersion":  "msDS-Behavior-Version"
+                                            },
+                       "severity":  "info",
+                       "description":  "Informational inventory: forest / functional-level related objects in the configuration partition. Not a pass/fail misconfiguration by itself; excluded from risk scoring.",
+                       "remediation":  "Use only for reporting and change tracking. Do not treat matches as automatic vulnerabilities. Exclude from executive risk rollups if your workflow scores only LDAP risk checks.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-active-directory-functional-levels",
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/manage/raise-forest-function-levels"
+                                      ]
+                   },
+                   {
+                       "id":  "DC-008",
+                       "name":  "Schema Master (dMD FSMO holder)",
+                       "category":  "Domain_Controllers",
+                       "engine":  "inventory",
+                       "searchBase":  "SchemaContainer",
+                       "searchScope":  "Subtree",
+                       "ldapFilter":  "(objectClass=dMD)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName",
+                                                "fSMORoleOwner"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "FsmoRoleOwner":  "fSMORoleOwner"
+                                            },
+                       "severity":  "info",
+                       "description":  "Informational inventory: schema partition root (dMD) and Schema Master FSMO holder. Excluded from risk scoring.",
+                       "remediation":  "Use for documentation and DR planning (who holds Schema Master). Not a security finding by itself; remove from risk dashboards if only misconfiguration checks should appear.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-schema",
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/manage/operations-roles"
+                                      ]
+                   },
+                   {
+                       "id":  "LDAP-001",
+                       "name":  "Example: all user objects (domain partition)",
+                       "category":  "LDAP_Security",
+                       "engine":  "inventory",
+                       "searchBase":  "Domain",
+                       "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user))",
+                       "propertiesToLoad":  [
+                                                "samAccountName",
+                                                "distinguishedName",
+                                                "userAccountControl"
+                                            ],
+                       "userAccountControlMustExclude":  2,
+                       "outputProperties":  {
+                                                "SamAccountName":  "samAccountName",
+                                                "DistinguishedName":  "distinguishedName",
+                                                "UserAccountControl":  "userAccountControl"
+                                            },
+                       "severity":  "info",
+                       "description":  "Demo inventory: lists enabled user objects in the domain partition. For learning and query validation only; excluded from risk scoring.",
+                       "remediation":  "Do not use as a security control. Replace with targeted risk checks (e.g. stale accounts, weak UAC flags) for assessments; omit from risk summaries.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/manage/understand-default-user-and-computer-containers",
+                                          "https://learn.microsoft.com/windows/win32/adsi/search-filter-syntax"
+                                      ]
+                   },
+                   {
+                       "id":  "SAMPLE-SCHEMA-NC",
+                       "name":  "Example: schema partition root search",
+                       "category":  "Documentation",
+                       "engine":  "inventory",
+                       "searchBase":  "Schema",
+                       "searchScope":  "OneLevel",
+                       "ldapFilter":  "(objectClass=*)",
+                       "propertiesToLoad":  [
+                                                "name",
+                                                "distinguishedName"
+                                            ],
+                       "outputProperties":  {
+                                                "Name":  "name",
+                                                "DistinguishedName":  "distinguishedName"
+                                            },
+                       "severity":  "info",
+                       "description":  "Demo inventory: one-level search at the schema naming context root. For documentation and tooling examples only; excluded from risk scoring.",
+                       "remediation":  "Use only to validate connectivity and schema NC visibility. Not a vulnerability; exclude from automated risk scoring pipelines.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-schema",
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview"
+                                      ]
+                   }
+               ]
 }

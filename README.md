@@ -100,11 +100,12 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 
 ### Certificate Services (ADCS)
 ```powershell
-# ESC1 - Templates Allowing SAN
-.\adsi.ps1 -CheckId CERT-002 -CompactOutput
+# ESC1 / ESC4 — use curated adcs checks (CERT-002/CERT-005 stubs are not in checks.json; see ADCS-ESC*)
+.\adsi.ps1 -CheckId ADCS-ESC1 -CompactOutput
+.\adsi.ps1 -CheckId ADCS-ESC4 -CompactOutput
 
-# ESC4 - Weak Access Control
-.\adsi.ps1 -CheckId CERT-005 -CompactOutput
+# Example promoted LDAP rule (client-auth templates)
+.\adsi.ps1 -CheckId CERT-006 -CompactOutput
 ```
 
 ### Advanced Attacks
@@ -322,7 +323,7 @@ $config.checks | Group-Object category | Sort-Object Count -Descending
 ### Example 1: Quick Security Assessment (Single Check Runner)
 ```powershell
 # Top 5 critical checks
-$checks = @('ACC-001', 'ACC-034', 'KRB-002', 'ACC-037', 'CERT-002')
+$checks = @('ACC-001', 'ACC-034', 'KRB-002', 'ACC-037', 'ADCS-ESC1')
 foreach ($c in $checks) {
     Write-Host "`n=== $c ===" -ForegroundColor Cyan
     .\adsi.ps1 -CheckId $c -ServerName dc01.domain.local -CompactOutput
@@ -351,7 +352,7 @@ start .\ui\dashboard.html
 ### Example 4: CI/CD Security Gate (Single Check Runner)
 ```powershell
 # Fail build if critical vulnerabilities found
-$criticalChecks = @('KRB-002', 'ACC-034', 'ACC-037', 'CERT-002')
+$criticalChecks = @('KRB-002', 'ACC-034', 'ACC-037', 'ADCS-ESC1')
 foreach ($check in $criticalChecks) {
     .\adsi.ps1 -CheckId $check -Quiet -FailOnFindings
     if ($LASTEXITCODE -eq 3) {
@@ -500,7 +501,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ### Phase Status
 - ✅ **Phase A:** Curated inventory rows (checks.json)
 - ✅ **Phase B:** Vulnerability-style metadata + bulk LDAP promotion (661 checks, excludes CERT/Azure)
-- ⏳ **Phase C/D:** Certificate_Services and Azure_AD_Integration categories (not yet promoted in bulk file)
+- ✅ **Phase C (partial):** `Certificate_Services` in `checks.json` — `ADCS-ESC1`…`ADCS-ESC8` plus promoted `CERT-*` LDAP checks (`tools\Build-CertificateServicesLdapChecks.ps1`); `checks.overrides.phaseB-complete.json` still excludes CERT/Azure for bulk generated scans
+- ⏳ **Phase D:** `Azure_AD_Integration` and any remaining bulk promotion work
 
 ---
 

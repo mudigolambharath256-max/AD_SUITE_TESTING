@@ -1,0 +1,466 @@
+{
+  "CERT-001": {
+    "name": "Certificate templates (configuration partition listing)",
+    "severity": "info",
+    "description": "Full LDAP listing of certificate template objects. Use for inventory and to scope ADCS-ESC reviews. Each row is a PKI object, not proof of vulnerability by itself.",
+    "remediation": "Use results for inventory and change tracking. Prioritize templates with client-auth EKU and weak enrollment ACLs using ADCS-ESC1–ESC8.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)",
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-006": {
+    "severity": "medium",
+    "description": "Certificate templates that include client authentication EKU (1.3.6.1.5.5.7.3.2). These are common targets for domain authentication abuse when combined with weak enrollment or subject/SAN settings.",
+    "remediation": "Restrict enrollment; require manager approval where appropriate; ensure subject/SAN flags and msPKI settings align with least privilege; cross-check ADCS-ESC1–ESC3.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)",
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-template-permissions"
+    ]
+  },
+  "CERT-007": {
+    "severity": "medium",
+    "description": "Templates granting smart card logon EKU (1.3.6.1.4.1.311.20.2.2). Mis-issued smart card logon certs can support credential abuse paths; review issuance and physical controls.",
+    "remediation": "Limit enrollment; validate key archival and issuance policies; ensure smart card issuance aligns with tier model.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ]
+  },
+  "CERT-008": {
+    "severity": "high",
+    "description": "Templates with PKINIT client authentication EKU (1.3.6.1.5.2.3.4). Certificates can be used in Kerberos PKINIT flows; combined with weak enrollment they raise domain authentication risk.",
+    "remediation": "Tighten enrollment ACLs; review PKINIT usage; validate KDC and domain controller certificate binding settings.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)",
+      "PKINIT and certificate mapping (Microsoft Docs)"
+    ]
+  },
+  "CERT-009": {
+    "severity": "medium",
+    "description": "Templates allowing code signing EKU (1.3.6.1.5.5.7.3.3). Abuse can support malware signing or policy bypass if enrollment is too broad.",
+    "remediation": "Restrict code signing template enrollment to designated groups; audit issued certificates.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+    ]
+  },
+  "CERT-010": {
+    "severity": "high",
+    "description": "Templates without manager approval (CT_FLAG_PEND_ALL_REQUESTS not set in msPKI-Enrollment-Flag). Speeds issuance and enlarges the window for mis-issued certificates when other controls fail.",
+    "remediation": "Enable manager approval for sensitive templates; combine with restricted enrollment and ADCS-ESC reviews.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ]
+  },
+  "CERT-011": {
+    "severity": "high",
+    "description": "Templates with zero or missing required RA signatures (msPKI-RA-Signature). Weakens issuance workflow and can ease abuse when enrollment is misconfigured.",
+    "remediation": "Require RA signatures where policy demands; align with PKI officer workflows.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ]
+  },
+  "CERT-012": {
+    "severity": "info",
+    "description": "Enterprise CA enrollment service objects (pKIEnrollmentService) in AD. Lists published CAs and template bindings; use for mapping attack surface alongside ADCS-ESC6–ESC8.",
+    "remediation": "Validate CA host hardening, Web Enrollment, and RPC exposure; review certificateTemplates published per CA.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/ad-cs-topology"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-013": {
+    "severity": "medium",
+    "description": "NTAuthCertificates store in AD lists CAs trusted for domain authentication. Unexpected or stale entries can affect trust decisions.",
+    "remediation": "Keep NTAuth aligned with intentional enterprise roots; remove retired CAs after migration.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/distribute-certificates-to-clients"
+    ]
+  },
+  "CERT-014": {
+    "severity": "medium",
+    "description": "Certification authority objects under the enterprise PKI tree. Broad listing helps identify roots and intermediates published to the forest.",
+    "remediation": "Audit CA certificates for lifecycle and trust alignment; remove obsolete publishing.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ]
+  },
+  "CERT-015": {
+    "severity": "medium",
+    "description": "Templates missing pKIExpirationPeriod (or equivalent validity constraints visible in LDAP). May indicate legacy or inconsistent template definitions worth validating in CA policy.",
+    "remediation": "Define and enforce validity periods per template; validate on issuing CA.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+    ]
+  },
+  "CERT-016": {
+    "severity": "medium",
+    "description": "Templates with key archival enrollment flag set. Increases sensitivity: archived keys require strict access controls on KRA and CA database.",
+    "remediation": "Verify KRA configuration, ACLs, and auditing; limit templates with archival to required scenarios.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/key-archival"
+    ]
+  },
+  "CERT-017": {
+    "severity": "high",
+    "description": "Templates allowing exportable private keys (msPKI-Private-Key-Flag). Eases credential theft if certificates are issued to interactive users or broadly enrolled.",
+    "remediation": "Disable exportable keys where not required; prefer hardware protection for high-value use cases.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ]
+  },
+  "CERT-018": {
+    "severity": "medium",
+    "description": "Templates with machine/enrollment name flags indicating machine certificate scenarios. Review for unintended domain computer authentication surface.",
+    "remediation": "Restrict enrollment to intended device OUs and groups; validate autoenrollment GPO scope.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+    ]
+  },
+  "CERT-019": {
+    "severity": "low",
+    "description": "Templates allowing renewal with a new key pair. Can complicate revocation and lifecycle tracking if combined with weak identity binding.",
+    "remediation": "Ensure renewal policies and revocation workflows cover key-change renewals.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+    ]
+  },
+  "CERT-023": {
+    "severity": "low",
+    "description": "User accounts with userCertificate populated. Published certs may support mapping or smart card scenarios; unexpected entries warrant review for stale or over-published credentials.",
+    "remediation": "Validate intentional publication; remove obsolete certificates from the directory.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/key-archival"
+    ]
+  },
+  "CERT-024": {
+    "severity": "low",
+    "description": "Computer accounts with userCertificate populated. May reflect domain controller or service certs published to AD; unexpected hosts warrant validation.",
+    "remediation": "Confirm published certs match intended roles; rotate and clean up stale entries.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/distribute-certificates-to-clients"
+    ]
+  },
+  "CERT-025": {
+    "severity": "info",
+    "description": "CRL distribution point objects in the configuration partition. Use to map revocation publication points and HTTP/S surface.",
+    "remediation": "Ensure CDP URLs are reachable and HTTPS where required; monitor expiration and replication.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-revocation"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-026": {
+    "name": "[DACL review] Certificate templates (nTSecurityDescriptor for enrollment ACL analysis)",
+    "severity": "medium",
+    "description": "Lists templates with security descriptor loaded. LDAP cannot resolve 'Everyone' enrollment in one filter—manually review DACL for Authenticated Users / Domain Users enrollment. Prefer ADCS-ESC4 for write-equivalent abuse on templates.",
+    "remediation": "Audit enrollment ACEs on each template; remove broad enrollment where inappropriate; correlate with ADCS-ESC4.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)",
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-template-permissions"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-027": {
+    "severity": "info",
+    "description": "CA objects referencing offline roots or cross-boundary trust material. Use for PKI topology documentation and continuity planning.",
+    "remediation": "Validate CRL/AIA publication for offline roots; document trust chains.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/ad-cs-topology"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-028": {
+    "severity": "info",
+    "description": "AIA container under Public Key Services. Authority Information Access publication affects chain building for clients.",
+    "remediation": "Ensure AIA URLs are correct, reachable, and aligned with issuance hierarchy.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/authority-information-access"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-029": {
+    "severity": "medium",
+    "description": "Templates with subject name from Active Directory (CT_FLAG_SUBJECT_ALT_REQUIRE_UPN or related name flags in msPKI-Certificate-Name-Flag). Affects how subjects are bound to directory identities.",
+    "remediation": "Validate name flags against intended use; cross-check with ESC1-style SAN issues.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ]
+  },
+  "CERT-030": {
+    "name": "[Listing] Template schema version fields (all templates)",
+    "severity": "info",
+    "description": "Lists all templates with schema/minor revision attributes. Useful for spotting legacy versions; not a vulnerability by itself.",
+    "remediation": "Deprecate legacy templates; migrate to supported schema versions with explicit EKU and ACLs.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-031": {
+    "name": "[Listing] Certificate templates (full forest set; manual ESC review)",
+    "severity": "info",
+    "description": "Broad listing only—same objects as a full template inventory. Use to drive manual review; does not imply vulnerable configuration without ADCS-ESC and ACL analysis.",
+    "remediation": "Cross-reference with ADCS-ESC1–ESC8 and per-template ACL review; retire unused templates.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-032": {
+    "name": "[Listing] Templates for enrollment rights review (full set)",
+    "severity": "info",
+    "description": "Lists every template with timestamps—LDAP does not enumerate enrollment ACEs in this filter. Use for workflow tracking; validate enrollment with ADCS-ESC4 and DACL review.",
+    "remediation": "Verify only intended groups may enroll; remove excessive ACEs.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-template-permissions"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-033": {
+    "name": "Client authentication templates (same LDAP scope as CERT-006)",
+    "severity": "info",
+    "ldapFilter": "(&(objectClass=pKICertificateTemplate)(pKIExtendedKeyUsage=1.3.6.1.5.5.7.3.2))",
+    "propertiesToLoad": [
+      "name",
+      "distinguishedName",
+      "cn",
+      "displayName",
+      "pKIExtendedKeyUsage",
+      "msPKI-Certificate-Name-Flag"
+    ],
+    "description": "Intentionally the same filter as CERT-006 (client authentication EKU). Retained for checklist parity; findings overlap—do not double-count risk. Scoring suppressed.",
+    "remediation": "Use CERT-006 or ADCS-ESC checks for reporting; disable one ID in overrides if duplicates are undesirable.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-034": {
+    "severity": "info",
+    "description": "Enterprise CA objects with timestamps for health-style review. LDAP alone does not prove outage; use with monitoring and certutil/CA logs.",
+    "remediation": "Monitor CA services, CRL validity, and disk space on CA hosts.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/monitoring-and-logging"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-035": {
+    "severity": "info",
+    "description": "CRL distribution points with change metadata. Supports tracking revocation publication changes.",
+    "remediation": "Validate CRL publication schedules and HTTP/S endpoints.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-revocation"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-036": {
+    "severity": "info",
+    "description": "Enterprise CA objects relevant to OCSP deployment review. LDAP does not prove OCSP responder health—follow with endpoint tests.",
+    "remediation": "Deploy and monitor OCSP responders per Microsoft guidance; align AIA/OCSP URLs.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/ocsp-responder"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-037": {
+    "name": "[Listing] Templates for version drift review (full set)",
+    "severity": "info",
+    "description": "Lists all templates—LDAP does not detect 'mismatch' without comparing to published CA policy. Manual review only.",
+    "remediation": "Consolidate templates; disable superseded definitions.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-038": {
+    "name": "[Listing] Templates for autoenrollment policy alignment (full set)",
+    "severity": "info",
+    "description": "Broad template listing for GPO/autoenrollment correlation. LDAP alone does not read autoenrollment GPOs.",
+    "remediation": "Scope autoenrollment GPOs tightly; review templates granted autoenrollment.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/autoenrollment"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-039": {
+    "name": "Templates with Certificate Request Agent EKU",
+    "severity": "high",
+    "ldapFilter": "(&(objectClass=pKICertificateTemplate)(pKIExtendedKeyUsage=1.3.6.1.4.1.311.20.2.1))",
+    "propertiesToLoad": [
+      "name",
+      "distinguishedName",
+      "cn",
+      "displayName",
+      "pKIExtendedKeyUsage"
+    ],
+    "description": "Templates publishing the CRA EKU (1.3.6.1.4.1.311.20.2.1). Overlaps ADCS-ESC3—validate enrollment and manager approval.",
+    "remediation": "Remove CRA EKU where unnecessary; enforce manager approval and enrollment restrictions.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ]
+  },
+  "CERT-040": {
+    "severity": "medium",
+    "description": "Enterprise CA objects tied to Web Enrollment attack surface. Correlates with ADCS-ESC8 for HTTP/NTLM exposure—this LDAP check does not replace network verification.",
+    "remediation": "Require HTTPS, harden IIS certsrv, restrict NTLM; see KB5005413.",
+    "references": [
+      "https://support.microsoft.com/topic/kb5005413"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-041": {
+    "name": "Templates with supersession reference (msPKI-Template-Supersede)",
+    "severity": "medium",
+    "ldapFilter": "(&(objectClass=pKICertificateTemplate)(msPKI-Template-Supersede=*))",
+    "propertiesToLoad": [
+      "name",
+      "distinguishedName",
+      "cn",
+      "displayName",
+      "msPKI-Template-Supersede"
+    ],
+    "description": "Templates that reference another template in the supersession chain. Validate whether superseded templates are disabled where policy requires.",
+    "remediation": "Disable superseded templates after migration; enforce supersession links.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+    ]
+  },
+  "CERT-042": {
+    "severity": "medium",
+    "description": "Enterprise CAs for CA certificate lifetime review. Expired or soon-to-expire CA certs break chain validation.",
+    "remediation": "Plan CA cert renewal; monitor AIA/CRL publication during rollover.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/renew-a-certification-authority"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-043": {
+    "name": "Templates with minimal key size at or below 1024 bits (LDAP)",
+    "severity": "high",
+    "ldapFilter": "(&(objectClass=pKICertificateTemplate)(msPKI-Minimal-Key-Size<=1024))",
+    "propertiesToLoad": [
+      "name",
+      "distinguishedName",
+      "cn",
+      "displayName",
+      "msPKI-Minimal-Key-Size"
+    ],
+    "description": "Templates advertising msPKI-Minimal-Key-Size ≤ 1024. Modern baselines typically require ≥2048; confirm algorithm context on issuing CA.",
+    "remediation": "Raise minimum key size on templates and CAs; reissue where non-compliant.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/cryptography"
+    ]
+  },
+  "CERT-044": {
+    "name": "[Listing] Template objects for validity period review (LDAP cannot compare periods)",
+    "severity": "info",
+    "description": "Broad listing: LDAP does not decode pKIExpirationPeriod for numeric comparison in this check. Manual or CA-policy review required for 'excessive' validity.",
+    "remediation": "Reduce validity periods to operational minimums; enforce renewal discipline.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-templates"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-045": {
+    "severity": "low",
+    "description": "Enterprise CAs for audit configuration review. LDAP listing does not read local CA audit policy—use CA host baselines.",
+    "remediation": "Enable and forward CA audit logs; align with SIEM coverage.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/monitoring-and-logging"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-046": {
+    "name": "[DACL review] Templates with security descriptor (ACL triage)",
+    "severity": "medium",
+    "ldapFilter": "(objectClass=pKICertificateTemplate)",
+    "propertiesToLoad": [
+      "name",
+      "distinguishedName",
+      "nTSecurityDescriptor",
+      "whenCreated",
+      "whenChanged"
+    ],
+    "description": "Loads nTSecurityDescriptor for manual or downstream ACL review. Prefer ADCS-ESC4 for automated weak-ACL detection.",
+    "remediation": "Remove write-equivalent rights for non-PKI admins; validate ADCS-ESC4 output.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)",
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-template-permissions"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-047": {
+    "severity": "info",
+    "description": "Enterprise CAs for backup posture review. AD LDAP does not prove backup success—follow with backup reports.",
+    "remediation": "Back up CA database and keys per Microsoft DR guidance; test restore.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/back-up-and-restore"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-048": {
+    "severity": "info",
+    "description": "Enterprise CAs for revocation workflow documentation. Pair with operational CRL/OCSP monitoring.",
+    "remediation": "Maintain revocation reason policies and responder availability.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/certificate-revocation"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-049": {
+    "name": "[Listing] Smart card logon template review (full set; see CERT-007 for EKU-specific)",
+    "severity": "info",
+    "description": "Legacy stub used a broad template list. For EKU-specific smart card templates use CERT-007. This row is listing-oriented; scoring suppressed.",
+    "remediation": "Validate smart card templates, KDC certs, and user mappings.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/smart-card-logon"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-050": {
+    "name": "Templates with Any Purpose or missing EKU (ESC2-style LDAP signal)",
+    "severity": "high",
+    "ldapFilter": "(&(objectClass=pKICertificateTemplate)(|(pKIExtendedKeyUsage=2.5.29.37.0)(!(pKIExtendedKeyUsage=*))))",
+    "propertiesToLoad": [
+      "name",
+      "distinguishedName",
+      "cn",
+      "displayName",
+      "pKIExtendedKeyUsage"
+    ],
+    "description": "Templates with Any Purpose EKU or no EKU—high-risk configuration class. Overlaps ADCS-ESC2; use ESC2 for full logic.",
+    "remediation": "Explicitly set required EKUs; remove Any Purpose where not justified.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ]
+  },
+  "CERT-051": {
+    "severity": "medium",
+    "description": "Enterprise CAs for CA role separation review. Combined CA admin + backup operator on same accounts increases insider risk.",
+    "remediation": "Separate CA administration per Microsoft PKI best practices.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/managing-permissions-on-the-enterprise-ca"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-052": {
+    "name": "[Listing] Subject name policy review (all templates)",
+    "severity": "info",
+    "description": "Broad listing for subject/SAN flag review. Prefer targeted checks (e.g. CERT-029, ADCS-ESC1) for specific misconfigurations.",
+    "remediation": "Tighten subject name flags; disable enrollee-supplied subject where not needed.",
+    "references": [
+      "SpecterOps Certified Pre-Owned (AD CS)"
+    ],
+    "scoreWeight": 0
+  },
+  "CERT-053": {
+    "severity": "high",
+    "description": "Enterprise CA objects for security descriptor review. Weak ACLs on pKIEnrollmentService relate to ADCS-ESC7—use LDAP plus ESC7 for full analysis.",
+    "remediation": "Restrict ManageCA and related rights to PKI admins; validate with ADCS-ESC7.",
+    "references": [
+      "https://learn.microsoft.com/windows-server/identity/ad-cs/manage/managing-permissions-on-the-enterprise-ca"
+    ],
+    "scoreWeight": 0
+  }
+}

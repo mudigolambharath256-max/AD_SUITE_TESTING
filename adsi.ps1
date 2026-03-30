@@ -57,7 +57,11 @@ param(
 
     [switch]$FailOnFindings,
 
-    [switch]$CompactOutput
+    [switch]$CompactOutput,
+
+    [switch]$AdcsSkipACLChecks,
+
+    [switch]$AdcsSkipNetworkProbes
 )
 
 $ErrorActionPreference = 'Continue'
@@ -134,6 +138,13 @@ switch ($engine) {
     'filesystem' {
         $result = Invoke-ADSuiteFilesystemCheck -Check $check -RootDse $rootDse -ServerName $ServerName -SourcePathOverride $paramSource
     }
+    'adcs' {
+        $result = Invoke-ADSuiteAdcsCheck -Check $check -RootDse $rootDse -ServerName $ServerName `
+            -AdcsSkipACLChecks:$AdcsSkipACLChecks -AdcsSkipNetworkProbes:$AdcsSkipNetworkProbes
+    }
+    'acl' {
+        $result = Invoke-ADSuiteAclCheck -Check $check -RootDse $rootDse -ServerName $ServerName -SourcePathOverride $paramSource
+    }
     'registry' {
         Write-AdsiStderr "Check '$CheckId' uses engine 'registry' (not implemented in adsi.ps1 yet)."
         exit 2
@@ -157,6 +168,9 @@ if (-not $Quiet) {
     Write-Host "  FindingCount: $findingCount  Result: $resultWord  (0 findings = Pass for risk checks)" -ForegroundColor $(if ($findingCount -eq 0) { 'Green' } else { 'Yellow' })
     if ($result.SourcePath) {
         Write-Host "  SourcePath: $($result.SourcePath)" -ForegroundColor DarkGray
+    }
+    if ($result.PSObject.Properties.Name -contains 'ScanNote' -and $result.ScanNote) {
+        Write-Host "  Note: $($result.ScanNote)" -ForegroundColor DarkYellow
     }
 }
 

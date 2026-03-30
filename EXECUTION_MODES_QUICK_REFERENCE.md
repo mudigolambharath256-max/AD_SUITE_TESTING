@@ -81,7 +81,7 @@ if ($LASTEXITCODE -eq 3) { exit 1 }
 # Specific checks only
 .\Invoke-ADSuiteScan.ps1 `
     -ChecksJsonPath .\checks.json `
-    -IncludeCheckId KRB-002,ACC-034,CERT-002 `
+    -IncludeCheckId KRB-002,ACC-034,ADCS-ESC1 `
     -OutputDirectory .\out\critical
 
 # Against specific DC
@@ -249,7 +249,7 @@ start .\ui\dashboard.html
 ### Workflow 4: CI/CD Security Gate
 ```powershell
 # Check critical vulnerabilities
-$checks = @('KRB-002', 'ACC-034', 'ACC-037', 'CERT-002')
+$checks = @('KRB-002', 'ACC-034', 'ACC-037', 'ADCS-ESC1')
 foreach ($check in $checks) {
     .\adsi.ps1 -CheckId $check -Quiet -FailOnFindings
     if ($LASTEXITCODE -eq 3) {

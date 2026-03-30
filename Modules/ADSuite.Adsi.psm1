@@ -25,6 +25,31 @@ function Get-ADSuiteRootDse {
     }
 }
 
+# Baseline for "expected" privileged principals when flagging non-admin ACEs (aligns with AD CS ACL helpers)
+$script:ADSuitePrivilegedSids = @('S-1-5-18', 'S-1-5-32-544', 'S-1-5-9', 'S-1-5-32-549')
+$script:ADSuitePrivilegedSidPatterns = @(
+    'S-1-5-21-\d+-\d+-\d+-512$', 'S-1-5-21-\d+-\d+-\d+-519$', 'S-1-5-21-\d+-\d+-\d+-516$',
+    'S-1-5-21-\d+-\d+-\d+-498$'
+)
+
+function Test-ADSuitePrivilegedPrincipalSid {
+    [CmdletBinding()]
+    param([string]$SID)
+    if ([string]::IsNullOrWhiteSpace($SID)) { return $false }
+    if ($SID -in $script:ADSuitePrivilegedSids) { return $true }
+    foreach ($pattern in $script:ADSuitePrivilegedSidPatterns) {
+        if ($SID -match $pattern) { return $true }
+    }
+    return $false
+}
+
+function Resolve-ADSuiteIdentityDisplayName {
+    [CmdletBinding()]
+    param([System.Security.Principal.SecurityIdentifier]$SID)
+    try { return $SID.Translate([System.Security.Principal.NTAccount]).Value }
+    catch { return $SID.Value }
+}
+
 function Merge-ADSuiteCheckDefaults {
     [CmdletBinding()]
     param(
@@ -171,8 +196,40 @@ function Test-ADSuiteCatalogIntegrity {
             if (-not $c.ldapFilter) { $errors.Add("$id : ldap engine requires 'ldapFilter'.") }
         } elseif ($eng -eq 'filesystem') {
             if (-not $c.filesystemKind) { $errors.Add("$id : filesystem engine requires 'filesystemKind'.") }
+        } elseif ($eng -eq 'adcs') {
+            if (-not $c.adcsCheck) {
+                $errors.Add("$id : adcs engine requires 'adcsCheck' (ESC1..ESC8).")
+            } else {
+                $ac = [string]$c.adcsCheck
+                if ($ac -notin @('ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC7','ESC8')) {
+                    $errors.Add("$id : adcsCheck must be ESC1 through ESC8.")
+                }
+            }
+        } elseif ($eng -eq 'acl') {
+            if (-not $c.searchBase) { $errors.Add("$id : acl engine requires 'searchBase'.") }
+            if (-not $c.ldapFilter) { $errors.Add("$id : acl engine requires 'ldapFilter'.") }
+            $dr = $c.dangerousRights
+            if ($null -eq $dr -or @($dr).Count -eq 0) {
+                $errors.Add("$id : acl engine requires non-empty 'dangerousRights' array.")
+            } else {
+                foreach ($rn in @($dr)) {
+                    if ([string]::IsNullOrWhiteSpace([string]$rn)) {
+                        $errors.Add("$id : acl dangerousRights contains an empty entry.")
+                        continue
+                    }
+                    try {
+                        $null = [System.Enum]::Parse([System.DirectoryServices.ActiveDirectoryRights], [string]$rn, $true)
+                    } catch {
+                        $errors.Add("$id : acl dangerousRights entry '$rn' is not a valid ActiveDirectoryRights name.")
+                    }
+                }
+            }
+            $mo = $c.maxObjects
+            if ($null -eq $mo -or [int]$mo -lt 1) {
+                $errors.Add("$id : acl engine requires positive integer 'maxObjects'.")
+            }
         }
-        if ($eng -in @('ldap', 'filesystem', 'registry')) {
+        if ($eng -in @('ldap', 'filesystem', 'registry', 'adcs', 'acl')) {
             if (-not $c.severity) { $warnings.Add("$id : risk check should set 'severity'.") }
             if (-not $c.description) { $warnings.Add("$id : risk check should set 'description'.") }
         }
@@ -279,7 +336,9 @@ function Invoke-ADSuiteLdapQuery {
 
         [string[]]$PropertiesToLoad = @(),
 
-        [int]$PageSize = 1000
+        [int]$PageSize = 1000,
+
+        [switch]$ReadAcl
     )
 
     $searcher = New-Object System.DirectoryServices.DirectorySearcher($SearchRoot)
@@ -287,9 +346,17 @@ function Invoke-ADSuiteLdapQuery {
         $searcher.Filter = $LdapFilter
         $searcher.PageSize = $PageSize
         $searcher.SearchScope = [System.DirectoryServices.SearchScope]::$SearchScope
+        if ($ReadAcl) {
+            $searcher.SecurityMasks =
+                [System.DirectoryServices.SecurityMasks]::Dacl -bor
+                [System.DirectoryServices.SecurityMasks]::Owner
+        }
         $searcher.PropertiesToLoad.Clear()
         foreach ($p in $PropertiesToLoad) {
             if ($p) { [void]$searcher.PropertiesToLoad.Add($p) }
+        }
+        if ($ReadAcl -and 'nTSecurityDescriptor' -notin $PropertiesToLoad) {
+            [void]$searcher.PropertiesToLoad.Add('nTSecurityDescriptor')
         }
 
         $collection = $searcher.FindAll()
@@ -609,6 +676,356 @@ function Invoke-ADSuiteFilesystemCheck {
     }
 }
 
+function Invoke-ADSuiteAclCheck {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $Check,
+
+        [Parameter(Mandatory)]
+        $RootDse,
+
+        [string]$ServerName,
+
+        [string]$SourcePathOverride
+    )
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $cid = [string]$Check.id
+    $cname = if ($Check.name) { [string]$Check.name } else { $cid }
+    $cat = if ($Check.category) { [string]$Check.category } else { 'Unknown' }
+
+    $resolvedSourcePath = $null
+    if (-not [string]::IsNullOrWhiteSpace($SourcePathOverride)) {
+        $resolvedSourcePath = $SourcePathOverride.Trim()
+    } elseif ($Check.PSObject.Properties.Name -contains 'sourcePath' -and -not [string]::IsNullOrWhiteSpace([string]$Check.sourcePath)) {
+        $resolvedSourcePath = [string]$Check.sourcePath
+    }
+
+    $severity = if ($Check.PSObject.Properties.Name -contains 'severity' -and $Check.severity) {
+        [string]$Check.severity
+    } else {
+        'medium'
+    }
+    $description = $null
+    if ($Check.PSObject.Properties.Name -contains 'description' -and $Check.description) {
+        $description = [string]$Check.description
+    }
+
+    $meta = Get-ADSuiteOptionalCheckMeta -Check $Check
+
+    $engine = if ($Check.engine) { $Check.engine.ToLowerInvariant() } else { 'ldap' }
+    if ($engine -ne 'acl') {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Skipped'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "Check '$cid' uses engine '$engine', not acl."
+            ExitCode      = 2
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+            ScanNote      = $null
+        }
+    }
+
+    $ldapFilter = $Check.ldapFilter
+    if (-not $ldapFilter) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "Check '$cid' has no ldapFilter."
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+            ScanNote      = $null
+        }
+    }
+
+    $rightEnums = [System.Collections.Generic.List[System.DirectoryServices.ActiveDirectoryRights]]::new()
+    foreach ($rn in @($Check.dangerousRights)) {
+        try {
+            $ev = [System.Enum]::Parse([System.DirectoryServices.ActiveDirectoryRights], [string]$rn, $true)
+            [void]$rightEnums.Add([System.DirectoryServices.ActiveDirectoryRights]$ev)
+        } catch {
+            $sw.Stop()
+            return [PSCustomObject]@{
+                CheckId       = $cid
+                CheckName     = $cname
+                Category      = $cat
+                Severity      = $severity
+                Description   = $description
+                FindingCount  = 0
+                Result        = 'Error'
+                DurationMs    = [int]$sw.ElapsedMilliseconds
+                Error         = "Invalid dangerousRights entry '$rn': $($_.Exception.Message)"
+                ExitCode      = 1
+                Findings      = [object[]]@()
+                SourcePath    = $resolvedSourcePath
+                Remediation   = $meta.Remediation
+                References    = $meta.References
+                ScoreWeight   = $meta.ScoreWeight
+                ScanNote      = $null
+            }
+        }
+    }
+
+    $maxObj = [int]$Check.maxObjects
+    if ($maxObj -lt 1) { $maxObj = 50000 }
+
+    $excludePriv = $true
+    if ($Check.PSObject.Properties.Name -contains 'excludePrivilegedPrincipal' -and $null -ne $Check.excludePrivilegedPrincipal) {
+        $excludePriv = [bool]$Check.excludePrivilegedPrincipal
+    }
+
+    $searchBaseDn = $null
+    if ($Check.PSObject.Properties.Name -contains 'searchBaseDn') {
+        $searchBaseDn = $Check.searchBaseDn
+    }
+
+    try {
+        $searchRoot = Resolve-ADSuiteSearchRoot -SearchBase $Check.searchBase -SearchBaseDn $searchBaseDn -RootDse $RootDse -ServerName $ServerName
+    } catch {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = $_.Exception.Message
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+            ScanNote      = $null
+        }
+    }
+
+    $scope = if ($Check.searchScope) { $Check.searchScope } else { 'Subtree' }
+    $pageSize = [int]($Check.pageSize)
+    if ($pageSize -lt 1) { $pageSize = 1000 }
+
+    $propsToLoad = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($p in @('distinguishedName', 'name', 'cn', 'objectClass', 'dNSHostName')) {
+        [void]$propsToLoad.Add($p)
+    }
+    if ($Check.propertiesToLoad) {
+        foreach ($p in $Check.propertiesToLoad) {
+            if ($p) { [void]$propsToLoad.Add($p) }
+        }
+    }
+
+    try {
+        $results = Invoke-ADSuiteLdapQuery -LdapFilter $ldapFilter -SearchRoot $searchRoot -SearchScope $scope `
+            -PropertiesToLoad @($propsToLoad) -PageSize $pageSize -ReadAcl
+    } catch {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "LDAP query failed: $($_.Exception.Message)"
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+            ScanNote      = $null
+        }
+    }
+
+    $findingRows = [System.Collections.Generic.List[object]]::new()
+    $aclFailCount = 0
+    $objectsScanned = 0
+    $capped = $false
+
+    foreach ($sr in $results) {
+        if ($objectsScanned -ge $maxObj) {
+            $capped = $true
+            break
+        }
+        $objectsScanned++
+
+        $sd = $null
+        try {
+            $rawSd = Get-AdsProperty -Properties $sr.Properties -Name 'nTSecurityDescriptor'
+            if ($rawSd) {
+                $sd = New-Object System.DirectoryServices.ActiveDirectorySecurity
+                $bytes = [byte[]]$rawSd
+                $sd.SetSecurityDescriptorBinaryForm($bytes)
+            } else {
+                $de = $sr.GetDirectoryEntry()
+                $sd = $de.ObjectSecurity
+            }
+        } catch {
+            $aclFailCount++
+            continue
+        }
+
+        if ($null -eq $sd) {
+            $aclFailCount++
+            continue
+        }
+
+        $dn = Get-AdsProperty -Properties $sr.Properties -Name 'distinguishedName'
+        $name = Get-AdsProperty -Properties $sr.Properties -Name 'name'
+        if (-not $name) { $name = Get-AdsProperty -Properties $sr.Properties -Name 'cn' }
+        $oc = Get-AdsProperty -Properties $sr.Properties -Name 'objectClass'
+        $ocStr = if ($null -eq $oc) { '' } elseif ($oc -is [System.Array]) { [string]$oc[$oc.Count - 1] } else { [string]$oc }
+        $dnsHost = Get-AdsProperty -Properties $sr.Properties -Name 'dNSHostName'
+
+        try {
+            $rules = $sd.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])
+        } catch {
+            $aclFailCount++
+            continue
+        }
+
+        foreach ($rule in $rules) {
+            if ($rule -isnot [System.DirectoryServices.ActiveDirectoryAccessRule]) { continue }
+            if ($rule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow) { continue }
+
+            $sidObj = $null
+            try {
+                $ref = $rule.IdentityReference
+                if ($ref -is [System.Security.Principal.SecurityIdentifier]) {
+                    $sidObj = $ref
+                } else {
+                    $sidObj = $ref.Translate([System.Security.Principal.SecurityIdentifier])
+                }
+            } catch {
+                continue
+            }
+
+            $sidStr = $sidObj.Value
+            if ($excludePriv -and (Test-ADSuitePrivilegedPrincipalSid -SID $sidStr)) { continue }
+
+            $matched = [System.Collections.Generic.List[string]]::new()
+            foreach ($dr in $rightEnums) {
+                if ($rule.ActiveDirectoryRights -band $dr) {
+                    [void]$matched.Add($dr.ToString())
+                }
+            }
+            if ($matched.Count -eq 0) { continue }
+
+            $principalName = Resolve-ADSuiteIdentityDisplayName -SID $sidObj
+            $ot = $rule.ObjectType
+            $objectTypeStr = if ($ot -and $ot -ne [guid]::Empty) { $ot.ToString() } else { '' }
+
+            $findingRows.Add([PSCustomObject]@{
+                    DistinguishedName      = $dn
+                    Name                   = $name
+                    DnsHostName            = $dnsHost
+                    ObjectClass            = $ocStr
+                    Principal              = $principalName
+                    PrincipalSID           = $sidStr
+                    MatchedDangerousRights = ($matched -join ', ')
+                    ActiveDirectoryRights  = $rule.ActiveDirectoryRights.ToString()
+                    ObjectType             = $objectTypeStr
+                    AccessControlType      = $rule.AccessControlType.ToString()
+                })
+        }
+    }
+
+    $scanNoteParts = [System.Collections.Generic.List[string]]::new()
+    if ($capped) {
+        [void]$scanNoteParts.Add("Scan stopped at maxObjects ($maxObj); not all LDAP matches were evaluated.")
+    }
+    if ($aclFailCount -gt 0) {
+        [void]$scanNoteParts.Add("ACL read failed for $aclFailCount object(s) (permissions or connectivity).")
+    }
+    $scanNote = if ($scanNoteParts.Count -gt 0) { ($scanNoteParts -join ' ') } else { $null }
+
+    $fatalNoAcl = ($objectsScanned -gt 0 -and $aclFailCount -eq $objectsScanned -and $findingRows.Count -eq 0)
+    if ($fatalNoAcl) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "Could not read DACL for any of $objectsScanned matching object(s)."
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+            ScanNote      = $scanNote
+        }
+    }
+
+    $fc = $findingRows.Count
+    $resultWord = if ($fc -eq 0) { 'Pass' } else { 'Fail' }
+
+    $rows = foreach ($row in $findingRows) {
+        $o = [ordered]@{}
+        foreach ($p in $row.PSObject.Properties) { $o[$p.Name] = $p.Value }
+        $o['CheckId'] = $cid
+        $o['CheckName'] = $cname
+        $o['FindingCount'] = $fc
+        $o['Result'] = $resultWord
+        $o['Severity'] = $severity
+        if ($description) { $o['Description'] = $description }
+        if ($resolvedSourcePath) { $o['SourcePath'] = $resolvedSourcePath }
+        [PSCustomObject]$o
+    }
+
+    $sw.Stop()
+    return [PSCustomObject]@{
+        CheckId       = $cid
+        CheckName     = $cname
+        Category      = $cat
+        Severity      = $severity
+        Description   = $description
+        FindingCount  = $fc
+        Result        = $resultWord
+        DurationMs    = [int]$sw.ElapsedMilliseconds
+        Error         = $null
+        ExitCode      = 0
+        Findings      = @($rows)
+        SourcePath    = $resolvedSourcePath
+        Remediation   = $meta.Remediation
+        References    = $meta.References
+        ScoreWeight   = $meta.ScoreWeight
+        ScanNote      = $scanNote
+    }
+}
+
 function Invoke-ADSuiteLdapCheck {
     [CmdletBinding()]
     param(
@@ -867,6 +1284,200 @@ function Invoke-ADSuiteLdapCheck {
     }
 }
 
+function Invoke-ADSuiteAdcsCheck {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $Check,
+
+        [Parameter(Mandatory)]
+        $RootDse,
+
+        [string]$ServerName,
+
+        [switch]$AdcsSkipACLChecks,
+
+        [switch]$AdcsSkipNetworkProbes
+    )
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $cid = [string]$Check.id
+    $cname = if ($Check.name) { [string]$Check.name } else { $cid }
+    $cat = if ($Check.category) { [string]$Check.category } else { 'Unknown' }
+    $resolvedSourcePath = $null
+    if ($Check.PSObject.Properties.Name -contains 'sourcePath' -and -not [string]::IsNullOrWhiteSpace([string]$Check.sourcePath)) {
+        $resolvedSourcePath = [string]$Check.sourcePath
+    }
+    $severity = if ($Check.PSObject.Properties.Name -contains 'severity' -and $Check.severity) {
+        [string]$Check.severity
+    } else {
+        'medium'
+    }
+    $description = $null
+    if ($Check.PSObject.Properties.Name -contains 'description' -and $Check.description) {
+        $description = [string]$Check.description
+    }
+    $meta = Get-ADSuiteOptionalCheckMeta -Check $Check
+
+    $engine = if ($Check.engine) { $Check.engine.ToLowerInvariant() } else { 'ldap' }
+    if ($engine -ne 'adcs') {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Skipped'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "Check '$cid' uses engine '$engine', not adcs."
+            ExitCode      = 2
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+        }
+    }
+
+    $esc = [string]$Check.adcsCheck
+    if ([string]::IsNullOrWhiteSpace($esc)) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "Check '$cid' is missing 'adcsCheck'."
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+        }
+    }
+
+    $configNc = $null
+    if ($RootDse -is [hashtable] -and $RootDse.ContainsKey('ConfigurationNamingContext')) {
+        $configNc = [string]$RootDse['ConfigurationNamingContext']
+    } elseif ($RootDse.PSObject.Properties.Name -contains 'ConfigurationNamingContext') {
+        $configNc = [string]$RootDse.ConfigurationNamingContext
+    }
+    if ([string]::IsNullOrWhiteSpace($configNc)) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "Check '$cid': RootDSE has no ConfigurationNamingContext."
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+        }
+    }
+
+    $adcsPath = Join-Path $PSScriptRoot 'ADSuite.Adcs.psm1'
+    if (-not (Test-Path -LiteralPath $adcsPath)) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "AD CS module not found: $adcsPath"
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+        }
+    }
+
+    try {
+        Import-Module $adcsPath -Force -ErrorAction Stop
+        $skipAcl = [bool]$AdcsSkipACLChecks.IsPresent
+        $skipNet = [bool]$AdcsSkipNetworkProbes.IsPresent
+        Set-ADSuiteAdcsSession -ServerName $ServerName -Credential $null -SkipACLChecks $skipAcl -SkipNetworkProbes $skipNet
+        $adcsResults = Invoke-AdcsEscByName -Name $esc -ConfigurationNamingContext $configNc -ErrorAction Stop
+    } catch {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = $_.Exception.Message
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+        }
+    }
+
+    $list = @($adcsResults)
+    $findingCount = $list.Count
+    $resultWord = if ($findingCount -eq 0) { 'Pass' } else { 'Fail' }
+
+    $rows = foreach ($f in $list) {
+        [PSCustomObject]@{
+            CheckId        = $cid
+            CheckName      = $cname
+            EscCheckId     = $f.CheckID
+            Title          = $f.Title
+            AdcsSeverity   = $f.Severity
+            FindingDetail  = $f.Description
+            Remediation    = $f.Remediation
+            AffectedObjects = ($f.AffectedObjects -join '; ')
+            Result         = $resultWord
+            Severity       = $severity
+        }
+    }
+
+    $sw.Stop()
+    return [PSCustomObject]@{
+        CheckId       = $cid
+        CheckName     = $cname
+        Category      = $cat
+        Severity      = $severity
+        Description   = $description
+        FindingCount  = $findingCount
+        Result        = $resultWord
+        DurationMs    = [int]$sw.ElapsedMilliseconds
+        Error         = $null
+        ExitCode      = 0
+        Findings      = @($rows)
+        SourcePath    = $resolvedSourcePath
+        Remediation   = $meta.Remediation
+        References    = $meta.References
+        ScoreWeight   = $meta.ScoreWeight
+    }
+}
+
 function ConvertTo-ADSuiteFindingRow {
     [CmdletBinding()]
     param(
@@ -1081,6 +1692,9 @@ section.check{margin:1.5rem 0;padding:1rem;border:1px solid #e0e0e0;border-radiu
             if ($r.Error) {
                 $null = $sb.AppendLine("<p class='err'><strong>Error:</strong> $([System.Net.WebUtility]::HtmlEncode([string]$r.Error))</p>")
             }
+            if ($r.PSObject.Properties.Name -contains 'ScanNote' -and $r.ScanNote) {
+                $null = $sb.AppendLine("<p class='small'><strong>Note:</strong> $([System.Net.WebUtility]::HtmlEncode([string]$r.ScanNote))</p>")
+            }
             $findings = $r.Findings
             if ($findings -and @($findings).Count -gt 0) {
                 $first = $findings[0]
@@ -1124,6 +1738,8 @@ Export-ModuleMember -Function @(
     'Resolve-ADSuiteSearchRoot',
     'Invoke-ADSuiteLdapQuery',
     'Invoke-ADSuiteLdapCheck',
+    'Invoke-ADSuiteAclCheck',
+    'Invoke-ADSuiteAdcsCheck',
     'Invoke-ADSuiteFilesystemCheck',
     'Get-AdsProperty',
     'Test-UserAccountControlMask',

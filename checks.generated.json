@@ -1,5 +1,10 @@
 {
     "schemaVersion":  1,
+    "meta":  {
+                 "catalogRole":  "legacyFullExport",
+                 "defaultEngine":  "inventory",
+                 "productionGuidance":  "Not a standalone production risk catalog: every check defaults to engine inventory and is skipped by Invoke-ADSuiteScan risk runs unless promoted. Use checks.json for curated rules, or merge checks.overrides.* into this file for bulk promotion."
+             },
     "defaults":  {
                      "engine":  "inventory",
                      "pageSize":  1000

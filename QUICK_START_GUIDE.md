@@ -172,17 +172,14 @@ Optional catalog fields per check: `severity` (`info` \| `low` \| `medium` \| `h
 
 ### Certificate Services (ADCS Attacks)
 ```powershell
-# ESC1 - Templates Allowing SAN Specification
-.\adsi.ps1 -CheckId CERT-002 -ServerName kingslanding.sevenkingdoms.local
+# Curated pack: use ADCS-ESC* (CERT-002..005 stubs are not in checks.json)
+.\adsi.ps1 -CheckId ADCS-ESC1 -ServerName kingslanding.sevenkingdoms.local
+.\adsi.ps1 -CheckId ADCS-ESC2 -ServerName kingslanding.sevenkingdoms.local
+.\adsi.ps1 -CheckId ADCS-ESC3 -ServerName kingslanding.sevenkingdoms.local
+.\adsi.ps1 -CheckId ADCS-ESC4 -ServerName kingslanding.sevenkingdoms.local
 
-# ESC2 - Templates with Any Purpose EKU
-.\adsi.ps1 -CheckId CERT-003 -ServerName kingslanding.sevenkingdoms.local
-
-# ESC3 - Certificate Request Agent
-.\adsi.ps1 -CheckId CERT-004 -ServerName kingslanding.sevenkingdoms.local
-
-# ESC4 - Weak Access Control
-.\adsi.ps1 -CheckId CERT-005 -ServerName kingslanding.sevenkingdoms.local
+# Optional: promoted LDAP rule (e.g. client-auth templates)
+.\adsi.ps1 -CheckId CERT-006 -ServerName kingslanding.sevenkingdoms.local
 ```
 
 ### Advanced Attacks
@@ -277,7 +274,7 @@ if ($LASTEXITCODE -eq 0) {
 ### Automated Security Gate
 ```powershell
 # Define critical checks
-$criticalChecks = @('KRB-002', 'ACC-034', 'ACC-037', 'CERT-002')
+$criticalChecks = @('KRB-002', 'ACC-034', 'ACC-037', 'ADCS-ESC1')
 
 $failedChecks = @()
 
@@ -377,8 +374,8 @@ $checks = @{
     'ACC-037' = 'Shadow Credentials'
     'ACC-039' = 'RBCD Detection'
     'KRB-002' = 'AS-REP Roastable'
-    'CERT-002' = 'ESC1 Templates'
-    'CERT-005' = 'ESC4 Templates'
+    'ADCS-ESC1' = 'ESC1 (enrollee SAN / templates)'
+    'ADCS-ESC4' = 'ESC4 (weak template ACLs)'
 }
 
 $results = @()
@@ -513,7 +510,7 @@ cd AD_SUITE_TESTING
 Set-ExecutionPolicy Bypass -Scope Process -Force
 
 # Run top 5 critical checks
-$checks = @('ACC-001', 'ACC-034', 'KRB-002', 'ACC-037', 'CERT-002')
+$checks = @('ACC-001', 'ACC-034', 'KRB-002', 'ACC-037', 'ADCS-ESC1')
 foreach ($c in $checks) { .\adsi.ps1 -CheckId $c -ServerName dc01.domain.local }
 ```
 

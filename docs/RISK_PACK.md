@@ -12,7 +12,11 @@ This document defines how check definitions behave in the **risk scan** (Ping Ca
 | `checks.overrides.phaseB1.json` | **Phase B wave B1 only** (71 checks): **`Kerberos_Security`** + **`Access_Control`**. Same merge rules as below. Regenerate: `node tools/Generate-PhaseB1Overrides.js`. |
 | `checks.overrides.phaseB-complete.json` | **Phase B waves B1–B11** (661 checks): promotes every stub in `checks.generated.json` **except** **`Certificate_Services`** and **`Azure_AD_Integration`** (Phase C/D). Merges **metadata from `checks.json`** where `id` matches; otherwise heuristic **severity** and generic **remediation** / **references** via `tools/phaseBOverrideHelpers.js`. Regenerate: `node tools/Generate-PhaseBCompleteOverrides.js`. Validate: `Test-ADSuiteCatalog.ps1 -CatalogPath .\checks.generated.json -OverridesPath .\checks.overrides.phaseB-complete.json`. Full LDAP scan (no CERT/Azure): `Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.generated.json -ChecksOverridesPath .\checks.overrides.phaseB-complete.json` (optionally `-ExcludeCheckId` for categories still under review). |
 
-**Production vs staging:** run risk scans with `-ChecksJsonPath .\checks.json` (plus optional overrides). Pointing the scanner at `checks.generated.json` alone will **skip all checks** for risk (all inventory) unless you patch specific IDs to `ldap` or `filesystem` via `checks.overrides.json`.
+**Production vs staging:** run risk scans with `-ChecksJsonPath .\checks.json` (plus optional overrides). Pointing the scanner at `checks.generated.json` alone will **skip all checks** for risk (all inventory) unless you patch specific IDs to `ldap`, `filesystem`, or **`adcs`** via `checks.overrides.json` or promote into `checks.json`.
+
+**Phase C (AD CS):** curated checks `ADCS-ESC1` … `ADCS-ESC8` use `engine: adcs` and `adcsCheck: ESC1` … `ESC8`, implemented in `Modules/ADSuite.Adcs.psm1`. Optional scan switches: `-AdcsSkipACLChecks` (skip ESC4, ESC5, ESC7), `-AdcsSkipNetworkProbes` (skip `certutil` ESC6 and HTTP/S probes for ESC8). ESC6 may return **Info** findings when the scanning host cannot reach the CA over RPC for `certutil`.
+
+**Certificate_Services LDAP (`CERT-*`):** `checks.json` includes promoted **`engine: ldap`** rules sourced from `checks.generated.json` (metadata in `tools/CertificateServicesLdapMetadata.json`). **`CERT-002`–`CERT-005` and `CERT-020`–`CERT-022` are omitted** here because they overlap **`ADCS-ESC1`–`ESC8`**. Configuration-partition PKI objects use **`searchBase: Configuration`**; **`CERT-023` / `CERT-024`** (`userCertificate` on users/computers) use **`Domain`**. Regenerate / re-merge: `tools\Build-CertificateServicesLdapChecks.ps1 -MergeIntoChecksJson`.
 
 ### Promoting many stubs from `checks.generated.json`
 
@@ -33,6 +37,8 @@ Load order: read base JSON → merge `defaults` per check → apply overrides by
 | `ldap` | Included | LDAP query; each returned row is a **finding** unless post-filtered in code (e.g. UAC masks). |
 | `filesystem` | Included | Host-accessible paths (e.g. SYSVOL); finding rows from implementation. |
 | `registry` | Included | Reserved; stub returns error until implemented. |
+| `adcs` | Included | AD Certificate Services ESC-style checks (LDAP + ACL analysis; optional `certutil` / HTTP per check). Requires **`adcsCheck`**: `ESC1` … `ESC8`. See `Modules/ADSuite.Adcs.psm1`. |
+| `acl` | Included | Paged LDAP with **DACL read** (`nTSecurityDescriptor`). Flags **Allow** ACEs where the trustee is **not** in the baseline privileged SID set (same idea as AD CS ACL helpers) and the rights intersect **`dangerousRights`** (e.g. `GenericAll`, `WriteDacl`). **`maxObjects`** caps work per check; **`ScanNote`** records caps or per-object ACL read failures while the scan continues. Not a CVSS substitute—high volume on broad filters (e.g. `WriteProperty`). Prefer a writable DC via **`-ServerName`**; scope is single domain / partition from **`searchBase`**. Overlaps in theme with **AD CS** template/CA ACL checks (**ADCS-ESC***) but targets arbitrary LDAP scopes. See `Invoke-ADSuiteAclCheck` in `Modules/ADSuite.Adsi.psm1`. |
 | `inventory` | **Excluded** | Documentation / raw listing only; not pass/fail misconfiguration. Use `adsi.ps1` after setting `engine` to `ldap` for debugging, or run inventory-only tooling separately. |
 
 ## Required fields (risk checks)
@@ -43,6 +49,10 @@ For `ldap`: **`searchBase`**, **`ldapFilter`**.
 
 For `filesystem`: **`filesystemKind`** (and kind-specific fields, e.g. `sysvolPoliciesPath`).
 
+For `adcs`: **`adcsCheck`** (`ESC1` through `ESC8`).
+
+For `acl`: **`searchBase`**, **`ldapFilter`**, **`dangerousRights`** (array of `ActiveDirectoryRights` names, e.g. `GenericAll`, `WriteDacl`), **`maxObjects`** (positive integer; required cap per check).
+
 ## Optional fields
 
 - **`name`**, **`sourcePath`**, **`outputProperties`**, **`propertiesToLoad`**, **`postFilter`** (implementation-specific)
@@ -50,6 +60,7 @@ For `filesystem`: **`filesystemKind`** (and kind-specific fields, e.g. `sysvolPo
 - **`remediation`**: short plain-text guidance (shown in HTML report).
 - **`references`**: string or array of URLs / doc IDs (shown in HTML).
 - **`scoreWeight`**: multiplier for this check’s contribution to raw score (default `1`). Use to down-rank noisy rules after review.
+- **`excludePrivilegedPrincipal`**: for `acl`, when `true` (default), ACEs whose trustee resolves to a **baseline** privileged SID (e.g. SYSTEM, Administrators, Domain Admins, Enterprise Admins, Schema Admins, Enterprise Domain Controllers) are not reported. Set `false` only for specialized reviews.
 
 ## Finding semantics
 
@@ -70,7 +81,9 @@ Aggregate:
 - `globalRaw = sum(CheckScore)` over checks.
 - `globalScore = min(100, ceil(globalRaw / ScoringNormalizer))` (default normalizer 5).
 
-**Limitations:** The score is a **relative** workload/complexity indicator, not a CVSS rating. Tuning `FindingCapPerCheck`, `ScoringNormalizer`, and per-check `scoreWeight` is expected after catalog review.
+**Limitations:** The score is a **relative** workload/complexity indicator, **not** a CVSS or compliance pass/fail. It does **not** measure exploitability or business impact by itself. **Do not** report the global score as a penetration-test or audit verdict without analyst review. Tuning `FindingCapPerCheck`, `ScoringNormalizer`, and per-check `scoreWeight` is expected after catalog review.
+
+**Certificate LDAP (`CERT-*`) rows:** Some checks are **explicit listings** (`[Listing]` in the name) or **`scoreWeight: 0`**—they support triage and documentation, not a single “vuln per row” guarantee. Prefer **`ADCS-ESC1`–`ESC8`** for ESC-class analysis; use **`CERT-*`** as supplementary LDAP signals.
 
 ## Versioning
 

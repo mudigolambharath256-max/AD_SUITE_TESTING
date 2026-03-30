@@ -1,0 +1,15 @@
+{
+  "powershell": {
+    "executionPolicy": "Bypass",
+    "nonInteractive": true,
+    "noProfile": true,
+    "windowStyleHidden": true
+  },
+  "csharp": {
+    "compilerPath": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe",
+    "dotNetFrameworkPath": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319"
+  },
+  "database": {
+    "retentionDays": 30
+  }
+}

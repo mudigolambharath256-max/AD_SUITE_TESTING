@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "scanTimeUtc": "2026-03-29T12:00:00.000Z",
+    "packName": "Synthetic GOAD-style lab demo (not from a live scan)",
+    "serverName": "DC01.corp.local",
+    "note": "Fictional findings for Attack Path / LLM testing only."
+  },
+  "aggregate": {
+    "checksRun": 20,
+    "totalFindings": 20,
+    "globalRiskBand": "High",
+    "checksWithFindings": 20,
+    "checksWithErrors": 0
+  },
+  "results": [
+    {
+      "CheckId": "KRB-ASREP-001",
+      "CheckName": "AS-REP roastable accounts",
+      "Category": "Kerberos_Security",
+      "Severity": "Critical",
+      "Description": "User backup_svc does not require pre-authentication (DONT_REQ_PREAUTH). Ticket-granting material can be requested without a password for offline cracking.",
+      "Impact": "Attacker in same broadcast domain can obtain AS-REP for backup_svc and attempt hash crack to recover NTLM.",
+      "RiskData": "Account: CN=backup_svc,OU=ServiceAccounts,DC=corp,DC=local"
+    },
+    {
+      "CheckId": "KRB-KRBTGT-002",
+      "CheckName": "Kerberoastable SPN concentration",
+      "Category": "Kerberos_Security",
+      "Severity": "High",
+      "Description": "Multiple user accounts with SPNs and weak password policy in OU=LegacyApps — classic Kerberoast surface.",
+      "Impact": "Cracked TGS hashes for sqlagent_svc or iis_svc may yield lateral movement into application tiers.",
+      "RiskData": "Sample SPN: MSSQLSvc/sql01.corp.local:1433 mapped to sqlagent_svc"
+    },
+    {
+      "CheckId": "KRB-DELEG-003",
+      "CheckName": "Unconstrained delegation on host",
+      "Category": "Kerberos_Security",
+      "Severity": "Critical",
+      "Description": "Computer account WEB01$ has TRUSTED_FOR_DELEGATION. Combined with coerced auth, TGT forwarding risk to Tier-1 assets.",
+      "Impact": "If WEB01 is compromised, attacker may capture delegated TGTs for users authenticating to the host.",
+      "RiskData": "sAMAccountName: WEB01$"
+    },
+    {
+      "CheckId": "KRB-DELEG-004",
+      "CheckName": "Constrained delegation abuse path",
+      "Category": "Kerberos_Security",
+      "Severity": "High",
+      "Description": "Service account app_pool_svc has constrained delegation to CIFS/FILE01.corp.local and LDAP/DC01.corp.local.",
+      "Impact": "Stolen app_pool_svc TGS could be used within allowed SPNs to reach file shares and directory reads.",
+      "RiskData": "msDS-AllowedToDelegateTo present"
+    },
+    {
+      "CheckId": "ACL-001",
+      "CheckName": "GenericAll on Domain Users to sensitive group",
+      "Category": "Access_Control",
+      "Severity": "Critical",
+      "Description": "Non-privileged group HelpDesk has GenericAll on group Server-Admins (memberOf path to Tier-1).",
+      "Impact": "HelpDesk members can add themselves or allies to Server-Admins and pivot toward server tier.",
+      "RiskData": "Target DN: CN=Server-Admins,OU=Groups,DC=corp,DC=local"
+    },
+    {
+      "CheckId": "ACL-002",
+      "CheckName": "WriteDacl on GPO",
+      "Category": "Access_Control",
+      "Severity": "High",
+      "Description": "Group Interns has WriteDacl on GPO Default Domain Policy (inherited unusual ACE).",
+      "Impact": "Ability to alter password policy or logon scripts domain-wide if abused.",
+      "RiskData": "GPO: Default Domain Policy"
+    },
+    {
+      "CheckId": "GPO-010",
+      "CheckName": "GPO preference passwords (legacy)",
+      "Category": "Group_Policy",
+      "Severity": "Critical",
+      "Description": "SYSVOL XML under Policies contains cpassword attribute for local admin push to workstations OU.",
+      "Impact": "Decryptable group policy preferences may reveal local administrator password across many hosts.",
+      "RiskData": "Path: \\\\corp.local\\SYSVOL\\corp.local\\Policies\\{GUID}\\Machine\\Preferences\\Groups\\Groups.xml"
+    },
+    {
+      "CheckId": "GPO-011",
+      "CheckName": "Logon script runs from writable share",
+      "Category": "Group_Policy",
+      "Severity": "Medium",
+      "Description": "User logon script points to NETLOGON share path writable by broad group Authenticated Users.",
+      "Impact": "Script tampering could run code at next user logon within scope of GPO.",
+      "RiskData": "scriptPath: \\\\corp.local\\netlogon\\logon.bat"
+    },
+    {
+      "CheckId": "ADCS-ESC1-DEMO",
+      "CheckName": "ESC1-style template exposure (lab)",
+      "Category": "Certificate_Services",
+      "Severity": "Critical",
+      "Description": "Template WebServerVuln has enrollee-supplied SAN and client auth EKU; enrollment open to Domain Users in lab CA.",
+      "Impact": "Forged certificates for arbitrary identities if enrollment succeeds — Certified Pre-Owned style path.",
+      "RiskData": "CA: CORP-CA-01\\corp-CA (synthetic)"
+    },
+    {
+      "CheckId": "ADCS-ESC4-DEMO",
+      "CheckName": "Weak template ACL (lab)",
+      "Category": "Certificate_Services",
+      "Severity": "High",
+      "Description": "Non-admin principal has WriteProperty on certificate template object for SmartCardLogon clone.",
+      "Impact": "Template flags could be altered to weaken enrollment constraints.",
+      "RiskData": "Template CN=CloneSmartCard,CN=Certificate Templates,CN=Public Key Services"
+    },
+    {
+      "CheckId": "CRED-020",
+      "CheckName": "Clear-text protocols in use",
+      "Category": "Credential_Access",
+      "Severity": "High",
+      "Description": "LDAP signing not enforced on legacy DC binding; LLMNR enabled on subnet with mixed Win7 clients.",
+      "Impact": "Relay and downgrade opportunities for credential capture on same broadcast segment.",
+      "RiskData": "Site: Default-First-Site-Name"
+    },
+    {
+      "CheckId": "CRED-021",
+      "CheckName": "Reversible encryption flag on account",
+      "Category": "Credential_Access",
+      "Severity": "Medium",
+      "Description": "Account legacy_app has reversible encryption enabled for compatibility.",
+      "Impact": "Domain admin recovery of plaintext-equivalent material if AD database access is achieved.",
+      "RiskData": "sAMAccountName: legacy_app"
+    },
+    {
+      "CheckId": "PRIV-030",
+      "CheckName": "Protected Users group gap",
+      "Category": "Privilege_Escalation",
+      "Severity": "Medium",
+      "Description": "Tier-0 adjacent account krbtgt_shadow not in Protected Users; long TGT lifetime.",
+      "Impact": "Stolen credentials remain usable longer than hardened baseline.",
+      "RiskData": "Account used for backup automation to DC"
+    },
+    {
+      "CheckId": "LATERAL-040",
+      "CheckName": "PSRemoting open to large subnet",
+      "Category": "Lateral_Movement",
+      "Severity": "High",
+      "Description": "WinRM listeners on servers allow * from 10.0.10.0/24 without IPsec in lab segment.",
+      "Impact": "Broad lateral movement surface if any workstation in range is compromised.",
+      "RiskData": "GPO: WinRM-Allow-Lab"
+    },
+    {
+      "CheckId": "DOMAIN-050",
+      "CheckName": "Schema admin stale account",
+      "Category": "Domain_Trust",
+      "Severity": "High",
+      "Description": "Account schema_editor last logon 800 days ago still member of Schema Admins.",
+      "Impact": "Dormant highly privileged account suitable for persistence if credentials recoverable.",
+      "RiskData": "CN=schema_editor,OU=Admins,DC=corp,DC=local"
+    },
+    {
+      "CheckId": "DNS-060",
+      "CheckName": "Dynamic DNS update ACL",
+      "Category": "Network",
+      "Severity": "Medium",
+      "Description": "Authenticated Users can create child records under sensitive DNS zone _msdcs.",
+      "Impact": "Potential spoofing or redirection in misconfigured resolver scenarios.",
+      "RiskData": "Zone: corp.local"
+    },
+    {
+      "CheckId": "SMB-070",
+      "CheckName": "SMB signing off on file server",
+      "Category": "Network",
+      "Severity": "Medium",
+      "Description": "FILE01 offers SMB without message signing required for session from domain members.",
+      "Impact": "Relay to SMB if NTLM is exposed elsewhere.",
+      "RiskData": "FILE01.corp.local"
+    },
+    {
+      "CheckId": "EXCHANGE-080",
+      "CheckName": "Exchange high privilege service account",
+      "Category": "Microsoft_Exchange",
+      "Severity": "High",
+      "Description": "Account exsvc has WriteDacl on multiple mail-enabled security groups including Organization Management (lab).",
+      "Impact": "Path from mail tier to broad directory changes if exsvc is compromised.",
+      "RiskData": "Mailbox server EXCH01.corp.local"
+    },
+    {
+      "CheckId": "AZURE-090",
+      "CheckName": "AD Connect account over-permissioned",
+      "Category": "Azure_AD_Integration",
+      "Severity": "Critical",
+      "Description": "MSOL account has unexpected membership in Domain Admins in lab (misconfiguration).",
+      "Impact": "Cloud sync account could be used for full domain takeover if credential is obtained.",
+      "RiskData": "Account: MSOL_12345678"
+    },
+    {
+      "CheckId": "SUMMARY-LINK",
+      "CheckName": "Chained kill chain hint (synthetic)",
+      "Category": "Threat_Scenario",
+      "Severity": "Critical",
+      "Description": "Analyst note: AS-REP user backup_svc in same OU as Kerberoastable sqlagent_svc; WEB01 unconstrained delegation reachable from 10.0.10.0/24 WinRM.",
+      "Impact": "Demonstrates overlapping paths: credential theft → delegation abuse → tier escalation in lab narrative.",
+      "RiskData": "Synthetic chain for LLM demo only"
+    }
+  ]
+}

@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AD Suite — Assessment Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --surface: #151b24;
+      --surface2: #1c2430;
+      --border: #2a3544;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #e8a838;
+      --accent-dim: #b87d20;
+      --ok: #3fb950;
+      --warn: #d29922;
+      --bad: #f85149;
+      --crit: #ff7b72;
+      --sev-info: #8b9cb3;
+      --sev-low: #58a6ff;
+      --sev-med: #d29922;
+      --sev-high: #f0883e;
+      --sev-crit: #f85149;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.45;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    header {
+      background: linear-gradient(135deg, #151b24 0%, #0c0f14 50%, #121820 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem 1.25rem;
+    }
+
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      max-width: 52rem;
+    }
+
+    .load-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-top: 1rem;
+    }
+
+    .load-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.85rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.88rem;
+    }
+
+    .load-row label:hover {
+      border-color: var(--accent-dim);
+    }
+
+    .load-row input[type="file"] {
+      display: none;
+    }
+
+    .badge {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--muted);
+    }
+
+    main {
+      padding: 1.25rem 1.5rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+    }
+
+    .card span {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .card strong {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.5rem;
+      font-weight: 500;
+      margin-top: 0.25rem;
+    }
+
+    .card.risk-low strong {
+      color: var(--ok);
+    }
+
+    .card.risk-mod strong {
+      color: var(--warn);
+    }
+
+    .card.risk-high strong {
+      color: #f0883e;
+    }
+
+    .card.risk-crit strong {
+      color: var(--crit);
+    }
+
+    h2 {
+      font-size: 1.05rem;
+      margin: 1.5rem 0 0.65rem;
+      color: var(--text);
+      border-left: 3px solid var(--accent);
+      padding-left: 0.6rem;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .chip {
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .chip.on {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(232, 168, 56, 0.12);
+    }
+
+    .chip.all {
+      font-weight: 600;
+    }
+
+    table.data {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    table.data th,
+    table.data td {
+      padding: 0.45rem 0.55rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    table.data th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    table.data th:hover {
+      color: var(--text);
+    }
+
+    table.data tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr.pass .col-result {
+      color: var(--ok);
+    }
+
+    tr.fail .col-result {
+      color: var(--warn);
+    }
+
+    tr.err .col-result {
+      color: var(--bad);
+    }
+
+    .sev-critical {
+      color: var(--sev-crit);
+      font-weight: 600;
+    }
+
+    .sev-high {
+      color: var(--sev-high);
+      font-weight: 600;
+    }
+
+    .sev-medium {
+      color: var(--sev-med);
+    }
+
+    .sev-low {
+      color: var(--sev-low);
+    }
+
+    .sev-info {
+      color: var(--sev-info);
+    }
+
+    details.drill {
+      margin: 0.25rem 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+    }
+
+    details.drill summary {
+      cursor: pointer;
+      padding: 0.5rem 0.65rem;
+      font-size: 0.8rem;
+      color: var(--accent);
+    }
+
+    .drill-body {
+      padding: 0 0.75rem 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .drill-body p {
+      margin: 0.4rem 0;
+    }
+
+    .drill-body pre {
+      background: var(--surface2);
+      padding: 0.5rem;
+      border-radius: 4px;
+      overflow: auto;
+      max-height: 200px;
+      font-size: 0.72rem;
+    }
+
+    .mini-table {
+      width: 100%;
+      font-size: 0.72rem;
+      border-collapse: collapse;
+    }
+
+    .mini-table th,
+    .mini-table td {
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.35rem;
+    }
+
+    .planner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 800px) {
+      .planner {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .cat-block {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      background: var(--surface);
+      margin-bottom: 0.5rem;
+    }
+
+    .cat-block h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .cat-block label {
+      display: block;
+      font-size: 0.78rem;
+      margin: 0.2rem 0;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .cat-block input {
+      margin-right: 0.35rem;
+    }
+
+    textarea.cmd {
+      width: 100%;
+      min-height: 5rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.65rem;
+    }
+
+    button.btn {
+      background: var(--accent);
+      color: #0c0f14;
+      border: none;
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    button.btn:hover {
+      filter: brightness(1.08);
+    }
+
+    button.btn-sec {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin: 0.5rem 0;
+    }
+
+    @media print {
+
+      header .load-row,
+      .planner,
+      .toolbar,
+      .chips {
+        display: none;
+      }
+
+      body {
+        background: #fff;
+        color: #111;
+      }
+
+      .card,
+      table.data {
+        border-color: #ccc;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>AD Suite — Assessment Dashboard</h1>
+    <p>Load a <strong>scan-results.json</strong> from <code>Invoke-ADSuiteScan.ps1</code> output. Optionally load
+      <strong>catalog-summary.json</strong> (run <code>Export-ADSuiteCatalogSummary.ps1</code>) to plan category-scoped
+      scans. All processing stays in your browser.</p>
+    <div class="load-row">
+      <label>Load scan results <input type="file" id="fileScan" accept=".json,application/json" /></label>
+      <label>Load catalog summary <input type="file" id="fileCat" accept=".json,application/json" /></label>
+      <span class="badge" id="scanStatus">No scan loaded</span>
+      <span class="badge" id="catStatus">No catalog loaded</span>
+    </div>
+  </header>
+  <main>
+    <section id="emptyState">
+      <p style="color:var(--muted)">Choose <strong>scan-results.json</strong> to view scores, checks, and findings.</p>
+    </section>
+
+    <section id="scanPanel" class="hidden">
+      <div class="summary-grid" id="summaryGrid"></div>
+      <div id="metaBlock" class="card" style="margin-bottom:1rem;font-size:0.85rem;color:var(--muted)"></div>
+
+      <h2 id="byCatHeading" class="hidden">By category</h2>
+      <div style="overflow:auto;margin-bottom:1rem" id="byCatWrap" class="hidden">
+        <table class="data" id="byCatTable">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Checks</th>
+              <th>With findings</th>
+              <th>Errors</th>
+              <th>Raw score</th>
+            </tr>
+          </thead>
+          <tbody id="byCatBody"></tbody>
+        </table>
+      </div>
+
+      <h2>Top risks (by score)</h2>
+      <div style="overflow:auto">
+        <table class="data" id="topTable">
+          <thead>
+            <tr>
+              <th>CheckId</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Severity</th>
+              <th>Findings</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <h2>Filter by category</h2>
+      <div class="chips" id="catChips"></div>
+
+      <h2>Filter by severity</h2>
+      <div class="chips" id="sevChips"></div>
+
+      <div class="toolbar">
+        <button type="button" class="btn btn-sec" id="btnExport">Download filtered JSON</button>
+        <button type="button" class="btn btn-sec" onclick="window.print()">Print report</button>
+      </div>
+
+      <h2>All checks</h2>
+      <div style="overflow:auto">
+        <table class="data" id="checksTable">
+          <thead>
+            <tr>
+              <th data-k="CheckId">CheckId</th>
+              <th data-k="CheckName">Name</th>
+              <th data-k="Category">Category</th>
+              <th data-k="Severity">Severity</th>
+              <th data-k="Result">Result</th>
+              <th data-k="FindingCount">Findings</th>
+              <th data-k="CheckScore">Score</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="checksBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="plannerSection" class="hidden" style="margin-top:2rem">
+      <h2>Scan planner (from catalog)</h2>
+      <p style="color:var(--muted);font-size:0.9rem">Full catalog = whole scan (all categories). Otherwise pick
+        categories for a scoped run. Run from repo root on a domain-joined host.</p>
+      <div class="planner">
+        <div>
+          <label
+            style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;cursor:pointer;font-weight:600">
+            <input type="checkbox" id="chkFullScan" /> Full catalog scan (all checks, no <code>-Category</code>)
+          </label>
+          <div id="catPlanner"></div>
+        </div>
+        <div>
+          <label style="font-size:0.85rem;color:var(--muted)">DC host (optional)</label>
+          <input type="text" id="inpServer" placeholder="dc01.contoso.local"
+            style="width:100%;margin:0.35rem 0;padding:0.45rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text)" />
+          <label style="font-size:0.85rem;color:var(--muted)">Output folder (optional)</label>
+          <input type="text" id="inpOut" placeholder=".\out\latest"
+            style="width:100%;margin:0.35rem 0;padding:0.45rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text)" />
+          <label style="font-size:0.85rem;color:var(--muted)">Include only these CheckIds (optional, one per line or
+            comma-separated)</label>
+          <textarea id="includeIds" placeholder="e.g. KRBTGT_LAST_PW_CHANGE"
+            style="width:100%;min-height:3.5rem;margin:0.35rem 0;padding:0.45rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:JetBrains Mono,monospace;font-size:0.78rem"></textarea>
+          <textarea class="cmd" id="cmdOut" readonly></textarea>
+          <button type="button" class="btn" id="btnCopy">Copy command</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      let scanDoc = null;
+      let catalogDoc = null;
+      let filterCats = new Set();
+      let sortKey = 'CheckId';
+      let sortDir = 1;
+
+      const $ = (id) => document.getElementById(id);
+
+      function sevClass(s) {
+        if (!s) return '';
+        const x = String(s).toLowerCase();
+        if (x === 'critical') return 'sev-critical';
+        if (x === 'high') return 'sev-high';
+        if (x === 'medium') return 'sev-medium';
+        if (x === 'low') return 'sev-low';
+        if (x === 'info') return 'sev-info';
+        return '';
+      }
+
+      function rowClass(r) {
+        const res = (r.Result || '').toLowerCase();
+        if (res === 'error' || r.Error) return 'err';
+        if (res === 'fail') return 'fail';
+        return 'pass';
+      }
+
+      function filteredResults() {
+        if (!scanDoc || !scanDoc.results) return [];
+        let rows = scanDoc.results.slice();
+        if (filterCats.size > 0) {
+          rows = rows.filter((r) => filterCats.has(String(r.Category || '')));
+        }
+        return rows;
+      }
+
+      function sortRows(rows) {
+        const k = sortKey;
+        const d = sortDir;
+        return rows.slice().sort((a, b) => {
+          let va = a[k], vb = b[k];
+          if (va == null) va = '';
+          if (vb == null) vb = '';
+          if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * d;
+          return String(va).localeCompare(String(vb), undefined, { numeric: true }) * d;
+        });
+      }
+
+      function renderScan() {
+        if (!scanDoc) return;
+        $('emptyState').classList.add('hidden');
+        $('scanPanel').classList.remove('hidden');
+        $('scanStatus').textContent = 'Scan loaded';
+
+        const agg = scanDoc.aggregate || {};
+        const meta = scanDoc.meta || {};
+        const band = agg.globalRiskBand || '';
+        let riskClass = 'risk-mod';
+        if (band === 'Low') riskClass = 'risk-low';
+        else if (band === 'High') riskClass = 'risk-high';
+        else if (band === 'Critical') riskClass = 'risk-crit';
+
+        $('summaryGrid').innerHTML = `
+      <div class="card ${riskClass}"><span>Global risk</span><strong>${agg.globalScore != null ? agg.globalScore : '—'} / 100</strong><small style="color:var(--muted)">${band || ''}</small></div>
+      <div class="card"><span>Checks run</span><strong>${agg.checksRun != null ? agg.checksRun : '—'}</strong></div>
+      <div class="card"><span>With findings</span><strong>${agg.checksWithFindings != null ? agg.checksWithFindings : '—'}</strong></div>
+      <div class="card"><span>Errors</span><strong>${agg.checksWithErrors != null ? agg.checksWithErrors : '—'}</strong></div>
+      <div class="card"><span>Total findings</span><strong>${agg.totalFindings != null ? agg.totalFindings : '—'}</strong></div>
+    `;
+
+        let mb = '';
+        if (meta.scanTimeUtc) mb += 'Scan (UTC): ' + escapeHtml(meta.scanTimeUtc) + '<br/>';
+        if (meta.serverName) mb += 'Server: ' + escapeHtml(meta.serverName) + '<br/>';
+        if (meta.defaultNamingContext) mb += 'Default NC: ' + escapeHtml(meta.defaultNamingContext) + '<br/>';
+        if (meta.checksJsonPath) mb += 'Catalog: ' + escapeHtml(meta.checksJsonPath) + '<br/>';
+        if (meta.packName || meta.packVersion) {
+          mb += 'Rule pack: ' + escapeHtml(meta.packName || '') + ' ' + escapeHtml(meta.packVersion || '') + '<br/>';
+        }
+        $('metaBlock').innerHTML = mb || 'No meta';
+
+        renderByCategoryTable();
+
+        const results = scanDoc.results || [];
+        const top = results
+          .filter((r) => r.CheckScore > 0)
+          .sort((a, b) => (b.CheckScore || 0) - (a.CheckScore || 0))
+          .slice(0, 10);
+        const tt = $('topTable').querySelector('tbody');
+        tt.innerHTML = top.map((r) => `<tr>
+      <td>${escapeHtml(r.CheckId)}</td>
+      <td>${escapeHtml(r.CheckName)}</td>
+      <td>${escapeHtml(r.Category)}</td>
+      <td class="${sevClass(r.Severity)}">${escapeHtml(r.Severity)}</td>
+      <td>${r.FindingCount != null ? r.FindingCount : ''}</td>
+      <td>${r.CheckScore != null ? r.CheckScore : ''}</td>
+    </tr>`).join('') || '<tr><td colspan="6">No scored checks</td></tr>';
+
+        const cats = new Set();
+        results.forEach((r) => { if (r.Category) cats.add(String(r.Category)); });
+        const chips = $('catChips');
+        chips.innerHTML = '<span class="chip all on" data-all="1">All categories</span>' +
+          Array.from(cats).sort().map((c) => `<span class="chip" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</span>`).join('');
+        chips.querySelectorAll('.chip').forEach((el) => {
+          el.addEventListener('click', () => {
+            if (el.dataset.all) {
+              filterCats.clear();
+              chips.querySelectorAll('.chip').forEach((x) => x.classList.toggle('on', !!x.dataset.all));
+            } else {
+              chips.querySelectorAll('.chip[data-all]').forEach((x) => x.classList.remove('on'));
+              const c = el.getAttribute('data-cat');
+              el.classList.toggle('on');
+              if (el.classList.contains('on')) filterCats.add(c);
+              else filterCats.delete(c);
+              if (filterCats.size === 0) {
+                const allChip = chips.querySelector('.chip[data-all]');
+                if (allChip) allChip.classList.add('on');
+              }
+            }
+            renderChecksTable();
+          });
+        });
+
+        renderChecksTable();
+      }
+
+      function renderByCategoryTable() {
+        const bc = scanDoc.byCategory;
+        const agg = scanDoc.aggregate || {};
+        const sbc = agg.scoreByCategory;
+        if (!bc || typeof bc !== 'object' || Object.keys(bc).length === 0) {
+          $('byCatHeading').classList.add('hidden');
+          $('byCatWrap').classList.add('hidden');
+          return;
+        }
+        $('byCatHeading').classList.remove('hidden');
+        $('byCatWrap').classList.remove('hidden');
+        const keys = Object.keys(bc).sort((a, b) => a.localeCompare(b));
+        $('byCatBody').innerHTML = keys.map((k) => {
+          const row = bc[k] || {};
+          const checks = row.checks != null ? row.checks : '';
+          const wf = row.withFindings != null ? row.withFindings : '';
+          const err = row.errors != null ? row.errors : '';
+          let raw = '';
+          if (sbc && typeof sbc === 'object' && Object.prototype.hasOwnProperty.call(sbc, k)) {
+            raw = sbc[k];
+          }
+          return '<tr><td>' + escapeHtml(k) + '</td><td>' + escapeHtml(String(checks)) + '</td><td>' + escapeHtml(String(wf)) + '</td><td>' + escapeHtml(String(err)) + '</td><td>' + escapeHtml(String(raw)) + '</td></tr>';
+        }).join('');
+      }
+
+      function escapeHtml(s) {
+        if (s == null) return '';
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+      }
+
+      function renderChecksTable() {
+        const tbody = $('checksBody');
+        let rows = filteredResults();
+        rows = sortRows(rows);
+        tbody.innerHTML = rows.map((r, idx) => {
+          const findings = r.Findings || [];
+          const prev = findings.slice(0, 15);
+          let prevTable = '';
+          if (prev.length > 0) {
+            const keys = Object.keys(prev[0]).filter((k) => !/^CheckId$|^CheckName$|^FindingCount$|^Result$|^Severity$|^Description$/i.test(k));
+            const showKeys = keys.slice(0, 10);
+            prevTable = '<table class="mini-table"><thead><tr>' + showKeys.map((k) => '<th>' + escapeHtml(k) + '</th>').join('') + '</tr></thead><tbody>' +
+              prev.map((row) => '<tr>' + showKeys.map((k) => '<td>' + escapeHtml(String(row[k] != null ? row[k] : '')) + '</td>').join('') + '</tr>').join('') +
+              '</tbody></table>';
+          }
+          const ref = r.References;
+          let refHtml = '';
+          if (ref) {
+            if (Array.isArray(ref)) refHtml = '<p><strong>References:</strong> ' + ref.map(escapeHtml).join(', ') + '</p>';
+            else refHtml = '<p><strong>References:</strong> ' + escapeHtml(ref) + '</p>';
+          }
+          return `<tr class="${rowClass(r)}">
+        <td>${escapeHtml(r.CheckId)}</td>
+        <td>${escapeHtml(r.CheckName)}</td>
+        <td>${escapeHtml(r.Category)}</td>
+        <td class="${sevClass(r.Severity)}">${escapeHtml(r.Severity)}</td>
+        <td class="col-result">${escapeHtml(r.Result)}</td>
+        <td>${r.FindingCount != null ? r.FindingCount : ''}</td>
+        <td>${r.CheckScore != null ? r.CheckScore : ''}</td>
+        <td>
+          <details class="drill">
+            <summary>Details</summary>
+            <div class="drill-body">
+              ${r.Description ? '<p><strong>Description:</strong> ' + escapeHtml(r.Description) + '</p>' : ''}
+              ${r.Remediation ? '<p><strong>Remediation:</strong> ' + escapeHtml(r.Remediation) + '</p>' : ''}
+              ${refHtml}
+              ${r.Error ? '<p style="color:var(--bad)"><strong>Error:</strong> ' + escapeHtml(r.Error) + '</p>' : ''}
+              ${prevTable ? '<p><strong>Findings preview (first ' + prev.length + ')</strong></p>' + prevTable : '<p>No finding rows</p>'}
+            </div>
+          </details>
+        </td>
+      </tr>`;
+        }).join('');
+
+        document.querySelectorAll('#checksTable thead th[data-k]').forEach((th) => {
+          th.onclick = () => {
+            const k = th.getAttribute('data-k');
+            if (sortKey === k) sortDir *= -1;
+            else { sortKey = k; sortDir = 1; }
+            renderChecksTable();
+          };
+        });
+      }
+
+      $('fileScan').addEventListener('change', (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          try {
+            scanDoc = JSON.parse(r.result);
+            filterCats.clear();
+            renderScan();
+          } catch (err) {
+            alert('Invalid JSON: ' + err.message);
+          }
+        };
+        r.readAsText(f);
+      });
+
+      $('fileCat').addEventListener('change', (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          try {
+            catalogDoc = JSON.parse(r.result);
+            $('catStatus').textContent = 'Catalog loaded';
+            renderPlanner();
+          } catch (err) {
+            alert('Invalid JSON: ' + err.message);
+          }
+        };
+        r.readAsText(f);
+      });
+
+      function renderPlanner() {
+        if (!catalogDoc || !catalogDoc.categories) return;
+        $('plannerSection').classList.remove('hidden');
+        const host = $('catPlanner');
+        host.innerHTML = catalogDoc.categories.map((cat) => {
+          const checks = cat.checks || [];
+          const riskN = checks.filter((c) => String(c.engine || '').toLowerCase() !== 'inventory').length;
+          return `<div class="cat-block">
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-weight:600;color:var(--text)">
+          <input type="checkbox" class="pcat" value="${escapeHtml(cat.name)}"/>
+          ${escapeHtml(cat.name)} <small style="color:var(--muted);font-weight:400">(${checks.length} checks, ${riskN} non-inventory)</small>
+        </label>
+        <div style="margin:0.5rem 0 0 1.2rem;font-size:0.78rem;color:var(--muted)">
+          ${checks.map((c) => '<span style="margin-right:0.5rem">' + escapeHtml(c.id) + '</span>').join('')}
+        </div>
+      </div>`;
+        }).join('');
+
+        host.querySelectorAll('.pcat').forEach((cb) => {
+          cb.addEventListener('change', updateCmd);
+        });
+        $('inpServer').oninput = updateCmd;
+        $('inpOut').oninput = updateCmd;
+        const fullOn = $('chkFullScan').checked;
+        document.querySelectorAll('.pcat').forEach((cb) => {
+          cb.disabled = fullOn;
+        });
+        updateCmd();
+      }
+
+      function updateCmd() {
+        const full = $('chkFullScan').checked;
+        const cats = new Set();
+        if (!full) {
+          document.querySelectorAll('.pcat:checked').forEach((cb) => cats.add(cb.value));
+        }
+        const catArr = Array.from(cats).sort();
+        let line = '.\\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\\checks.json';
+        if (!full) {
+          catArr.forEach((c) => {
+            line += ' -Category ' + quotePs(c);
+          });
+        }
+        const idsRaw = $('includeIds').value.trim();
+        if (idsRaw) {
+          idsRaw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean).forEach((id) => {
+            line += ' -IncludeCheckId ' + quotePs(id);
+          });
+        }
+        const srv = $('inpServer').value.trim();
+        if (srv) line += ' -ServerName ' + quotePs(srv);
+        const out = $('inpOut').value.trim();
+        if (out) line += ' -OutputDirectory ' + quotePs(out);
+        $('cmdOut').value = line;
+      }
+
+      function quotePs(s) {
+        if (/^[a-zA-Z0-9_.\\:-]+$/.test(s)) return s;
+        return "'" + String(s).replace(/'/g, "''") + "'";
+      }
+
+      $('chkFullScan').addEventListener('change', function () {
+        const on = this.checked;
+        document.querySelectorAll('.pcat').forEach((cb) => {
+          cb.disabled = on;
+          if (on) cb.checked = false;
+        });
+        updateCmd();
+      });
+      $('includeIds').addEventListener('input', updateCmd);
+
+      $('btnCopy').addEventListener('click', () => {
+        $('cmdOut').select();
+        document.execCommand('copy');
+      });
+
+      $('btnExport').addEventListener('click', () => {
+        const rows = filteredResults();
+        const out = {
+          schemaVersion: 1,
+          filteredFrom: scanDoc.meta,
+          aggregate: scanDoc.aggregate,
+          results: rows
+        };
+        const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'scan-filtered.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+    })();
+  </script>
+</body>
+
+</html>
