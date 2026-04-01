@@ -1,10 +1,11 @@
 import express from 'express';
 import fs from 'fs/promises';
-import { authenticate } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
 import { ScanService } from '../services/scanService';
 
 const router = express.Router();
 router.use(authenticate);
+router.use(authorize('admin', 'analyst', 'viewer'));
 
 async function getAvailableScans() {
     const summaries = await ScanService.listAvailableScans();

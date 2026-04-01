@@ -24,6 +24,7 @@ const dashboard_1 = __importDefault(require("./routes/dashboard"));
 const analysis_1 = __importDefault(require("./routes/analysis"));
 const settings_1 = __importDefault(require("./routes/settings"));
 const attackPath_1 = __importDefault(require("./routes/attackPath"));
+const oidcAuth_1 = __importDefault(require("./routes/oidcAuth"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
@@ -45,7 +46,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
     if (process.env.NODE_ENV !== 'production') {
         return res.status(200).json({
-            message: 'AD Suite API (Express). The web UI is served by Vite in development.',
+            message: 'Technieum AD suite API (Express). The web UI is served by Vite in development.',
             webUi: process.env.FRONTEND_URL || 'http://localhost:5173',
             health: '/health',
             api: '/api'
@@ -59,6 +60,7 @@ app.get('/health', (req, res) => {
 });
 // API Routes
 app.use('/api/auth', auth_1.default);
+app.use('/api/auth/oidc', oidcAuth_1.default);
 app.use('/api/scans', scans_1.default);
 app.use('/api/checks', checks_1.default);
 app.use('/api/reports', reports_1.default);

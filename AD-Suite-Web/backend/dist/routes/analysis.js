@@ -8,9 +8,13 @@ const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const promises_1 = __importDefault(require("fs/promises"));
 const auth_1 = require("../middleware/auth");
+const auditMiddleware_1 = require("../middleware/auditMiddleware");
 const scanService_1 = require("../services/scanService");
 const router = express_1.default.Router();
 router.use(auth_1.authenticate);
+router.use(auditMiddleware_1.auditMutations);
+const readRoles = (0, auth_1.authorize)('admin', 'analyst', 'viewer');
+const writeRoles = (0, auth_1.authorize)('admin', 'analyst');
 const uploadDir = path_1.default.resolve('./uploads/analysis');
 // Ensure upload directory exists
 promises_1.default.mkdir(uploadDir, { recursive: true }).catch(() => { });
@@ -35,7 +39,7 @@ const upload = (0, multer_1.default)({
     }
 });
 // Upload a scan-results.json
-router.post('/upload', upload.single('file'), async (req, res, next) => {
+router.post('/upload', writeRoles, upload.single('file'), async (req, res, next) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
@@ -67,7 +71,7 @@ router.post('/upload', upload.single('file'), async (req, res, next) => {
     }
 });
 // List uploaded and generated scan files
-router.get('/scans', async (_req, res, next) => {
+router.get('/scans', readRoles, async (_req, res, next) => {
     try {
         const scans = await scanService_1.ScanService.listAvailableScans();
         res.json({ scans });
@@ -77,7 +81,7 @@ router.get('/scans', async (_req, res, next) => {
     }
 });
 // Serve a specific scan file
-router.get('/scans/:filename', async (req, res, next) => {
+router.get('/scans/:filename', readRoles, async (req, res, next) => {
     try {
         const filename = req.params.filename;
         const data = await scanService_1.ScanService.getScanContent(filename);

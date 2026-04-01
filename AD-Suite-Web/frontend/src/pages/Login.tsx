@@ -29,19 +29,19 @@ export default function Login() {
 
     return (
         <div className="min-h-screen bg-bg-primary flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                <div className="bg-surface-elevated border border-border-light rounded-2xl p-8 shadow-lg">
+            <div className="w-full max-w-md px-2">
+                <div className="bg-surface-elevated border border-border-light rounded-2xl p-6 sm:p-8 shadow-lg">
                     {/* Logo */}
                     <div className="text-center mb-8">
                         <div className="flex justify-center mb-4">
                             <img
                                 src="/technieum-logo.png"
                                 alt="Technieum"
-                                className="h-14 w-auto max-w-[220px] object-contain mx-auto"
+                                className="h-12 w-auto max-w-[180px] object-contain mx-auto"
                             />
                         </div>
-                        <h1 className="text-2xl font-semibold text-text-primary mb-2">Technieum AD suite</h1>
-                        <p className="text-sm text-text-secondary">Security Assessment Platform</p>
+                        <h1 className="text-xl font-semibold text-text-primary mb-1 break-words">Technieum AD suite</h1>
+                        <p className="text-xs text-text-secondary">Security Assessment Platform</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-5">

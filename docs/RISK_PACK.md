@@ -6,17 +6,22 @@ This document defines how check definitions behave in the **risk scan** (Ping Ca
 
 | File | Role |
 |------|------|
-| `checks.json` | **Production risk pack** (curated): use this path for `Invoke-ADSuiteScan.ps1` when you want Ping Castle–style **reviewed** rules only. Optional `defaults` merged into each check. |
+| `checks.unified.json` | **Single merged catalog** (optional artifact): `checks.generated.json` + `checks.overrides.phaseB-complete.json`, then **`checks.json` wins on every matching `id`** (adds ADCS/ACL/filesystem-only curated rows). Regenerate: `node tools/Merge-UnifiedChecksCatalog.js`. When this file exists in the repo root, `Invoke-ADSuiteScan.ps1`, `Test-ADSuiteCatalog.ps1`, and the web API default to it instead of `checks.json`. |
+| `checks.json` | **Curated risk pack** (source): reviewed rules and `defaults`; also the overlay source for `checks.unified.json`. Use this path explicitly when you want the small pack only and no unified file. |
 | `checks.overrides.json` | Optional **patches only**: same `schemaVersion`, `checks` array of partial objects keyed by `id`. Non-null fields override the base catalog. Use to **promote** a stub from inventory to `ldap` / `filesystem`, adjust `severity`, `description`, or fix `ldapFilter` without copying full definitions. |
 | `checks.generated.json` | Legacy exporter output (`Export-ChecksJsonFromLegacyScripts.ps1`): **every check defaults to `engine: inventory`**. It is a full LDAP stub listing for reference, **not** a production risk catalog until individual IDs are promoted (overrides or copy into `checks.json`). |
 | `checks.overrides.phaseB1.json` | **Phase B wave B1 only** (71 checks): **`Kerberos_Security`** + **`Access_Control`**. Same merge rules as below. Regenerate: `node tools/Generate-PhaseB1Overrides.js`. |
 | `checks.overrides.phaseB-complete.json` | **Phase B waves B1–B11** (661 checks): promotes every stub in `checks.generated.json` **except** **`Certificate_Services`** and **`Azure_AD_Integration`** (Phase C/D). Merges **metadata from `checks.json`** where `id` matches; otherwise heuristic **severity** and generic **remediation** / **references** via `tools/phaseBOverrideHelpers.js`. Regenerate: `node tools/Generate-PhaseBCompleteOverrides.js`. Validate: `Test-ADSuiteCatalog.ps1 -CatalogPath .\checks.generated.json -OverridesPath .\checks.overrides.phaseB-complete.json`. Full LDAP scan (no CERT/Azure): `Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.generated.json -ChecksOverridesPath .\checks.overrides.phaseB-complete.json` (optionally `-ExcludeCheckId` for categories still under review). |
 
-**Production vs staging:** run risk scans with `-ChecksJsonPath .\checks.json` (plus optional overrides). Pointing the scanner at `checks.generated.json` alone will **skip all checks** for risk (all inventory) unless you patch specific IDs to `ldap`, `filesystem`, or **`adcs`** via `checks.overrides.json` or promote into `checks.json`.
+**Production vs staging:** if `checks.unified.json` is present, the scanner and API default to it (one file, full Phase B + curated overlay). Otherwise default to `-ChecksJsonPath .\checks.json` (plus optional overrides). Pointing the scanner at `checks.generated.json` alone will **skip all checks** for risk (all inventory) unless you patch specific IDs to `ldap`, `filesystem`, or **`adcs`** via `checks.overrides.json` or promote into `checks.json`.
+
+**AD-Suite-Web backend:** `GET /api/checks` and scan execution use the **same** resolution: `CHECKS_JSON_PATH` or `AD_SUITE_CHECKS_JSON` (default: `checks.unified.json` if it exists, else `checks.json`), merged with `CHECKS_OVERRIDES_PATH` or `AD_SUITE_CHECKS_OVERRIDES`, or automatic `checks.overrides.json` when that file exists. The API lists only **runnable** checks (`ldap`, `filesystem`, `adcs`, `acl`) unless you pass **`?includeInventory=1`**, which also includes `inventory` stubs for reference.
 
 **Phase C (AD CS):** curated checks `ADCS-ESC1` … `ADCS-ESC8` use `engine: adcs` and `adcsCheck: ESC1` … `ESC8`, implemented in `Modules/ADSuite.Adcs.psm1`. Optional scan switches: `-AdcsSkipACLChecks` (skip ESC4, ESC5, ESC7), `-AdcsSkipNetworkProbes` (skip `certutil` ESC6 and HTTP/S probes for ESC8). ESC6 may return **Info** findings when the scanning host cannot reach the CA over RPC for `certutil`.
 
 **Certificate_Services LDAP (`CERT-*`):** `checks.json` includes promoted **`engine: ldap`** rules sourced from `checks.generated.json` (metadata in `tools/CertificateServicesLdapMetadata.json`). **`CERT-002`–`CERT-005` and `CERT-020`–`CERT-022` are omitted** here because they overlap **`ADCS-ESC1`–`ESC8`**. Configuration-partition PKI objects use **`searchBase: Configuration`**; **`CERT-023` / `CERT-024`** (`userCertificate` on users/computers) use **`Domain`**. Regenerate / re-merge: `tools\Build-CertificateServicesLdapChecks.ps1 -MergeIntoChecksJson`.
+
+**See also:** [CATALOG_ESC_CERT_AND_AAD.md](CATALOG_ESC_CERT_AND_AAD.md) — **`ADCS-ESC*`** vs **`CERT-*`** stubs and **`AAD-*`** / Azure limitations.
 
 ### Promoting many stubs from `checks.generated.json`
 
@@ -30,13 +35,15 @@ To bulk-reset a generated file to inventory defaults (after editing), use `tools
 
 Load order: read base JSON → merge `defaults` per check → apply overrides by `id` → run validation (`Test-ADSuiteCatalog.ps1`).
 
+**Title vs LDAP implementation:** Some catalog rows reuse generic `ldapFilter` values while names imply machine policy (SMB/LDAP signing, NTLM, ports, etc.). Regenerate the audit with `node tools/Audit-CheckSemantics.js` → `docs/CHECK_SEMANTICS_AUDIT.md` and `docs/check-semantics-audit.json`.
+
 ## Engines
 
 | `engine` | Risk scan | Meaning |
 |----------|-----------|---------|
 | `ldap` | Included | LDAP query; each returned row is a **finding** unless post-filtered in code (e.g. UAC masks). |
 | `filesystem` | Included | Host-accessible paths (e.g. SYSVOL); finding rows from implementation. |
-| `registry` | Included | Reserved; stub returns error until implemented. |
+| `registry` | **Skipped in scan** | Not executed until implemented; definitions may exist in catalogs but `Invoke-ADSuiteScan.ps1` excludes `engine: registry` so runs do not fail on an unimplemented engine. |
 | `adcs` | Included | AD Certificate Services ESC-style checks (LDAP + ACL analysis; optional `certutil` / HTTP per check). Requires **`adcsCheck`**: `ESC1` … `ESC8`. See `Modules/ADSuite.Adcs.psm1`. |
 | `acl` | Included | Paged LDAP with **DACL read** (`nTSecurityDescriptor`). Flags **Allow** ACEs where the trustee is **not** in the baseline privileged SID set (same idea as AD CS ACL helpers) and the rights intersect **`dangerousRights`** (e.g. `GenericAll`, `WriteDacl`). **`maxObjects`** caps work per check; **`ScanNote`** records caps or per-object ACL read failures while the scan continues. Not a CVSS substitute—high volume on broad filters (e.g. `WriteProperty`). Prefer a writable DC via **`-ServerName`**; scope is single domain / partition from **`searchBase`**. Overlaps in theme with **AD CS** template/CA ACL checks (**ADCS-ESC***) but targets arbitrary LDAP scopes. See `Invoke-ADSuiteAclCheck` in `Modules/ADSuite.Adsi.psm1`. |
 | `inventory` | **Excluded** | Documentation / raw listing only; not pass/fail misconfiguration. Use `adsi.ps1` after setting `engine` to `ldap` for debugging, or run inventory-only tooling separately. |
@@ -47,7 +54,7 @@ Load order: read base JSON → merge `defaults` per check → apply overrides by
 
 For `ldap`: **`searchBase`**, **`ldapFilter`**.
 
-For `filesystem`: **`filesystemKind`** (and kind-specific fields, e.g. `sysvolPoliciesPath`).
+For `filesystem`: **`filesystemKind`** (and kind-specific fields, e.g. `sysvolPoliciesPath`). **`SysvolGptTmplSecedit`** reads `\\<domain>\SYSVOL\<domain>\Policies\{GUID}\Machine\Microsoft\Windows NT\SecEdit\GptTmpl.inf` and evaluates **`gptTmplRules`** against the `[Registry Values]` section (dword pairs `4,<value>`). Use for SMB/LDAP signing, NTLM compatibility, and related policy **as deployed via GPO templates** — not live remote registry.
 
 For `adcs`: **`adcsCheck`** (`ESC1` through `ESC8`).
 

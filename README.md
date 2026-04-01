@@ -218,6 +218,7 @@ foreach ($check in $criticalChecks) {
 ## 📚 Documentation
 
 ### Essential Documentation
+- **[PRODUCT_POSTURE_SUMMARY.txt](PRODUCT_POSTURE_SUMMARY.txt)** - Product posture: what is built, what runs, gaps, and ops guidance (plain text)
 - **[README.md](README.md)** - This file (main documentation)
 - **[COMPLETE_ARCHITECTURE.md](COMPLETE_ARCHITECTURE.md)** - Complete system architecture
 - **[EXECUTION_MODES_QUICK_REFERENCE.md](EXECUTION_MODES_QUICK_REFERENCE.md)** - Quick reference for all modes
@@ -225,6 +226,8 @@ foreach ($check in $criticalChecks) {
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### Advanced Topics
+- **[docs/ENTERPRISE_DEPLOYMENT.md](docs/ENTERPRISE_DEPLOYMENT.md)** - Scan topology, scheduling, OIDC pointers, catalog CI
+- **[docs/HEALTH_SCORE_METHODOLOGY.md](docs/HEALTH_SCORE_METHODOLOGY.md)** - How the global score is computed (not CVSS)
 - **[docs/RISK_PACK.md](docs/RISK_PACK.md)** - Risk pack contract and engine types (field-level rules)
 - **[docs/COVERAGE.md](docs/COVERAGE.md)** - Rule pack coverage documentation
 - **[docs/LAB_VALIDATION.md](docs/LAB_VALIDATION.md)** - Lab validation procedures

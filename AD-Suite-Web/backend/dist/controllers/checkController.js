@@ -1,43 +1,37 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CheckController = void 0;
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
 const logger_1 = require("../utils/logger");
+const repoRoot_1 = require("../utils/repoRoot");
+const loadChecksCatalog_1 = require("../utils/loadChecksCatalog");
 class CheckController {
     constructor() {
         this.getChecks = async (req, res, next) => {
             try {
-                const catalogPath = this.getCatalogPath();
-                logger_1.logger.info(`Fetching catalog from: ${catalogPath}`);
-                if (!fs_1.default.existsSync(catalogPath)) {
-                    logger_1.logger.warn(`Catalog not found at ${catalogPath}`);
+                const rootDir = (0, repoRoot_1.getRepoRoot)();
+                const loaded = (0, loadChecksCatalog_1.loadMergedChecksCatalog)(rootDir);
+                if (!loaded.ok) {
+                    logger_1.logger.warn(`Catalog load failed: ${loaded.error}`);
                     return res.status(404).json({
                         error: 'Catalog not found',
-                        message: `checks.generated.json not found at expected path: ${catalogPath}`
+                        message: loaded.error,
+                        checksJsonPath: loaded.checksJsonPath
                     });
                 }
-                const catalogData = fs_1.default.readFileSync(catalogPath, 'utf-8');
-                const catalog = JSON.parse(catalogData);
-                if (!catalog.checks || !Array.isArray(catalog.checks)) {
-                    return res.status(500).json({
-                        error: 'Invalid catalog format',
-                        message: 'Catalog does not contain a valid checks array'
-                    });
-                }
-                // Extract unique categories
+                const { document, checksJsonPath, checksOverridesPath } = loaded;
+                const allChecks = document.checks ?? [];
+                const includeInventory = req.query.includeInventory === '1' || req.query.includeInventory === 'true';
+                const pool = includeInventory
+                    ? allChecks
+                    : allChecks.filter((check) => (0, loadChecksCatalog_1.isRunnableEngine)(check.engine));
                 const categoriesSet = new Set();
-                catalog.checks.forEach((check) => {
+                pool.forEach((check) => {
                     if (check.category) {
-                        categoriesSet.add(check.category);
+                        categoriesSet.add(String(check.category));
                     }
                 });
                 const categories = Array.from(categoriesSet).sort();
-                // Map checks to a cleaner format
-                const checks = catalog.checks.map((check) => ({
+                const checks = pool.map((check) => ({
                     id: check.id,
                     name: check.name,
                     category: check.category,
@@ -46,37 +40,40 @@ class CheckController {
                     engine: check.engine || 'ldap',
                     sourcePath: check.sourcePath
                 }));
-                logger_1.logger.info(`Returning ${categories.length} categories and ${checks.length} checks`);
+                logger_1.logger.info(`Returning ${categories.length} categories and ${checks.length} checks (catalog ${checksJsonPath})`);
                 res.json({
                     categories,
                     checks,
                     meta: {
                         totalChecks: checks.length,
                         totalCategories: categories.length,
-                        catalogPath: catalogPath
+                        checksJsonPath,
+                        checksOverridesPath: checksOverridesPath ?? null,
+                        includeInventory
                     }
                 });
             }
             catch (error) {
+                const message = error instanceof Error ? error.message : 'Unknown error';
                 logger_1.logger.error('Error reading catalog:', error);
                 res.status(500).json({
                     error: 'Failed to read catalog',
-                    message: error.message
+                    message
                 });
             }
         };
         this.getCheck = async (req, res, next) => {
             try {
                 const { id } = req.params;
-                const catalogPath = this.getCatalogPath();
-                if (!fs_1.default.existsSync(catalogPath)) {
+                const rootDir = (0, repoRoot_1.getRepoRoot)();
+                const loaded = (0, loadChecksCatalog_1.loadMergedChecksCatalog)(rootDir);
+                if (!loaded.ok) {
                     return res.status(404).json({
-                        error: 'Catalog not found'
+                        error: 'Catalog not found',
+                        message: loaded.error
                     });
                 }
-                const catalogData = fs_1.default.readFileSync(catalogPath, 'utf-8');
-                const catalog = JSON.parse(catalogData);
-                const check = catalog.checks.find((c) => c.id === id);
+                const check = loaded.document.checks?.find((c) => String(c.id) === id);
                 if (!check) {
                     return res.status(404).json({
                         error: 'Check not found',
@@ -86,18 +83,14 @@ class CheckController {
                 res.json({ check });
             }
             catch (error) {
+                const message = error instanceof Error ? error.message : 'Unknown error';
                 logger_1.logger.error('Error reading check:', error);
                 res.status(500).json({
                     error: 'Failed to read check',
-                    message: error.message
+                    message
                 });
             }
         };
-    }
-    getCatalogPath() {
-        // Corrected path to reach the root AD_SUITE folder from backend/src/controllers
-        // src/controllers -> src -> backend -> AD-Suite-Web -> AD_SUITE
-        return path_1.default.resolve(__dirname, '../../../../checks.generated.json');
     }
 }
 exports.CheckController = CheckController;

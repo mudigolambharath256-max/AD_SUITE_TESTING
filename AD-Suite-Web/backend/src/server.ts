@@ -20,6 +20,7 @@ import dashboardRoutes from './routes/dashboard';
 import analysisRoutes from './routes/analysis';
 import settingsRoutes from './routes/settings';
 import attackPathRoutes from './routes/attackPath';
+import oidcAuthRoutes from './routes/oidcAuth';
 
 dotenv.config();
 
@@ -27,10 +28,27 @@ const app: Application = express();
 const PORT = process.env.PORT || 3000;
 const WS_PORT = process.env.WS_PORT || 3001;
 
+/** Comma-separated browser origins allowed for CORS (e.g. LAN: http://192.168.1.10:5173,http://host.domain.local:5173). */
+const corsOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
 // Middleware
 app.use(helmet());
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+        if (corsOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+        logger.warn(`CORS blocked for origin: ${origin} (set FRONTEND_URL to include this origin)`);
+        callback(null, false);
+    },
     credentials: true
 }));
 app.use(express.json());
@@ -62,6 +80,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/oidc', oidcAuthRoutes);
 app.use('/api/scans', scanRoutes);
 app.use('/api/checks', checkRoutes);
 app.use('/api/reports', reportRoutes);
@@ -105,9 +124,10 @@ async function bootstrap() {
         process.exit(1);
     }
 
-    server.listen(PORT, () => {
-        logger.info(`🚀 Server running on port ${PORT}`);
-        logger.info(`📡 WebSocket server running on port ${WS_PORT}`);
+    const listenHost = process.env.HOST || '0.0.0.0';
+    server.listen(Number(PORT), listenHost, () => {
+        logger.info(`🚀 HTTP API listening on http://${listenHost}:${PORT}`);
+        logger.info(`📡 WebSocket server running on port ${WS_PORT} (all interfaces)`);
         logger.info(`🌍 Environment: ${process.env.NODE_ENV}`);
     });
 }

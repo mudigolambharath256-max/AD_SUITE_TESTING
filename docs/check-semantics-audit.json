@@ -1,0 +1,3937 @@
+{
+  "catalogPath": "checks.unified.json",
+  "generatedAtUtc": "2026-03-31T06:07:29.460Z",
+  "totalChecks": 771,
+  "summary": {
+    "ldapChecks": 690,
+    "rowsWithPolicyKeywords": 97,
+    "flaggedSemanticMismatches": 16,
+    "duplicateFilterGroups": 87
+  },
+  "mismatches": [
+    {
+      "id": "COMPLY-005",
+      "name": "Advanced Audit Policy Validation",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Audit policy"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "COMPLY-018",
+      "name": "Audit Policy Success Failure",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Audit policy"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-038-dup2",
+      "name": "Domain Controllers with Audit Policy Gaps",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Audit policy"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-043",
+      "name": "DCs Not Configured for Secure Time Sync",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Time / NTP"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-044",
+      "name": "DCs with Excessive Open Ports",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Network ports / firewall"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-046",
+      "name": "DCs Missing Critical Security Updates",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-047",
+      "name": "DCs with Weak Audit Policy",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Audit policy"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-048",
+      "name": "DCs with RDP Enabled",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "RDP"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-049",
+      "name": "DCs with Insecure DNS Configuration",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "DNS"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-050",
+      "name": "DCs with Disabled Windows Firewall",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Network ports / firewall"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-053",
+      "name": "DCs with Insecure Share Permissions",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Share permissions"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-055",
+      "name": "DCs with Unsigned Drivers Allowed",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Drivers policy"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "DC-057",
+      "name": "DCs with Insecure WMI Permissions",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "WMI"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "LDAP-002",
+      "name": "LDAP Channel Binding Disabled",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "LDAP signing / channel binding"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "NET-002",
+      "name": "Firewall Rules for AD Ports",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Network ports / firewall"
+      ],
+      "mismatch": "title_implies_machine_policy_but_filter_is_only_dc_enumeration"
+    },
+    {
+      "id": "SMB-003",
+      "name": "SMB Encryption Not Enabled",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "SMB / LanMan policy"
+      ],
+      "mismatch": "title_implies_smb_policy_but_filter_is_all_non_disabled_computers"
+    }
+  ],
+  "duplicateFilters": [
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "count": 57,
+      "distinctNames": 57,
+      "checks": [
+        {
+          "id": "ADV-001",
+          "name": "Print Spooler Service on DCs",
+          "engine": "ldap"
+        },
+        {
+          "id": "ADV-002",
+          "name": "Zerologon Vulnerability Check",
+          "engine": "ldap"
+        },
+        {
+          "id": "ADV-003",
+          "name": "PetitPotam Vulnerability",
+          "engine": "ldap"
+        },
+        {
+          "id": "ADV-006",
+          "name": "Coerced Authentication Vectors",
+          "engine": "ldap"
+        },
+        {
+          "id": "BCK-001",
+          "name": "AD Backup Status",
+          "engine": "ldap"
+        },
+        {
+          "id": "BCK-002",
+          "name": "System State Backup Validation",
+          "engine": "ldap"
+        },
+        {
+          "id": "BCK-006",
+          "name": "Backup Retention Policy",
+          "engine": "ldap"
+        },
+        {
+          "id": "BCK-008",
+          "name": "Backup Encryption Status",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-005",
+          "name": "Advanced Audit Policy Validation",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-006",
+          "name": "Security Event Log Forwarding",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-018",
+          "name": "Audit Policy Success Failure",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-019",
+          "name": "Security Log Size Compliance",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-001",
+          "name": "Domain Controllers Inventory",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-036",
+          "name": "DCs with Expiring Certificates",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-037",
+          "name": "DCs Replication Failures",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-037-dup2",
+          "name": "Domain Controllers with Unusual Services",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-038",
+          "name": "DCs Null Session Enabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-038-dup2",
+          "name": "Domain Controllers with Audit Policy Gaps",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-039",
+          "name": "DCs with Print Spooler Running",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-039-dup2",
+          "name": "Event Log Size and Retention",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-040",
+          "name": "DC Accounts Not Protected",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-041",
+          "name": "DCs with Weak Kerberos Encryption",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-042",
+          "name": "DCs with Unsigned LDAP Binds Allowed",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-043",
+          "name": "DCs Not Configured for Secure Time Sync",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-044",
+          "name": "DCs with Excessive Open Ports",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-046",
+          "name": "DCs Missing Critical Security Updates",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-047",
+          "name": "DCs with Weak Audit Policy",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-048",
+          "name": "DCs with RDP Enabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-049",
+          "name": "DCs with Insecure DNS Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-050",
+          "name": "DCs with Disabled Windows Firewall",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-051",
+          "name": "DCs with Excessive Service Accounts",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-052",
+          "name": "DCs with Old DSRM Password",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-053",
+          "name": "DCs with Insecure Share Permissions",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-054",
+          "name": "DCs with Disabled Security Event Log",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-055",
+          "name": "DCs with Unsigned Drivers Allowed",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-056",
+          "name": "DCs with PowerShell v2 Enabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-057",
+          "name": "DCs with Insecure WMI Permissions",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-058",
+          "name": "DCs with Cached Credentials Excessive",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-059",
+          "name": "DCs with Anonymous SID Translation Enabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-060",
+          "name": "DCs with Insecure Screensaver Policy",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-024",
+          "name": "Domain Controllers Encryption Types",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-002",
+          "name": "LDAP Channel Binding Disabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-004",
+          "name": "LDAPS Not Configured",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-005",
+          "name": "LDAP Query Performance Issues",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-007",
+          "name": "LDAP Server Certificate Invalid",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-008",
+          "name": "LDAP Connection Limits",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-010",
+          "name": "LDAP Admin Limits Not Set",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-012",
+          "name": "LDAP Encryption Downgrade Possible",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-013",
+          "name": "LDAP Audit Logging Disabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-015",
+          "name": "LDAP Bind Redirect Attacks",
+          "engine": "ldap"
+        },
+        {
+          "id": "NET-002",
+          "name": "Firewall Rules for AD Ports",
+          "engine": "ldap"
+        },
+        {
+          "id": "NET-003",
+          "name": "Network Segmentation Validation",
+          "engine": "ldap"
+        },
+        {
+          "id": "NET-004",
+          "name": "VLAN Isolation Checks",
+          "engine": "ldap"
+        },
+        {
+          "id": "NET-010",
+          "name": "RPC Security Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "PERS-004",
+          "name": "Skeleton Key Malware Detection",
+          "engine": "ldap"
+        },
+        {
+          "id": "PERS-006",
+          "name": "DSRM Password Changes",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-025",
+          "name": "Domain Controllers from Trusted Domains",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=trustedDomain)",
+      "count": 43,
+      "distinctNames": 43,
+      "checks": [
+        {
+          "id": "AAD-041",
+          "name": "Cloud Kerberos Trust Issues",
+          "engine": "inventory"
+        },
+        {
+          "id": "ADV-010",
+          "name": "Domain Trust Authentication Vulnerabilities",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-028",
+          "name": "Forest Trust Information",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-026",
+          "name": "Trust Accounts TDOs",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-001",
+          "name": "Trust Relationships",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-002",
+          "name": "Trusts Without SID Filtering",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-004",
+          "name": "Trust Authentication Level",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-005",
+          "name": "Trust Direction Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-006",
+          "name": "Trust Type Classification",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-007",
+          "name": "Trust Transitivity Settings",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-008",
+          "name": "Forest Trust Selective Authentication",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-009",
+          "name": "External Trust Relationships",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-010",
+          "name": "Realm Trust Relationships",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-011",
+          "name": "Trust Password Last Set",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-012",
+          "name": "Trust Encryption Types",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-013",
+          "name": "Trust Quarantine Status",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-014",
+          "name": "Trust Attributes Review",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-015",
+          "name": "Cross Forest Trust Validation",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-016",
+          "name": "Trust Partner Domain Controllers",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-017",
+          "name": "Trust Routing Status",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-018",
+          "name": "Trust Name Suffix Routing",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-019",
+          "name": "Trust Forest Trust Info",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-020",
+          "name": "Trust Posix Offset",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-021",
+          "name": "Trust Supported Encryption Types",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-022",
+          "name": "Orphaned Trust Objects",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-023",
+          "name": "Disabled Trust Relationships",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-024",
+          "name": "Trust SID Filtering Bypass",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-025",
+          "name": "Trust TGT Delegation",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-026",
+          "name": "Trust RC4 Encryption Usage",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-027",
+          "name": "Trust Authentication Policies",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-028",
+          "name": "Trust Claims Transformation",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-029",
+          "name": "Trust Resource Property Lists",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-030",
+          "name": "Trust Central Access Policies",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-031",
+          "name": "Trust Relationship Changes",
+          "engine": "ldap"
+        },
+        {
+          "id": "TMGMT-032",
+          "name": "Trusts with Weak Encryption",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-001",
+          "name": "Trust Inventory All Trusts",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-012",
+          "name": "Cross-Forest Trusts Encryption Types",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-013",
+          "name": "Trust Partner Domains",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-014",
+          "name": "Trusts Created Recently 30 Days",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-015",
+          "name": "Trust Security Identifiers",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-021",
+          "name": "Trust Attributes Analysis",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-024",
+          "name": "Trusts Last Modified",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-030",
+          "name": "Trust Authentication Summary",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "count": 34,
+      "distinctNames": 34,
+      "checks": [
+        {
+          "id": "AAD-031",
+          "name": "Hybrid Join Status",
+          "engine": "inventory"
+        },
+        {
+          "id": "AAD-034",
+          "name": "Pass Through Authentication Security",
+          "engine": "inventory"
+        },
+        {
+          "id": "AAD-036",
+          "name": "Azure AD Joined Device Compliance",
+          "engine": "inventory"
+        },
+        {
+          "id": "ADV-004",
+          "name": "NoPac Vulnerability Check",
+          "engine": "ldap"
+        },
+        {
+          "id": "ADV-005",
+          "name": "sAMAccountName Spoofing",
+          "engine": "ldap"
+        },
+        {
+          "id": "ADV-007",
+          "name": "NTLM Relay Attack Surface",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-006",
+          "name": "Computers with Stale Passwords",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-031",
+          "name": "Local Admin Rights Mapping",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-032",
+          "name": "Computers with Cached Credentials",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-033",
+          "name": "RDP Access Mapping",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-034",
+          "name": "PSRemoting Enabled Computers",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMP-007",
+          "name": "Stale Computer Accounts 90 Days",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMP-019",
+          "name": "Computers Created in Last 7 Days",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMP-023",
+          "name": "Computers in Default Computers Container",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMP-026",
+          "name": "Computer Accounts with Old Password 1 Year",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-033",
+          "name": "PAC Validation Disabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-040",
+          "name": "Kerberos Armoring Not Enabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-044",
+          "name": "Kerberos Clock Skew Issues",
+          "engine": "ldap"
+        },
+        {
+          "id": "NET-005",
+          "name": "Broadcast Multicast Issues",
+          "engine": "ldap"
+        },
+        {
+          "id": "NET-007",
+          "name": "WINS Server Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "NET-008",
+          "name": "IPv6 Security Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "NET-009",
+          "name": "Network Access Protection",
+          "engine": "ldap"
+        },
+        {
+          "id": "PERS-001",
+          "name": "DCShadow Attack Indicators",
+          "engine": "ldap"
+        },
+        {
+          "id": "PRV-031",
+          "name": "PAW Compliance Check",
+          "engine": "ldap"
+        },
+        {
+          "id": "SMB-003",
+          "name": "SMB Encryption Not Enabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "SMB-004",
+          "name": "Anonymous SMB Shares",
+          "engine": "ldap"
+        },
+        {
+          "id": "SMB-005",
+          "name": "Null Session Enumeration Possible",
+          "engine": "ldap"
+        },
+        {
+          "id": "SMB-006",
+          "name": "SMB Guest Access Enabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "SMB-007",
+          "name": "SMB Relay Attack Vulnerable",
+          "engine": "ldap"
+        },
+        {
+          "id": "SMB-008",
+          "name": "SMB Shares with Weak Permissions",
+          "engine": "ldap"
+        },
+        {
+          "id": "SMB-009",
+          "name": "Administrative Shares Exposed",
+          "engine": "ldap"
+        },
+        {
+          "id": "SMB-010",
+          "name": "SMB Dialect Negotiation Weak",
+          "engine": "ldap"
+        },
+        {
+          "id": "SMB-011",
+          "name": "SMB Compression Vulnerabilities",
+          "engine": "ldap"
+        },
+        {
+          "id": "SMB-012",
+          "name": "SMB Audit Logging Disabled",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=pKICertificateTemplate)",
+      "count": 30,
+      "distinctNames": 30,
+      "checks": [
+        {
+          "id": "CERT-001",
+          "name": "Certificate templates (configuration partition listing)",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-005",
+          "name": "ESC4 Templates with Weak Access Control",
+          "engine": "inventory"
+        },
+        {
+          "id": "CERT-026",
+          "name": "[DACL review] Certificate templates (nTSecurityDescriptor for enrollment ACL analysis)",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-030",
+          "name": "[Listing] Template schema version fields (all templates)",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-031",
+          "name": "[Listing] Certificate templates (full forest set; manual ESC review)",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-032",
+          "name": "[Listing] Templates for enrollment rights review (full set)",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-037",
+          "name": "[Listing] Templates for version drift review (full set)",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-038",
+          "name": "[Listing] Templates for autoenrollment policy alignment (full set)",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-044",
+          "name": "[Listing] Template objects for validity period review (LDAP cannot compare periods)",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-046",
+          "name": "[DACL review] Templates with security descriptor (ACL triage)",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-049",
+          "name": "[Listing] Smart card logon template review (full set; see CERT-007 for EKU-specific)",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-052",
+          "name": "[Listing] Subject name policy review (all templates)",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-002",
+          "name": "Certificate Templates",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-003",
+          "name": "Certificate Template Permissions",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-004",
+          "name": "Certificate Template Enrollment Rights",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-005",
+          "name": "Certificate Template Auto Enrollment",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-006",
+          "name": "Certificate Template Subject Name",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-007",
+          "name": "Certificate Template SAN Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-008",
+          "name": "Certificate Template EKU Settings",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-009",
+          "name": "Certificate Template Validity Period",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-010",
+          "name": "Certificate Template Renewal Period",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-011",
+          "name": "Certificate Template Key Size",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-012",
+          "name": "Certificate Template Cryptographic Providers",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-013",
+          "name": "Certificate Template Superseded Templates",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-014",
+          "name": "Certificate Template Issuance Requirements",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-015",
+          "name": "Certificate Template Application Policies",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-016",
+          "name": "Certificate Template Manager Approval",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-017",
+          "name": "Certificate Template Authorized Signatures",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-018",
+          "name": "Certificate Template Private Key Archival",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-019",
+          "name": "Certificate Template Key Attestation",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=groupPolicyContainer)",
+      "count": 20,
+      "distinctNames": 20,
+      "checks": [
+        {
+          "id": "GPO-001",
+          "name": "GPO Inventory All",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-009",
+          "name": "GPOs Created Recently 7 Days",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-010",
+          "name": "GPOs Modified Recently",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-031",
+          "name": "GPO Modification History",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-032",
+          "name": "GPOs with Weak Permissions",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-033",
+          "name": "Unlinked GPOs",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-034",
+          "name": "GPOs with Scripts",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-035",
+          "name": "GPO Security Filtering Issues",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-038",
+          "name": "Loopback Processing Misconfigurations",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-039",
+          "name": "Slow Link Detection Settings",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-040",
+          "name": "GPO Processing Errors",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-041",
+          "name": "GPO Replication Issues",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-042",
+          "name": "GPO Backup Status",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-043",
+          "name": "GPO Preferences Passwords",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-044",
+          "name": "GPO Scheduled Tasks Security",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-045",
+          "name": "GPO Registry Settings Dangerous",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-046",
+          "name": "GPO Software Installation Issues",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-047",
+          "name": "GPO Folder Redirection Security",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-048",
+          "name": "GPO Startup Shutdown Scripts",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-049",
+          "name": "GPO Enforcement Not Set",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=domain)",
+      "count": 19,
+      "distinctNames": 19,
+      "checks": [
+        {
+          "id": "ACC-025",
+          "name": "Users Can Add Computers to Domain",
+          "engine": "ldap"
+        },
+        {
+          "id": "ADV-008",
+          "name": "Machine Account Quota Abuse",
+          "engine": "ldap"
+        },
+        {
+          "id": "BCK-007",
+          "name": "Disaster Recovery Plan Validation",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-001",
+          "name": "Kerberos Encryption Types Domain",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-003",
+          "name": "ms-DS-MachineAccountQuota Setting",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-004",
+          "name": "Default Domain Password Policy",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-017",
+          "name": "DC Lockout Threshold",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-018",
+          "name": "Account Lockout Duration",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-019",
+          "name": "Reset Account Lockout Counter",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-020",
+          "name": "Min Password Length",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-021",
+          "name": "Password Complexity",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-022",
+          "name": "Password History",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-023",
+          "name": "Max Password Age",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-024",
+          "name": "Min Password Age",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-025",
+          "name": "Reversible Encryption",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-026",
+          "name": "Domain Rename Status",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-006",
+          "name": "LDAP Referral Chasing Issues",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-011",
+          "name": "LDAP Null Base Search Allowed",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-014",
+          "name": "LDAP Paged Results Abuse",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=pKIEnrollmentService)",
+      "count": 16,
+      "distinctNames": 16,
+      "checks": [
+        {
+          "id": "ADV-009",
+          "name": "ADCS Web Enrollment Vulnerabilities",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-012",
+          "name": "Enterprise Certificate Authorities",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-020",
+          "name": "ESC6 CA Allowing SAN in Requests",
+          "engine": "inventory"
+        },
+        {
+          "id": "CERT-021",
+          "name": "ESC7 CA with Manage Certificates Permission",
+          "engine": "inventory"
+        },
+        {
+          "id": "CERT-022",
+          "name": "ESC8 NTLM Relay to Web Enrollment",
+          "engine": "inventory"
+        },
+        {
+          "id": "CERT-034",
+          "name": "Certificate Authority Health",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-036",
+          "name": "OCSP Responder Status",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-040",
+          "name": "Web Enrollment Security",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-042",
+          "name": "CA Certificate Expiration",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-045",
+          "name": "CA Audit Settings",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-047",
+          "name": "CA Database Backup Status",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-048",
+          "name": "Certificate Revocation Reasons",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-051",
+          "name": "CA Role Separation",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-053",
+          "name": "CA Security Descriptor",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-020",
+          "name": "Enrollment Services",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-021",
+          "name": "Enrollment Service Permissions",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=msDS-PasswordSettings)",
+      "count": 15,
+      "distinctNames": 14,
+      "checks": [
+        {
+          "id": "AUTH-012",
+          "name": "Fine-Grained Password Policies",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-012",
+          "name": "Fine-Grained Password Policies",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-001",
+          "name": "Password Settings Objects Fine-Grained",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-003",
+          "name": "Password Settings Precedence",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-004",
+          "name": "PSO Minimum Password Length",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-005",
+          "name": "PSO Password Complexity",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-006",
+          "name": "PSO Password History",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-007",
+          "name": "PSO Maximum Password Age",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-008",
+          "name": "PSO Minimum Password Age",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-009",
+          "name": "PSO Lockout Threshold",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-010",
+          "name": "PSO Lockout Duration",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-011",
+          "name": "PSO Lockout Observation Window",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-012",
+          "name": "PSO Reversible Encryption",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-013",
+          "name": "PSO Applied To Groups",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-014",
+          "name": "PSO Applied To Users",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=domainDNS)",
+      "count": 13,
+      "distinctNames": 13,
+      "checks": [
+        {
+          "id": "AUTH-011",
+          "name": "Default Password Policy",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-001",
+          "name": "STIG Password Policy Compliance",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-002",
+          "name": "CIS Benchmark Account Policies",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-003",
+          "name": "PCI DSS",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-004",
+          "name": "HIPAA Controls",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-008",
+          "name": "Account Lockout Policy Compliance",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-009",
+          "name": "Minimum Password Age Compliance",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-010",
+          "name": "Password History Compliance",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-011",
+          "name": "Reversible Encryption Disabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-002",
+          "name": "Domain Functional Level",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-007",
+          "name": "FSMO Role Holders",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-011",
+          "name": "Domain Password Policy from Domain Object",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-014",
+          "name": "Domain Kerberos Policy",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=msDS-GroupManagedServiceAccount)",
+      "count": 9,
+      "distinctNames": 9,
+      "checks": [
+        {
+          "id": "AUTH-015",
+          "name": "gMSA Accounts Best Practice",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-017",
+          "name": "gMSA Accounts",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-016",
+          "name": "Group Managed Service Accounts",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-017",
+          "name": "gMSA Password Interval",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-018",
+          "name": "gMSA Managed Password",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-019",
+          "name": "gMSA Principals Allowed to Retrieve",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-020",
+          "name": "gMSA DNS Host Name",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-021",
+          "name": "gMSA Service Principal Names",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-026",
+          "name": "Group Managed Service Accounts gMSA",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=certificationAuthority)",
+      "count": 9,
+      "distinctNames": 9,
+      "checks": [
+        {
+          "id": "PKI-001",
+          "name": "AD-Integrated Certificate Authorities",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-022",
+          "name": "CA Certificate Locations",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-024",
+          "name": "CA AIA Locations",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-025",
+          "name": "CA OCSP Responders",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-026",
+          "name": "CA Key Recovery Agents",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-027",
+          "name": "CA Certificate Managers",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-028",
+          "name": "CA Auditors",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-029",
+          "name": "NTAuth Store Certificates",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-030",
+          "name": "Enterprise Root CA Certificates",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user))",
+      "count": 7,
+      "distinctNames": 7,
+      "checks": [
+        {
+          "id": "AAD-037",
+          "name": "Conditional Access Policy Gaps",
+          "engine": "inventory"
+        },
+        {
+          "id": "AAD-040",
+          "name": "Hybrid Identity Attack Surface",
+          "engine": "inventory"
+        },
+        {
+          "id": "KRB-036",
+          "name": "Kerberos AES Not Enforced",
+          "engine": "ldap"
+        },
+        {
+          "id": "LDAP-001",
+          "name": "Example: all user objects (domain partition)",
+          "engine": "inventory"
+        },
+        {
+          "id": "PERS-008",
+          "name": "Hidden Accounts in CN Users",
+          "engine": "ldap"
+        },
+        {
+          "id": "PERS-009",
+          "name": "Backdoor Accounts Detection",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-035",
+          "name": "Accounts with Suspicious Naming Patterns",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "count": 7,
+      "distinctNames": 7,
+      "checks": [
+        {
+          "id": "ACC-012",
+          "name": "Users Can Create DNS Records",
+          "engine": "ldap"
+        },
+        {
+          "id": "ACC-031",
+          "name": "Shortest Path to Domain Admin",
+          "engine": "ldap"
+        },
+        {
+          "id": "AUTH-032",
+          "name": "Accounts with Blank Passwords",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-031",
+          "name": "Bronze Bit Attack Vulnerable Accounts",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-010",
+          "name": "Accounts with unicodePwd Readable",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-016",
+          "name": "Inactive Accounts 90 Days",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-034",
+          "name": "Accounts with Unusual Group Memberships",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=dnsZone)",
+      "count": 7,
+      "distinctNames": 7,
+      "checks": [
+        {
+          "id": "INFRA-003",
+          "name": "DNS Zones",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-011",
+          "name": "DNS Forwarders Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-012",
+          "name": "DNS Zone Transfers",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-013",
+          "name": "DNS Dynamic Updates",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-014",
+          "name": "DNS Scavenging Settings",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-015",
+          "name": "DNS Aging Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "NET-006",
+          "name": "DNS Scavenging Configuration",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=printQueue)",
+      "count": 7,
+      "distinctNames": 7,
+      "checks": [
+        {
+          "id": "PUBRES-001",
+          "name": "Printers Published in AD",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-005",
+          "name": "Printer Queue Permissions",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-006",
+          "name": "Printer Driver Versions",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-007",
+          "name": "Printer Server Names",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-008",
+          "name": "Printer Share Names",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-009",
+          "name": "Printer Locations",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-010",
+          "name": "Printer Port Names",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(adminCount=1))",
+      "count": 6,
+      "distinctNames": 6,
+      "checks": [
+        {
+          "id": "AAD-038",
+          "name": "MFA Enforcement Status",
+          "engine": "inventory"
+        },
+        {
+          "id": "COMPLY-007",
+          "name": "Privileged Account Naming Convention",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-020",
+          "name": "Privileged Account Separation",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-045",
+          "name": "Protected Users Group Not Used",
+          "engine": "ldap"
+        },
+        {
+          "id": "PRV-032",
+          "name": "Admin Logons from Non PAW",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-033",
+          "name": "Recently Created Privileged Accounts",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(|(objectCategory=person)(objectCategory=computer)(objectCategory=group)(objectClass=organizationalUnit)(objectClass=groupPolicyContainer))(!(objectClass=domainDNS)))",
+      "count": 5,
+      "distinctNames": 5,
+      "checks": [
+        {
+          "id": "ACE-001",
+          "name": "Dangerous ACE: GenericAll (non-privileged principal)",
+          "engine": "acl"
+        },
+        {
+          "id": "ACE-002",
+          "name": "Dangerous ACE: GenericWrite (non-privileged principal)",
+          "engine": "acl"
+        },
+        {
+          "id": "ACE-003",
+          "name": "Dangerous ACE: WriteDacl (non-privileged principal)",
+          "engine": "acl"
+        },
+        {
+          "id": "ACE-004",
+          "name": "Dangerous ACE: WriteOwner (non-privileged principal)",
+          "engine": "acl"
+        },
+        {
+          "id": "ACE-005",
+          "name": "Broad ACE: WriteProperty (non-privileged principal)",
+          "engine": "acl"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=nTDSDSA)",
+      "count": 5,
+      "distinctNames": 5,
+      "checks": [
+        {
+          "id": "DCONF-030",
+          "name": "FSMO Role Holders",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-005",
+          "name": "Replication Partners",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-006",
+          "name": "Replication Metadata",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-018",
+          "name": "Time Server Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-019",
+          "name": "PDC Emulator Time Source",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=serviceConnectionPoint)",
+      "count": 5,
+      "distinctNames": 5,
+      "checks": [
+        {
+          "id": "PUBRES-018",
+          "name": "Service Connection Points",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-019",
+          "name": "SCP Service Bindings",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-020",
+          "name": "SCP Keywords",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-021",
+          "name": "Remote Desktop Connection Brokers",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-022",
+          "name": "Exchange Servers Published",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(samAccountName=krbtgt))",
+      "count": 4,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "AD-005",
+          "name": "KRBTGT Account Password Age",
+          "engine": "ldap"
+        },
+        {
+          "id": "AUTH-030",
+          "name": "KRBTGT Password Age",
+          "engine": "ldap"
+        },
+        {
+          "id": "DC-005-dup2",
+          "name": "KRBTGT Account Password Age",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-013",
+          "name": "KRBTGT Account",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))",
+      "count": 4,
+      "distinctNames": 4,
+      "checks": [
+        {
+          "id": "AUTH-008",
+          "name": "Service Accounts SPN Set",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-001",
+          "name": "Kerberoastable User Accounts",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-019",
+          "name": "Kerberoastable Accounts with Old Password",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-002",
+          "name": "Accounts Vulnerable to Kerberoasting",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer))",
+      "count": 4,
+      "distinctNames": 4,
+      "checks": [
+        {
+          "id": "CMGMT-013",
+          "name": "Computers in Default Computers Container",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-017",
+          "name": "Computers with Expired Passwords",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-028",
+          "name": "Computers with Null Sessions Allowed",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-029",
+          "name": "Computers with Anonymous Access",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=site)",
+      "count": 4,
+      "distinctNames": 4,
+      "checks": [
+        {
+          "id": "INFRA-001",
+          "name": "Sites Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-022",
+          "name": "Site Coverage",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-026",
+          "name": "Empty Sites",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-027",
+          "name": "Sites Without Subnets",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=subnet)",
+      "count": 4,
+      "distinctNames": 4,
+      "checks": [
+        {
+          "id": "INFRA-002",
+          "name": "Subnets Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-023",
+          "name": "Subnet to Site Mapping",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-024",
+          "name": "Orphaned Subnets",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-025",
+          "name": "Overlapping Subnets",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))(|(samAccountName=MSOL_*)(samAccountName=AAD_*)))",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "AAD-006",
+          "name": "Sync Accounts with Old Passwords 180 Days",
+          "engine": "inventory"
+        },
+        {
+          "id": "AAD-026",
+          "name": "Sync Account Last Logon",
+          "engine": "inventory"
+        },
+        {
+          "id": "AAD-028",
+          "name": "Writeback Enabled Indicators",
+          "engine": "inventory"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(samAccountName=MSOL_*)",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "AAD-033",
+          "name": "Azure AD Connect Sync Errors",
+          "engine": "inventory"
+        },
+        {
+          "id": "AAD-039",
+          "name": "Azure AD Connect Permissions",
+          "engine": "inventory"
+        },
+        {
+          "id": "AAD-042",
+          "name": "Azure AD Connect Health Status",
+          "engine": "inventory"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=4194304))",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "AUTH-001",
+          "name": "Accounts Without Kerberos Pre-Auth",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-002",
+          "name": "AS-REP Roastable Accounts",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-001",
+          "name": "Accounts Vulnerable to ASRepRoasting",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=32))",
+      "count": 3,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "AUTH-003",
+          "name": "Accounts with Password Not Required",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-012",
+          "name": "Accounts with Blank Password Allowed",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-021",
+          "name": "Accounts with Password Not Required",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(memberOf:1.2.840.113556.1.4.1941:=CN=ProtectedUsers,CN=Users,*))",
+      "count": 3,
+      "distinctNames": 1,
+      "checks": [
+        {
+          "id": "AUTH-009",
+          "name": "Protected Users Group Members",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-022",
+          "name": "Protected Users Group Members",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-028",
+          "name": "Protected Users Group Members",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=2097152))",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "AUTH-010",
+          "name": "Accounts Using DES Encryption",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-009",
+          "name": "DES-Only Kerberos Users",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-006",
+          "name": "Accounts with DES Encryption Only",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=1048576)))",
+      "count": 3,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "AUTH-018",
+          "name": "Admin Accounts Without Delegation Protection",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-016",
+          "name": "Admin Accounts Without Delegation Protection",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-005",
+          "name": "Admin Accounts That Can Be Delegated",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=msDS-AuthNPolicySilo)",
+      "count": 3,
+      "distinctNames": 1,
+      "checks": [
+        {
+          "id": "AUTH-028",
+          "name": "Authentication Policy Silos",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-029",
+          "name": "Authentication Policy Silos",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-022",
+          "name": "Authentication Policy Silos",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=524288))",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "CMGMT-009",
+          "name": "Computers with Unconstrained Delegation",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-021",
+          "name": "Computers with Trusted for Delegation",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-037",
+          "name": "Unconstrained Delegation Computers",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=dMD)",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "DC-008",
+          "name": "Schema Master (dMD FSMO holder)",
+          "engine": "inventory"
+        },
+        {
+          "id": "DCONF-027",
+          "name": "Schema Version Check",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-031",
+          "name": "Unexpected Schema Modifications",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=nTDSSiteSettings)",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "DCONF-006",
+          "name": "Anonymous LDAP Access",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-010",
+          "name": "Inter Site Topology Generator",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-028",
+          "name": "Universal Group Membership Caching",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectClass=domain)(name=__AD_SUITE_NO_MATCH_PLACEHOLDER__))",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "DCONF-015",
+          "name": "Kerberos ticket lifetime (LDAP placeholder — see ticket policy doc)",
+          "engine": "ldap"
+        },
+        {
+          "id": "DCONF-016",
+          "name": "Kerberos renewal lifetime (LDAP placeholder — see ticket policy doc)",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-038",
+          "name": "Kerberos ticket lifetime excessive (LDAP placeholder — see ticket policy doc)",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=organizationalUnit)",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "GPO-037",
+          "name": "GPO Link Order Conflicts",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-050",
+          "name": "GPO Block Inheritance Issues",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-004",
+          "name": "Organizational Units OU Inventory",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=siteLink)",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "INFRA-007",
+          "name": "Site Links Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-029",
+          "name": "Replication Schedule Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-030",
+          "name": "Replication Notification Delay",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=server)",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "INFRA-017",
+          "name": "WINS Servers Configuration",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-020",
+          "name": "Bridgehead Servers",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-021",
+          "name": "Preferred Bridgehead Servers",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=dnsNode)",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "INFRA-031",
+          "name": "DNS Records Pointing to External IPs",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-032",
+          "name": "Wildcard DNS Records",
+          "engine": "ldap"
+        },
+        {
+          "id": "INFRA-033",
+          "name": "Stale DNS Records",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=msDS-ManagedServiceAccount)",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "KRB-018",
+          "name": "sMSA Accounts Legacy",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-015",
+          "name": "Managed Service Accounts",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-027",
+          "name": "Standalone Managed Service Accounts sMSA",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(servicePrincipalName=*)",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "KRB-043",
+          "name": "Duplicate SPNs",
+          "engine": "ldap"
+        },
+        {
+          "id": "PERS-003",
+          "name": "Silver Ticket Indicators",
+          "engine": "ldap"
+        },
+        {
+          "id": "PERS-007",
+          "name": "Malicious SPN Additions",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=volume)",
+      "count": 3,
+      "distinctNames": 3,
+      "checks": [
+        {
+          "id": "PUBRES-002",
+          "name": "Shared Folders Published",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-003",
+          "name": "Shared Folder Permissions",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-004",
+          "name": "Shared Folder UNC Paths",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))(samAccountName=MSOL_*))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "AAD-001",
+          "name": "Azure AD Connect Accounts MSOL",
+          "engine": "inventory"
+        },
+        {
+          "id": "AAD-014",
+          "name": "Password Hash Sync Enabled Indicators",
+          "engine": "inventory"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "ACC-001",
+          "name": "Privileged Users adminCount1",
+          "engine": "ldap"
+        },
+        {
+          "id": "AUTH-033",
+          "name": "Privileged Accounts with Stale Passwords",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=524288)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "ACC-011",
+          "name": "Trust Accounts for Delegation",
+          "engine": "ldap"
+        },
+        {
+          "id": "ACC-044",
+          "name": "Admin SDHolder Template",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=1048576)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "ACC-030",
+          "name": "Accounts with Not Delegated Flag",
+          "engine": "ldap"
+        },
+        {
+          "id": "ACC-045",
+          "name": "Privileged Access Workstation PAW Computers",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(msDS-AllowedToDelegateTo=*)",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "ACC-038",
+          "name": "Constrained Delegation Targets",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-035",
+          "name": "S4U2Proxy Abuse Detection",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=128))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "AUTH-002",
+          "name": "Accounts with Reversible Encryption",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-015",
+          "name": "Accounts with Reversible Password Encryption",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=65536))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "AUTH-004",
+          "name": "Accounts with Never Expiring Password",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-014",
+          "name": "Accounts with Never Expiring Passwords",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(lockoutTime>=1))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "AUTH-005",
+          "name": "Locked Out Accounts",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-013",
+          "name": "Locked Accounts",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(userPassword=*))",
+      "count": 2,
+      "distinctNames": 1,
+      "checks": [
+        {
+          "id": "AUTH-013",
+          "name": "Accounts with userPassword Attribute",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-008",
+          "name": "Accounts with userPassword Attribute",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(unixUserPassword=*))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "AUTH-014",
+          "name": "Accounts with unixUserPassword",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-009",
+          "name": "Accounts with unixUserPassword Attribute",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(altSecurityIdentities=*))",
+      "count": 2,
+      "distinctNames": 1,
+      "checks": [
+        {
+          "id": "AUTH-016",
+          "name": "Accounts with altSecurityIdentities",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-007",
+          "name": "Accounts with altSecurityIdentities",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(objectSid=*-500))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "AUTH-019",
+          "name": "Native Administrator Account",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-025",
+          "name": "Native Administrator Account Recent Use",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(description=*))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "AUTH-021",
+          "name": "Accounts with Description Field",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-024",
+          "name": "Users with Description Field",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(cn=DirectoryService)",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "BCK-003",
+          "name": "Tombstone Lifetime Check",
+          "engine": "ldap"
+        },
+        {
+          "id": "BCK-004",
+          "name": "Deleted Object Recovery Capability",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectClass=pKICertificateTemplate)(|(pKIExtendedKeyUsage=2.5.29.37.0)(!(pKIExtendedKeyUsage=*))))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CERT-003",
+          "name": "ESC2 Templates with Any Purpose EKU",
+          "engine": "inventory"
+        },
+        {
+          "id": "CERT-050",
+          "name": "Templates with Any Purpose or missing EKU (ESC2-style LDAP signal)",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectClass=pKICertificateTemplate)(pKIExtendedKeyUsage=1.3.6.1.4.1.311.20.2.1))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CERT-004",
+          "name": "ESC3 Templates with Certificate Request Agent",
+          "engine": "inventory"
+        },
+        {
+          "id": "CERT-039",
+          "name": "Templates with Certificate Request Agent EKU",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectClass=pKICertificateTemplate)(pKIExtendedKeyUsage=1.3.6.1.5.5.7.3.2))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CERT-006",
+          "name": "Templates Allowing Client Authentication",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-033",
+          "name": "Client authentication templates (same LDAP scope as CERT-006)",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectClass=certificationAuthority)(cn=*))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CERT-014",
+          "name": "Trusted Root CAs in AD",
+          "engine": "ldap"
+        },
+        {
+          "id": "CERT-027",
+          "name": "Offline Root CA References",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=cRLDistributionPoint)",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CERT-035",
+          "name": "CRL Distribution Point Availability",
+          "engine": "ldap"
+        },
+        {
+          "id": "PKI-023",
+          "name": "CA Certificate Revocation Lists",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=attributeSchema)",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMGMT-001",
+          "name": "LAPS Schema Extended",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-002",
+          "name": "Windows LAPS Schema Extended",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=4194304))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMGMT-007",
+          "name": "Computers with Weak Encryption",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-042",
+          "name": "Kerberos Pre Auth Not Required Computers",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(adminCount=1))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMGMT-014",
+          "name": "Computers with AdminSDHolder Protection",
+          "engine": "ldap"
+        },
+        {
+          "id": "PRV-016",
+          "name": "Privileged Computers adminCount1",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=2))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMGMT-015",
+          "name": "Computers with Disabled Accounts",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMP-020",
+          "name": "Disabled Computer Accounts",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=1048576))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMGMT-022",
+          "name": "Computers with Not Delegated Flag",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-025",
+          "name": "Computers with Sensitive Flag",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(ms-Mcs-AdmPwd=*))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMGMT-036",
+          "name": "LAPS Passwords Expiring Soon",
+          "engine": "ldap"
+        },
+        {
+          "id": "CMGMT-037",
+          "name": "LAPS Read Permissions Audit",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288)(!(primaryGroupID=516)))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMP-001",
+          "name": "Computers with Unconstrained Delegation",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-003",
+          "name": "Unconstrained Delegation Computers",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToDelegateTo=*))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMP-002",
+          "name": "Computers with Constrained Delegation",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-005",
+          "name": "Constrained Delegation Computers",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=16777216))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMP-013",
+          "name": "Computers with S4U Delegation",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-025",
+          "name": "Computers with Protocol Transition",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=2097152))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMP-014",
+          "name": "Computers with DES-Only Kerberos",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-010",
+          "name": "DES-Only Kerberos Computers",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(userPassword=*))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMP-021",
+          "name": "Computers with userPassword Attribute",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-003",
+          "name": "Accounts Vulnerable to Timeroasting",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMP-024",
+          "name": "Computers with Service Principal Names",
+          "engine": "ldap"
+        },
+        {
+          "id": "KRB-028",
+          "name": "SPN Duplicates Check Computers",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectClass=msDS-GroupManagedServiceAccount)(msDS-HostServiceAccount=*))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "CMP-030",
+          "name": "Computers with Managed Password gMSA Hosts",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-011",
+          "name": "Accounts with msDS-HostServiceAccount",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(|(objectClass=organizationalUnit)(objectClass=container)(objectClass=domain))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "COMPLY-014",
+          "name": "Everyone Permissions Audit",
+          "engine": "ldap"
+        },
+        {
+          "id": "COMPLY-015",
+          "name": "Authenticated Users Permissions",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=msWMI-Som)",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "GPO-017",
+          "name": "WMI Filters Inventory",
+          "engine": "ldap"
+        },
+        {
+          "id": "GPO-036",
+          "name": "WMI Filter Validation",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "KRB-004",
+          "name": "Unconstrained Delegation Users",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-032",
+          "name": "Accounts Trusted for Delegation",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToDelegateTo=*))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "KRB-006",
+          "name": "Constrained Delegation Users",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-031",
+          "name": "Accounts with Constrained Delegation",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=msDS-AuthNPolicy)",
+      "count": 2,
+      "distinctNames": 1,
+      "checks": [
+        {
+          "id": "KRB-030",
+          "name": "Authentication Policies",
+          "engine": "ldap"
+        },
+        {
+          "id": "SECACCT-023",
+          "name": "Authentication Policies",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(samAccountName=krbtgt)",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "KRB-039",
+          "name": "KRBTGT Password Age",
+          "engine": "ldap"
+        },
+        {
+          "id": "PERS-002",
+          "name": "Golden Ticket Indicators",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=group)(cn=Pre-Windows2000CompatibleAccess))",
+      "count": 2,
+      "distinctNames": 1,
+      "checks": [
+        {
+          "id": "PRV-024",
+          "name": "Pre-Windows 2000 Compatible Access Members",
+          "engine": "ldap"
+        },
+        {
+          "id": "USR-022",
+          "name": "Pre-Windows 2000 Compatible Access Members",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=rpcEntry)",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "PUBRES-011",
+          "name": "RPC Services Published",
+          "engine": "ldap"
+        },
+        {
+          "id": "PUBRES-012",
+          "name": "RPC Service Bindings",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectCategory=person)(objectClass=user)(servicePrincipalName=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))(userAccountControl:1.2.840.113556.1.4.803:=32))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "SVC-011",
+          "name": "Service Accounts with Password Not Required",
+          "engine": "ldap"
+        },
+        {
+          "id": "SVC-029",
+          "name": "Service Accounts with Password Not Required Duplicate Guard",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(objectClass=foreignSecurityPrincipal)",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "TMGMT-003",
+          "name": "Orphaned Foreign Security Principals",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-018",
+          "name": "Foreign Security Principals",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectClass=trustedDomain)(trustType=2))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "TRST-005",
+          "name": "External Trusts Non-Forest",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-017",
+          "name": "Shortcut Trusts",
+          "engine": "ldap"
+        }
+      ]
+    },
+    {
+      "normalizedFilter": "(&(objectClass=trustedDomain)(trustAttributes:1.2.840.113556.1.4.803:=32))",
+      "count": 2,
+      "distinctNames": 2,
+      "checks": [
+        {
+          "id": "TRST-008",
+          "name": "Trusts with SID History Enabled",
+          "engine": "ldap"
+        },
+        {
+          "id": "TRST-027",
+          "name": "Trust Attributes - Within Forest",
+          "engine": "ldap"
+        }
+      ]
+    }
+  ],
+  "keywordHitsWithoutAutoFlag": [
+    {
+      "id": "ACC-009",
+      "name": "KeyCredentialLink on Computers",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(msDS-KeyCredentialLink=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "NTLM / LM policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "ACC-025",
+      "name": "Users Can Add Computers to Domain",
+      "engine": "ldap",
+      "filterClass": "DOMAIN_OBJECT",
+      "ldapFilter": "(objectClass=domain)",
+      "keywordHits": [
+        "NTLM / LM policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "ACC-037",
+      "name": "Shadow Credentials Detection",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(msDS-KeyCredentialLink=*)",
+      "keywordHits": [
+        "NTLM / LM policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "ADV-007",
+      "name": "NTLM Relay Attack Surface",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "NTLM / LM policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "ADV-008",
+      "name": "Machine Account Quota Abuse",
+      "engine": "ldap",
+      "filterClass": "DOMAIN_OBJECT",
+      "ldapFilter": "(objectClass=domain)",
+      "keywordHits": [
+        "NTLM / LM policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CERT-040",
+      "name": "Web Enrollment Security",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(objectClass=pKIEnrollmentService)",
+      "keywordHits": [
+        "NTLM / LM policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CERT-045",
+      "name": "CA Audit Settings",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(objectClass=pKIEnrollmentService)",
+      "keywordHits": [
+        "Audit policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-005",
+      "name": "Computers with BitLocker Keys Stored",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(objectClass=msFVE-RecoveryInformation)",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-006",
+      "name": "Computers with Stale Passwords",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-008",
+      "name": "Computers with Pre Windows 2000 Access",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(operatingSystem=Windows*2000*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-012",
+      "name": "Computers with Duplicate SPNs",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(servicePrincipalName=*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-013",
+      "name": "Computers in Default Computers Container",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-015",
+      "name": "Computers with Disabled Accounts",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=2))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-016",
+      "name": "Computers Never Logged On",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(lastLogonTimestamp=*)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-017",
+      "name": "Computers with Expired Passwords",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-019",
+      "name": "Computers with Reversible Encryption",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=128))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-022",
+      "name": "Computers with Not Delegated Flag",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=1048576))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-023",
+      "name": "Computers with Smartcard Required",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=262144))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-024",
+      "name": "Computers with Password Not Required",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=32))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-025",
+      "name": "Computers with Sensitive Flag",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=1048576))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-026",
+      "name": "Computers with Primary Group ID Not 515",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(primaryGroupID=515)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-028",
+      "name": "Computers with Null Sessions Allowed",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer))",
+      "keywordHits": [
+        "Patching / updates",
+        "Null session"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-029",
+      "name": "Computers with Anonymous Access",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-030",
+      "name": "Computers with Legacy Operating Systems",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(operatingSystem=*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-031",
+      "name": "Local Admin Rights Mapping",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-032",
+      "name": "Computers with Cached Credentials",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-033",
+      "name": "RDP Access Mapping",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "RDP",
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMGMT-034",
+      "name": "PSRemoting Enabled Computers",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-001",
+      "name": "Computers with Unconstrained Delegation",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288)(!(primaryGroupID=516)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-007",
+      "name": "Stale Computer Accounts 90 Days",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-010",
+      "name": "Computers with KeyCredentialLink",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-KeyCredentialLink=*))",
+      "keywordHits": [
+        "NTLM / LM policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-011",
+      "name": "Windows Servers Inventory",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(operatingSystem=*Server*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-012",
+      "name": "Windows Workstations Inventory",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(operatingSystem=*Windows*)(!(operatingSystem=*Server*)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-015",
+      "name": "Computers Missing Encryption Types",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(!(msDS-SupportedEncryptionTypes=*)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-016",
+      "name": "Computers with Reversible Encryption",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=128))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-017",
+      "name": "Computers Trusted as DCs Not Actual DCs",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=8192)(!(primaryGroupID=516)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-018",
+      "name": "Computers with Pre-2000 Compatible Access",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(memberOf:1.2.840.113556.1.4.1941:=CN=Pre-Windows 2000 Compatible Access,CN=Builtin,*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-019",
+      "name": "Computers Created in Last 7 Days",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-020",
+      "name": "Disabled Computer Accounts",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=2))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-021",
+      "name": "Computers with userPassword Attribute",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(userPassword=*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-022",
+      "name": "Computers with Description Containing Sensitive Info",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(description=*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-023",
+      "name": "Computers in Default Computers Container",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-024",
+      "name": "Computers with Service Principal Names",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-025",
+      "name": "Computers with AltSecurityIdentities",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(altSecurityIdentities=*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-026",
+      "name": "Computer Accounts with Old Password 1 Year",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-027",
+      "name": "Computers - Windows 10 Versions",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(operatingSystem=*Windows 10*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-028",
+      "name": "Computers - Windows 11 Versions",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(operatingSystem=*Windows 11*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-029",
+      "name": "LinuxUnix Computers",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(!(operatingSystem=*Windows*)))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "CMP-030",
+      "name": "Computers with Managed Password gMSA Hosts",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectClass=msDS-GroupManagedServiceAccount)(msDS-HostServiceAccount=*))",
+      "keywordHits": [
+        "Patching / updates"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "COMPLY-011",
+      "name": "Reversible Encryption Disabled",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(objectClass=domainDNS)",
+      "keywordHits": [
+        "LDAP signing / channel binding"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "DC-038",
+      "name": "DCs Null Session Enabled",
+      "engine": "ldap",
+      "filterClass": "DC_COMPUTERS",
+      "ldapFilter": "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))",
+      "keywordHits": [
+        "Null session"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "DCONF-003",
+      "name": "ms-DS-MachineAccountQuota Setting",
+      "engine": "ldap",
+      "filterClass": "DOMAIN_OBJECT",
+      "ldapFilter": "(objectClass=domain)",
+      "keywordHits": [
+        "NTLM / LM policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "DCONF-015",
+      "name": "Kerberos ticket lifetime (LDAP placeholder — see ticket policy doc)",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectClass=domain)(name=__AD_SUITE_NO_MATCH_PLACEHOLDER__))",
+      "keywordHits": [
+        "Registry (stated)",
+        "Kerberos lifetime (GPO/registry)"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "DCONF-016",
+      "name": "Kerberos renewal lifetime (LDAP placeholder — see ticket policy doc)",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectClass=domain)(name=__AD_SUITE_NO_MATCH_PLACEHOLDER__))",
+      "keywordHits": [
+        "Kerberos lifetime (GPO/registry)"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "GPO-005",
+      "name": "GPOs with WMI Filters",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectClass=groupPolicyContainer)(gPCWQLFilter=*))",
+      "keywordHits": [
+        "WMI"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "GPO-017",
+      "name": "WMI Filters Inventory",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(objectClass=msWMI-Som)",
+      "keywordHits": [
+        "WMI"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "GPO-024",
+      "name": "Audit Policy GPO Check",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectClass=groupPolicyContainer)(|(displayName=*audit*)(displayName=*Audit*)(displayName=*logging*)))",
+      "keywordHits": [
+        "Audit policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "GPO-025",
+      "name": "Firewall GPO Check",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectClass=groupPolicyContainer)(|(displayName=*firewall*)(displayName=*Firewall*)))",
+      "keywordHits": [
+        "Network ports / firewall"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "GPO-030",
+      "name": "Remote Desktop GPO Check",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectClass=groupPolicyContainer)(|(displayName=*rdp*)(displayName=*RDP*)(displayName=*remote*desktop*)))",
+      "keywordHits": [
+        "RDP"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "GPO-036",
+      "name": "WMI Filter Validation",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(objectClass=msWMI-Som)",
+      "keywordHits": [
+        "WMI"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "GPO-045",
+      "name": "GPO Registry Settings Dangerous",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(objectClass=groupPolicyContainer)",
+      "keywordHits": [
+        "Registry (stated)"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "KRB-038",
+      "name": "Kerberos ticket lifetime excessive (LDAP placeholder — see ticket policy doc)",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectClass=domain)(name=__AD_SUITE_NO_MATCH_PLACEHOLDER__))",
+      "keywordHits": [
+        "Kerberos lifetime (GPO/registry)"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "PRV-012",
+      "name": "Membership Remote Desktop Users",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=group)(cn=Remote Desktop Users))",
+      "keywordHits": [
+        "RDP"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "PUBRES-021",
+      "name": "Remote Desktop Connection Brokers",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(objectClass=serviceConnectionPoint)",
+      "keywordHits": [
+        "RDP"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "SMB-005",
+      "name": "Null Session Enumeration Possible",
+      "engine": "ldap",
+      "filterClass": "ALL_COMPUTERS_NOT_DISABLED",
+      "ldapFilter": "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+      "keywordHits": [
+        "Null session"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "SVC-013",
+      "name": "Service Accounts with KeyCredentialLink",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(servicePrincipalName=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))(msDS-KeyCredentialLink=*))",
+      "keywordHits": [
+        "NTLM / LM policy"
+      ],
+      "mismatch": null
+    },
+    {
+      "id": "USR-030",
+      "name": "Accounts with KeyCredentialLink Shadow Credentials",
+      "engine": "ldap",
+      "filterClass": "OTHER",
+      "ldapFilter": "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-KeyCredentialLink=*))",
+      "keywordHits": [
+        "NTLM / LM policy"
+      ],
+      "mismatch": null
+    }
+  ]
+}

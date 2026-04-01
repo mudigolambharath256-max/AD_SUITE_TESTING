@@ -1,0 +1,256 @@
+================================================================================
+  AD SUITE — PRODUCT POSTURE SUMMARY
+================================================================================
+
+This file is a posture snapshot: what the product is, how it runs, what is
+implemented, and what is intentionally missing or weak. It is not marketing
+copy — use it for onboarding, audits, and scope decisions.
+
+Document generated for catalog state as of last merge (see footer).
+
+
+--------------------------------------------------------------------------------
+1. WHAT AD SUITE IS
+--------------------------------------------------------------------------------
+
+AD Suite is a Windows PowerShell toolkit for Active Directory security
+assessment. Check definitions live in JSON catalogs. Execution uses ADSI and
+DirectorySearcher over LDAP — no ActiveDirectory (RSAT) PowerShell module is
+required. Typical access: domain-joined host, LDAP connectivity to a DC.
+
+Outputs include JSON, CSV, HTML, and optional web UI consumption.
+
+
+--------------------------------------------------------------------------------
+2. HOW YOU RUN IT (EXECUTION MODES)
+--------------------------------------------------------------------------------
+
+Single check
+  Script: adsi.ps1
+  Use: one CheckId, fast iteration, CI gates, debugging.
+  Engines: per-check ldap, filesystem, adcs, acl as defined in the catalog.
+
+Batch risk scan
+  Script: Invoke-ADSuiteScan.ps1
+  Use: full or filtered catalog run, severity-weighted scoring, multi-format
+       reports. Skips engine "inventory" by default for risk runs.
+
+Static / local UI
+  ui/dashboard.html — visualize exported scan-results.json (offline-friendly).
+
+AD-Suite-Web (optional)
+  Folder: AD-Suite-Web/
+  Node backend + frontend; see AD-Suite-Web/README.md for JWT_SECRET (>=32
+  chars), CHECKS_JSON_PATH / AD_SUITE_CHECKS_JSON, HTTPS, and deployment notes.
+
+
+--------------------------------------------------------------------------------
+3. CATALOG PIPELINE (SOURCE OF TRUTH)
+--------------------------------------------------------------------------------
+
+The single merged artifact checks.unified.json is built by:
+  node tools/Merge-UnifiedChecksCatalog.js
+
+Merge order (conceptual):
+
+  checks.generated.json
+       |
+       |  + checks.overrides.phaseB-complete.json (patch by id onto generated)
+       v
+  base (Phase B promoted stubs)
+       |
+       |  + checks.json (curated overlay: replaces/adds by id)
+       v
+       |
+       |  + checks.catalog-additions.json (optional; from
+       |    node tools/build-catalog-additions.js — last wins on id)
+       v
+  checks.unified.json
+
+File roles (short):
+
+  checks.generated.json
+    Legacy exporter output. Rows default to engine "inventory" until promoted.
+
+  checks.overrides.phaseB-complete.json
+    Bulk promotion to "ldap" for most stubs; Certificate_Services and
+    Azure_AD_Integration handling follows generator design (see tools docs).
+
+  checks.json
+    Curated risk pack: reviewed rules, real adcs/filesystem/acl rows, SYSVOL
+    policy checks where applicable.
+
+  checks.catalog-additions.json
+    Targeted overrides (e.g. propertiesToLoad, complianceRuleSet,
+    ldapFindingCondition, SYSVOL-backed definitions) — optional layer.
+
+Default path at runtime:
+  If checks.unified.json exists in the repo root, Invoke-ADSuiteScan.ps1 and
+  the web API default to it. Otherwise they default to checks.json.
+
+  Tension: QUICK_START_GUIDE.md often recommends passing -ChecksJsonPath
+  .\checks.json explicitly when you want the small curated pack only. Unified
+  is "broad coverage"; curated-only is "tight, reviewed surface."
+
+
+--------------------------------------------------------------------------------
+4. ENGINES AND RISK SCAN
+--------------------------------------------------------------------------------
+
+Engine          Risk scan    Implementation notes
+--------------  -----------  ------------------------------------------------
+ldap            Yes          Modules/ADSuite.Adsi.psm1 — Invoke-ADSuiteLdapCheck
+                            Optional: propertiesToLoad, ldapFindingCondition,
+                            complianceRuleSet (see compliance-profiles.json),
+                            ldapWhenChangedWithinDays, ldapEmptyResultIsFinding,
+                            postFilter-style behavior via condition evaluation.
+
+filesystem      Yes          Invoke-ADSuiteFilesystemCheck — SysvolGptTmplSecedit
+                            reads SYSVOL GPO ...\GptTmpl.inf [Registry Values];
+                            not live remote registry.
+
+adcs            Yes          Modules/ADSuite.Adcs.psm1 — ADCS-ESC1 .. ESC8
+                            (Invoke-ADSuiteAdcsCheck). Optional scan switches
+                            for ACL or network probes — see RISK_PACK.md.
+
+acl             Yes          Invoke-ADSuiteAclCheck — DACL reads, dangerousRights,
+                            maxObjects caps.
+
+registry        No           Definitions may exist; batch scan does not execute.
+
+inventory       No           Stubs / documentation; excluded from risk scoring.
+                            Entire Azure_AD_Integration AAD-* set is here.
+
+
+Pass / fail semantics (risk checks):
+  Pass: FindingCount == 0 and no error.
+  Fail: At least one finding row.
+  Error: LDAP/filesystem/adcs failure, invalid definition, or skipped engine.
+
+
+--------------------------------------------------------------------------------
+5. COUNTS (checks.unified.json — REFRESH WHEN REGENERATING THIS FILE)
+--------------------------------------------------------------------------------
+
+Total checks in unified catalog:     771
+  After Phase B merge (before curated/additions): 756
+  Curated overlay (checks.json):     87 rows (replace/add semantics in merge)
+  Catalog additions patched:         29 ids (replaced)
+
+Engine distribution (approximate, from unified catalog):
+  ldap:        ~690 checks (risk scan)
+  filesystem:  15
+  adcs:         8  (ADCS-ESC1 .. ESC8 plus any extra adcs rows if present)
+  acl:          5
+  inventory:   53  (skipped in risk scan — includes all AAD-*)
+
+Catalog integrity: Test-ADSuiteCatalog.ps1 reports 0 duplicate ids when run
+against the merged file.
+
+Semantics audit (title vs LDAP implementation heuristics):
+  node tools/Audit-CheckSemantics.js
+  Latest flagged semantic mismatches: see docs/CHECK_SEMANTICS_AUDIT.md (count
+  in summary table; domain-policy rows with ldapFindingCondition are excluded
+  from false-flagging where applicable).
+  These are checks whose *titles* imply machine/registry/network policy while
+  the implementation may still be generic LDAP — treat as analyst review list,
+  not automatic bugs.
+
+Enterprise-oriented docs (Ping Castle / Purple Knight–style posture):
+  docs/ENTERPRISE_DEPLOYMENT.md — topology, CI, trends file, OIDC pointers
+  docs/HEALTH_SCORE_METHODOLOGY.md — score formula and limitations
+  docs/KERBEROS_TICKET_POLICY_LIMITS.md — ticket lifetime vs LDAP
+  docs/RFC_AAD_GRAPH_AND_ELEVATED_COLLECTOR.md — optional cloud / elevated scope
+  AD-Suite-Web/README.md — OIDC env vars, executive report API routes, audit.log
+
+
+--------------------------------------------------------------------------------
+6. WHAT IS BUILT AND STRONG
+--------------------------------------------------------------------------------
+
+- Pure ADSI LDAP path without ActiveDirectory module dependency.
+- Unified merge pipeline + Test-ADSuiteCatalog.ps1 validation.
+- AD CS ESC coverage via ADCS-ESC1 .. ADCS-ESC8 (adcs engine) — authoritative
+  ESC execution path; not duplicated by CERT-002..022 inventory stubs.
+- Password compliance profiles: Modules/compliance-profiles.json with
+  complianceRuleSet on applicable ldap checks.
+- SYSVOL GptTmpl.inf evaluation for policy deployed via GPO templates
+  (filesystem / SysvolGptTmplSecedit).
+- Semantics audit tooling to surface title/implementation drift.
+- Core docs: docs/RISK_PACK.md, docs/CATALOG_ESC_CERT_AND_AAD.md,
+  docs/CHECK_SEMANTICS_AUDIT.md.
+
+
+--------------------------------------------------------------------------------
+7. WHAT IS MISSING OR LIMITED (HONEST GAPS)
+--------------------------------------------------------------------------------
+
+Azure / Entra (AAD-*)
+  All AAD-* checks are inventory in the unified catalog — not executed in the
+  default risk scan. Cloud settings need Microsoft Graph or other APIs; LDAP to
+  DCs cannot substitute. See docs/CATALOG_ESC_CERT_AND_AAD.md.
+
+CERT-* vs ADCS-ESC*
+  Many CERT-* rows are supplementary LDAP signals or legacy stubs. ESC-class
+  analysis: prefer ADCS-ESC1..ESC8.
+
+Registry engine
+  Not run in batch scan even if defined.
+
+Machine-local policy not in LDAP or GptTmpl
+  Firewall rules, open ports, RDP, WMI, patch level, etc. cannot be proven by
+  LDAP alone. Many DC_* / COMPLY_* titles still share broad DC filters — see
+  CHECK_SEMANTICS_AUDIT.md duplicate-filter groups.
+
+Kerberos ticket lifetime (e.g. DCONF-015/016, KRB-038)
+  Do not assume one domain attribute equals Kerberos *ticket* policy; confirm
+  schema and product behavior before treating as compliance evidence.
+
+Scoring
+  Global score is a relative workload-style indicator (severity x findings),
+  not CVSS, not a legal attestation. Tunable caps and weights — docs/RISK_PACK.md.
+
+Remote registry / WMI on DCs
+  Out of scope for "domain-user safe" unless documented elevated collectors are
+  added.
+
+
+--------------------------------------------------------------------------------
+8. RECOMMENDED OPERATIONAL POSTURE
+--------------------------------------------------------------------------------
+
+- For strict, review-friendly audits: prefer checks.json or an explicit
+  -IncludeCheckId / -ExcludeCheckId policy after review.
+- For maximum coverage: checks.unified.json with analyst review of semantics
+  audit output and noisy categories.
+- After any catalog edit:
+    node tools/Merge-UnifiedChecksCatalog.js
+    .\Test-ADSuiteCatalog.ps1
+    node tools/Audit-CheckSemantics.js
+- Web deployments: strong JWT secret, HTTPS, restrict network exposure.
+
+
+--------------------------------------------------------------------------------
+9. MAINTENANCE FOOTER
+--------------------------------------------------------------------------------
+
+Product: AD Suite — Active Directory Security Auditing Framework
+This summary path: PRODUCT_POSTURE_SUMMARY.txt (repository root)
+
+Related documentation:
+  README.md
+  docs/RISK_PACK.md
+  docs/CHECK_SEMANTICS_AUDIT.md
+  docs/CATALOG_ESC_CERT_AND_AAD.md
+  COMPLETE_ARCHITECTURE.md
+  QUICK_START_GUIDE.md
+
+Last unified merge metadata (from checks.unified.json meta.unifiedMerge):
+  mergedAtUtc: 2026-03-31T05:43:31.324Z
+  totalChecks: 771
+
+Semantics audit snapshot:
+  generatedAtUtc: 2026-03-31T05:48:39.099Z
+  flaggedSemanticMismatches: 22
+
+================================================================================

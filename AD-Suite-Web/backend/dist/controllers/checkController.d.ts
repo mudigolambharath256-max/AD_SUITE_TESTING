@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 export declare class CheckController {
-    private getCatalogPath;
     getChecks: (req: Request, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>;
     getCheck: (req: Request, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>;
 }

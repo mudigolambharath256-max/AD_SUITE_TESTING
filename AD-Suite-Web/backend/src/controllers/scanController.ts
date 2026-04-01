@@ -9,17 +9,7 @@ import { ScanService } from '../services/scanService';
 import { settingsService } from '../services/settingsService';
 import { getRepoRoot } from '../utils/repoRoot';
 import { findingsToCsv } from '../utils/scanExportCsv';
-
-function resolveChecksJsonPath(rootDir: string): string {
-    const envPath = process.env.AD_SUITE_CHECKS_JSON || process.env.CHECKS_JSON_PATH;
-    if (envPath) {
-        if (path.isAbsolute(envPath)) {
-            return envPath;
-        }
-        return path.join(rootDir, envPath);
-    }
-    return path.join(rootDir, 'checks.json');
-}
+import { resolveChecksJsonPath, resolveChecksOverridesPath } from '../utils/catalogPaths';
 
 export class ScanController {
     public getScans = async (_req: Request, res: Response) => {
@@ -79,6 +69,7 @@ export class ScanController {
         const rootDir = getRepoRoot();
         const scriptPath = path.join(rootDir, 'Invoke-ADSuiteScan.ps1');
         const checksJsonPath = resolveChecksJsonPath(rootDir);
+        const checksOverridesPath = resolveChecksOverridesPath(rootDir);
         const outputDir = path.join(rootDir, 'out', `scan-${scanId}`);
 
         if (!fs.existsSync(scriptPath)) {
@@ -91,6 +82,14 @@ export class ScanController {
             return res.status(500).json({ error: `Checks catalog not found at ${checksJsonPath}` });
         }
 
+        const overridesEnv = process.env.AD_SUITE_CHECKS_OVERRIDES || process.env.CHECKS_OVERRIDES_PATH;
+        if (overridesEnv && !checksOverridesPath) {
+            const attempted = path.isAbsolute(overridesEnv)
+                ? overridesEnv
+                : path.join(rootDir, overridesEnv);
+            logger.warn(`Checks overrides env set but file not found: ${attempted}`);
+        }
+
         const settings = await settingsService.getSettings();
 
         try {
@@ -101,7 +100,8 @@ export class ScanController {
                 startedAt: new Date().toISOString(),
                 categories: categories || [],
                 includeCheckIdsCount: includeCheckIds?.length ?? 0,
-                checksJsonPath
+                checksJsonPath,
+                checksOverridesPath: checksOverridesPath ?? null
             };
             await fsPromises.writeFile(
                 path.join(outputDir, 'scan.meta.json'),
@@ -123,6 +123,9 @@ export class ScanController {
         args.push('-File', scriptPath);
         args.push('-ChecksJsonPath', checksJsonPath);
         args.push('-OutputDirectory', outputDir);
+        if (checksOverridesPath) {
+            args.push('-ChecksOverridesPath', checksOverridesPath);
+        }
 
         if (categories && Array.isArray(categories) && categories.length > 0) {
             categories.forEach((cat) => {
@@ -208,6 +211,7 @@ export class ScanController {
             id: scanId,
             status: 'running',
             checksJsonPath,
+            checksOverridesPath: checksOverridesPath ?? null,
             outputDir
         });
     };

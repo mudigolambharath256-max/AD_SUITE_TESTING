@@ -105,7 +105,12 @@ function Write-ScanErr([string]$Message) {
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ChecksJsonPath) {
-    $ChecksJsonPath = Join-Path $scriptDir 'checks.json'
+    $unified = Join-Path $scriptDir 'checks.unified.json'
+    if (Test-Path -LiteralPath $unified) {
+        $ChecksJsonPath = $unified
+    } else {
+        $ChecksJsonPath = Join-Path $scriptDir 'checks.json'
+    }
 }
 
 if (-not (Test-Path -LiteralPath $ChecksJsonPath)) {
@@ -157,7 +162,8 @@ if (-not $SkipCatalogValidation) {
 $candidates = @($doc.checks | Where-Object {
         $e = if ($_.engine) { $_.engine.ToLowerInvariant() } else { 'ldap' }
         if ($e -eq 'inventory') { return $false }
-        $e -in @('ldap', 'filesystem', 'registry', 'adcs', 'acl')
+        if ($e -eq 'registry') { return $false }
+        $e -in @('ldap', 'filesystem', 'adcs', 'acl')
     })
 
 if ($Category -and $Category.Count -gt 0) {
@@ -308,6 +314,15 @@ $scanMeta['checksOverridesPath'] = if ($ChecksOverridesPath) { (Resolve-Path -Li
 $scanMeta['checksRun'] = $results.Count
 $scanMeta['scoringNormalizer'] = $ScoringNormalizer
 $scanMeta['findingCapPerCheck'] = $FindingCapPerCheck
+$scanMeta['adSuiteEngineVersion'] = '1.6.0'
+try {
+    $gitOut = & git -C $scriptDir rev-parse HEAD 2>$null
+    if ($gitOut) { $scanMeta['sourceGitCommit'] = [string]$gitOut.Trim() }
+    $gitShort = & git -C $scriptDir rev-parse --short HEAD 2>$null
+    if ($gitShort) { $scanMeta['sourceGitCommitShort'] = [string]$gitShort.Trim() }
+} catch {
+    $scanMeta['sourceGitCommit'] = $null
+}
 
 $scanDoc = @{
     schemaVersion = 1
@@ -361,6 +376,27 @@ if ($uniform.Count -gt 0) {
 
 $htmlPath = Join-Path $OutputDirectory 'report.html'
 Export-ADSuiteHtmlReport -ScanDocument $scanDoc -OutputPath $htmlPath -Title 'AD Suite Scan Report'
+
+$trendsPath = Join-Path $scriptDir 'out\trends-history.jsonl'
+try {
+    $trendObj = [ordered]@{
+        scanTimeUtc      = $scanMeta['scanTimeUtc']
+        globalScore      = $scoring.GlobalScore
+        globalRiskBand   = $scoring.GlobalRiskBand
+        totalFindings    = $totalFindings
+        checksRun        = $results.Count
+        checksJsonPath   = $scanMeta['checksJsonPath']
+        outputDirectory  = $OutputDirectory
+        sourceGitCommitShort = $scanMeta['sourceGitCommitShort']
+    }
+    $trendLine = ($trendObj | ConvertTo-Json -Compress -Depth 5)
+    if (-not (Test-Path -LiteralPath (Split-Path -Parent $trendsPath))) {
+        New-Item -ItemType Directory -Path (Split-Path -Parent $trendsPath) -Force | Out-Null
+    }
+    Add-Content -LiteralPath $trendsPath -Value $trendLine -Encoding UTF8
+} catch {
+    # Optional trend file — non-fatal
+}
 
 Write-Host "Wrote: $jsonPath" -ForegroundColor Green
 Write-Host "Wrote: $csvPath" -ForegroundColor Green

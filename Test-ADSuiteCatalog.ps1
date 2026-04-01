@@ -44,7 +44,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $CatalogPath) {
-    $CatalogPath = Join-Path $scriptDir 'checks.json'
+    $unified = Join-Path $scriptDir 'checks.unified.json'
+    if (Test-Path -LiteralPath $unified) {
+        $CatalogPath = $unified
+    } else {
+        $CatalogPath = Join-Path $scriptDir 'checks.json'
+    }
 }
 
 $modulePath = Join-Path $scriptDir 'Modules\ADSuite.Adsi.psm1'

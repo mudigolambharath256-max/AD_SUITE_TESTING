@@ -4,7 +4,7 @@ import { AppError } from './errorHandler';
 
 export interface AuthRequest extends Request {
     user?: {
-        id: number;
+        id: number | string;
         email: string;
         role: string;
         organizationId: number;

@@ -1,0 +1,47 @@
+# Validates merged catalog integrity and semantics audit when catalog-related paths change.
+name: Catalog CI
+
+on:
+  push:
+    paths:
+      - 'checks.json'
+      - 'checks.generated.json'
+      - 'checks.overrides.phaseB-complete.json'
+      - 'checks.catalog-additions.json'
+      - 'tools/Merge-UnifiedChecksCatalog.js'
+      - 'tools/Audit-CheckSemantics.js'
+      - 'tools/build-catalog-additions.js'
+      - 'Modules/ADSuite.Adsi.psm1'
+  pull_request:
+    paths:
+      - 'checks.json'
+      - 'checks.generated.json'
+      - 'checks.overrides.phaseB-complete.json'
+      - 'checks.catalog-additions.json'
+      - 'tools/Merge-UnifiedChecksCatalog.js'
+      - 'tools/Audit-CheckSemantics.js'
+      - 'tools/build-catalog-additions.js'
+      - 'Modules/ADSuite.Adsi.psm1'
+
+jobs:
+  catalog:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build catalog additions and merge unified
+        run: |
+          node tools/build-catalog-additions.js
+          node tools/Merge-UnifiedChecksCatalog.js
+
+      - name: Semantics audit
+        run: node tools/Audit-CheckSemantics.js
+
+      - name: PowerShell catalog test
+        shell: pwsh
+        run: ./Test-ADSuiteCatalog.ps1 -CatalogPath ./checks.unified.json

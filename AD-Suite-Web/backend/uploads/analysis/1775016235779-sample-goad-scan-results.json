@@ -1,0 +1,371 @@
+{
+    "schemaVersion": 1,
+    "meta": {
+        "name": "GOAD Sample Scan (synthetic)",
+        "scanTimeUtc": "2026-03-31T00:00:00.000Z",
+        "serverName": "dc01.goad.lab",
+        "defaultNamingContext": "DC=goad,DC=lab",
+        "checksJsonPath": "SYNTHETIC",
+        "checksOverridesPath": null,
+        "checksRun": 12,
+        "scoringNormalizer": 5,
+        "findingCapPerCheck": 10,
+        "adSuiteEngineVersion": "sample"
+    },
+    "aggregate": {
+        "checksRun": 12,
+        "checksWithFindings": 10,
+        "checksWithErrors": 0,
+        "totalFindings": 26,
+        "globalRaw": 110,
+        "globalScore": 22,
+        "globalRiskBand": "High",
+        "scoreByCategory": {
+            "Access_Control": 26,
+            "Kerberos_Security": 22,
+            "Certificate_Services": 30,
+            "Group_Policy": 12,
+            "LDAP_Security": 10,
+            "Domain_Configuration": 10
+        }
+    },
+    "byCategory": {
+        "Access_Control": { "checks": 3, "withFindings": 3, "errors": 0 },
+        "Kerberos_Security": { "checks": 2, "withFindings": 2, "errors": 0 },
+        "Certificate_Services": { "checks": 2, "withFindings": 2, "errors": 0 },
+        "Group_Policy": { "checks": 1, "withFindings": 1, "errors": 0 },
+        "LDAP_Security": { "checks": 2, "withFindings": 2, "errors": 0 },
+        "Domain_Configuration": { "checks": 2, "withFindings": 0, "errors": 0 }
+    },
+    "results": [
+        {
+            "CheckId": "ACC-001",
+            "CheckName": "Privileged Users (adminCount=1)",
+            "Category": "Access_Control",
+            "Severity": "High",
+            "Description": "Users with adminCount=1 are protected accounts; review membership and delegation paths.",
+            "Result": "Fail",
+            "FindingCount": 4,
+            "DurationMs": 210,
+            "Error": null,
+            "Findings": [
+                {
+                    "CheckId": "ACC-001",
+                    "CheckName": "Privileged Users (adminCount=1)",
+                    "Category": "Access_Control",
+                    "Severity": "High",
+                    "SamAccountName": "Administrator",
+                    "DistinguishedName": "CN=Administrator,CN=Users,DC=goad,DC=lab",
+                    "Reason": "adminCount=1"
+                },
+                {
+                    "CheckId": "ACC-001",
+                    "CheckName": "Privileged Users (adminCount=1)",
+                    "Category": "Access_Control",
+                    "Severity": "High",
+                    "SamAccountName": "DA_SVC",
+                    "DistinguishedName": "CN=DA_SVC,CN=Users,DC=goad,DC=lab",
+                    "Reason": "adminCount=1"
+                },
+                {
+                    "CheckId": "ACC-001",
+                    "CheckName": "Privileged Users (adminCount=1)",
+                    "Category": "Access_Control",
+                    "Severity": "High",
+                    "SamAccountName": "SQL_SVC",
+                    "DistinguishedName": "CN=SQL_SVC,CN=Users,DC=goad,DC=lab",
+                    "Reason": "adminCount=1"
+                },
+                {
+                    "CheckId": "ACC-001",
+                    "CheckName": "Privileged Users (adminCount=1)",
+                    "Category": "Access_Control",
+                    "Severity": "High",
+                    "SamAccountName": "HELPDESK_LEAD",
+                    "DistinguishedName": "CN=HELPDESK_LEAD,CN=Users,DC=goad,DC=lab",
+                    "Reason": "adminCount=1"
+                }
+            ]
+        },
+        {
+            "CheckId": "ACC-025",
+            "CheckName": "Users Can Add Computers to Domain",
+            "Category": "Access_Control",
+            "Severity": "Medium",
+            "Description": "ms-DS-MachineAccountQuota > 0 allows domain users to add computers.",
+            "Result": "Fail",
+            "FindingCount": 1,
+            "DurationMs": 55,
+            "Error": null,
+            "Findings": [
+                {
+                    "CheckId": "ACC-025",
+                    "CheckName": "Users Can Add Computers to Domain",
+                    "Category": "Access_Control",
+                    "Severity": "Medium",
+                    "Domain": "goad.lab",
+                    "Attribute": "ms-DS-MachineAccountQuota",
+                    "Value": 10,
+                    "Reason": "Quota > 0 enables machine account abuse / RBCD staging"
+                }
+            ]
+        },
+        {
+            "CheckId": "ACC-034",
+            "CheckName": "Kerberoastable Accounts (SPN set)",
+            "Category": "Kerberos_Security",
+            "Severity": "High",
+            "Description": "User accounts with SPNs can be Kerberoasted; review privilege and password strength.",
+            "Result": "Fail",
+            "FindingCount": 3,
+            "DurationMs": 165,
+            "Error": null,
+            "Findings": [
+                {
+                    "CheckId": "ACC-034",
+                    "CheckName": "Kerberoastable Accounts (SPN set)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "SQL_SVC",
+                    "ServicePrincipalName": "MSSQLSvc/sql01.goad.lab:1433",
+                    "Note": "Service account appears privileged (adminCount=1); high impact if cracked"
+                },
+                {
+                    "CheckId": "ACC-034",
+                    "CheckName": "Kerberoastable Accounts (SPN set)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "WEB_SVC",
+                    "ServicePrincipalName": "HTTP/web01.goad.lab",
+                    "Note": "Web service account; investigate delegation and group memberships"
+                },
+                {
+                    "CheckId": "ACC-034",
+                    "CheckName": "Kerberoastable Accounts (SPN set)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "BACKUP_SVC",
+                    "ServicePrincipalName": "HOST/backup01.goad.lab",
+                    "Note": "Backup service accounts are common Tier-0 adjacency"
+                }
+            ]
+        },
+        {
+            "CheckId": "KRB-002",
+            "CheckName": "AS-REP Roastable Accounts (no preauth)",
+            "Category": "Kerberos_Security",
+            "Severity": "High",
+            "Description": "Accounts without Kerberos pre-auth can be AS-REP roasted.",
+            "Result": "Fail",
+            "FindingCount": 2,
+            "DurationMs": 130,
+            "Error": null,
+            "Findings": [
+                {
+                    "CheckId": "KRB-002",
+                    "CheckName": "AS-REP Roastable Accounts (no preauth)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "NO_PREAUTH1",
+                    "DistinguishedName": "CN=NO_PREAUTH1,CN=Users,DC=goad,DC=lab",
+                    "Reason": "DONT_REQ_PREAUTH"
+                },
+                {
+                    "CheckId": "KRB-002",
+                    "CheckName": "AS-REP Roastable Accounts (no preauth)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "NO_PREAUTH2",
+                    "DistinguishedName": "CN=NO_PREAUTH2,CN=Users,DC=goad,DC=lab",
+                    "Reason": "DONT_REQ_PREAUTH"
+                }
+            ]
+        },
+        {
+            "CheckId": "GPO-001",
+            "CheckName": "GPOs with Weak Permissions",
+            "Category": "Group_Policy",
+            "Severity": "High",
+            "Description": "Non-admin principals can modify GPOs linked to privileged OUs.",
+            "Result": "Fail",
+            "FindingCount": 2,
+            "DurationMs": 290,
+            "Error": null,
+            "Findings": [
+                {
+                    "CheckId": "GPO-001",
+                    "CheckName": "GPOs with Weak Permissions",
+                    "Category": "Group_Policy",
+                    "Severity": "High",
+                    "GpoName": "Default Domain Controllers Policy",
+                    "LinkedOu": "OU=Domain Controllers,DC=goad,DC=lab",
+                    "Trustee": "GOAD\\Helpdesk",
+                    "Right": "WriteDacl",
+                    "Reason": "GPO edit rights enable code execution on DCs"
+                },
+                {
+                    "CheckId": "GPO-001",
+                    "CheckName": "GPOs with Weak Permissions",
+                    "Category": "Group_Policy",
+                    "Severity": "High",
+                    "GpoName": "Workstation Baseline",
+                    "LinkedOu": "OU=Workstations,DC=goad,DC=lab",
+                    "Trustee": "GOAD\\IT_Support",
+                    "Right": "GenericWrite",
+                    "Reason": "GPO edit rights enable broad lateral movement"
+                }
+            ]
+        },
+        {
+            "CheckId": "LDAP-003",
+            "CheckName": "Anonymous LDAP Bind Allowed (SYSVOL GPO)",
+            "Category": "LDAP_Security",
+            "Severity": "High",
+            "Description": "LDAP signing not required by GPO template.",
+            "Result": "Fail",
+            "FindingCount": 1,
+            "DurationMs": 420,
+            "Error": null,
+            "Findings": [
+                {
+                    "CheckId": "LDAP-003",
+                    "CheckName": "Anonymous LDAP Bind Allowed (SYSVOL GPO)",
+                    "Category": "LDAP_Security",
+                    "Severity": "High",
+                    "PolicyPath": "\\\\goad.lab\\SYSVOL\\goad.lab\\Policies\\{SAMPLE-GUID}\\Machine\\Microsoft\\Windows NT\\SecEdit\\GptTmpl.inf",
+                    "RegistryValue": "NTDS\\Parameters\\LDAPServerIntegrity",
+                    "Expected": "2",
+                    "Observed": "0 or 1",
+                    "Reason": "Weak LDAP integrity enables credential relay / downgrade paths"
+                }
+            ]
+        },
+        {
+            "CheckId": "LDAP-002",
+            "CheckName": "LDAP Channel Binding Disabled",
+            "Category": "LDAP_Security",
+            "Severity": "High",
+            "Description": "Channel binding and LDAP protections may be disabled on DCs.",
+            "Result": "Fail",
+            "FindingCount": 2,
+            "DurationMs": 140,
+            "Error": null,
+            "Findings": [
+                {
+                    "CheckId": "LDAP-002",
+                    "CheckName": "LDAP Channel Binding Disabled",
+                    "Category": "LDAP_Security",
+                    "Severity": "High",
+                    "Computer": "DC01",
+                    "Reason": "DC enumeration only; validate channel binding via policy baselines"
+                },
+                {
+                    "CheckId": "LDAP-002",
+                    "CheckName": "LDAP Channel Binding Disabled",
+                    "Category": "LDAP_Security",
+                    "Severity": "High",
+                    "Computer": "DC02",
+                    "Reason": "DC enumeration only; validate channel binding via policy baselines"
+                }
+            ]
+        },
+        {
+            "CheckId": "ADCS-ESC1",
+            "CheckName": "ADCS ESC1 — Client Authentication Template Misconfig",
+            "Category": "Certificate_Services",
+            "Severity": "Critical",
+            "Description": "Enroll in a client auth template and supply subject/UPN to impersonate privileged users.",
+            "Result": "Fail",
+            "FindingCount": 3,
+            "DurationMs": 950,
+            "Error": null,
+            "Findings": [
+                {
+                    "CheckId": "ADCS-ESC1",
+                    "CheckName": "ADCS ESC1 — Client Authentication Template Misconfig",
+                    "Category": "Certificate_Services",
+                    "Severity": "Critical",
+                    "CaName": "GOAD-CA",
+                    "Template": "UserAuthentication",
+                    "EnrollableBy": "GOAD\\Domain Users",
+                    "Danger": "User supplied SAN/UPN + client auth enables cert for Domain Admin"
+                },
+                {
+                    "CheckId": "ADCS-ESC1",
+                    "CheckName": "ADCS ESC1 — Client Authentication Template Misconfig",
+                    "Category": "Certificate_Services",
+                    "Severity": "Critical",
+                    "CaName": "GOAD-CA",
+                    "Template": "VPN-User",
+                    "EnrollableBy": "GOAD\\Authenticated Users",
+                    "Danger": "Client auth template broadly enrollable"
+                },
+                {
+                    "CheckId": "ADCS-ESC1",
+                    "CheckName": "ADCS ESC1 — Client Authentication Template Misconfig",
+                    "Category": "Certificate_Services",
+                    "Severity": "Critical",
+                    "CaName": "GOAD-CA",
+                    "Template": "SmartcardLogon",
+                    "EnrollableBy": "GOAD\\Helpdesk",
+                    "Danger": "Smartcard logon template can be abused for authentication"
+                }
+            ]
+        },
+        {
+            "CheckId": "ADCS-ESC4",
+            "CheckName": "ADCS ESC4 — Template ACL allows dangerous modification",
+            "Category": "Certificate_Services",
+            "Severity": "Critical",
+            "Description": "Low-privileged users can modify certificate template security or EKUs.",
+            "Result": "Fail",
+            "FindingCount": 1,
+            "DurationMs": 780,
+            "Error": null,
+            "Findings": [
+                {
+                    "CheckId": "ADCS-ESC4",
+                    "CheckName": "ADCS ESC4 — Template ACL allows dangerous modification",
+                    "Category": "Certificate_Services",
+                    "Severity": "Critical",
+                    "Template": "UserAuthentication",
+                    "Trustee": "GOAD\\IT_Support",
+                    "Right": "WriteDacl",
+                    "Danger": "Modify template to become ESC1/ESC2-equivalent and mint auth certs"
+                }
+            ]
+        },
+        {
+            "CheckId": "DCONF-004",
+            "CheckName": "Default Domain Password Policy",
+            "Category": "Domain_Configuration",
+            "Severity": "Medium",
+            "Description": "Default domain password policy below recommended baseline.",
+            "Result": "Fail",
+            "FindingCount": 2,
+            "DurationMs": 65,
+            "Error": null,
+            "Findings": [
+                {
+                    "CheckId": "DCONF-004",
+                    "CheckName": "Default Domain Password Policy",
+                    "Category": "Domain_Configuration",
+                    "Severity": "Medium",
+                    "Attribute": "minPwdLength",
+                    "Value": 8,
+                    "Reason": "Short passwords increase cracking success"
+                },
+                {
+                    "CheckId": "DCONF-004",
+                    "CheckName": "Default Domain Password Policy",
+                    "Category": "Domain_Configuration",
+                    "Severity": "Medium",
+                    "Attribute": "pwdHistoryLength",
+                    "Value": 5,
+                    "Reason": "Low history allows quick password reuse"
+                }
+            ]
+        }
+    ]
+}
+

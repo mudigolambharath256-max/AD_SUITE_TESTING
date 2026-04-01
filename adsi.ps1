@@ -73,7 +73,12 @@ function Write-AdsiStderr {
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ChecksJsonPath) {
-    $ChecksJsonPath = Join-Path $scriptDir 'checks.json'
+    $unified = Join-Path $scriptDir 'checks.unified.json'
+    if (Test-Path -LiteralPath $unified) {
+        $ChecksJsonPath = $unified
+    } else {
+        $ChecksJsonPath = Join-Path $scriptDir 'checks.json'
+    }
 }
 
 if (-not (Test-Path -LiteralPath $ChecksJsonPath)) {

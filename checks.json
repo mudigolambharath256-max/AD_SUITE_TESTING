@@ -20,15 +20,15 @@
                        "searchScope":  "Subtree",
                        "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "samAccountName",
-                                                "adminCount",
-                                                "userAccountControl",
-                                                "objectClass",
-                                                "whenCreated",
-                                                "whenChanged"
-                                            ],
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "adminCount",
+        "userAccountControl",
+        "objectClass",
+        "whenCreated",
+        "whenChanged"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -44,11 +44,11 @@
                        "description":  "Misconfiguration: user accounts with adminCount=1 (protected object flag); review for inappropriate persistence of admin protection.",
                        "remediation":  "Remove inappropriate adminSDHolder protection; relocate accounts to correct OUs with least-privilege delegation; investigate unexpected adminCount=1 on non-privileged users.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
-                                          "Persistence via adminSDHolder (MITRE T1484.002)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
+        "Persistence via adminSDHolder (MITRE T1484.002)"
+      ]
+    },
+    {
                        "id":  "ACC-002",
                        "name":  "Privileged Groups adminCount1",
                        "category":  "Access_Control",
@@ -56,13 +56,13 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectClass=group)(adminCount=1))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "objectClass",
-                                                "whenCreated",
-                                                "whenChanged",
-                                                "adminCount"
-                                            ],
+        "name",
+        "distinguishedName",
+        "objectClass",
+        "whenCreated",
+        "whenChanged",
+        "adminCount"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -76,11 +76,11 @@
                        "description":  "Misconfiguration: security groups with adminCount=1; review membership and whether protection is expected.",
                        "remediation":  "Validate each group is an intentional protected group; remove nested or unintended memberships; replace ad-hoc protected groups with delegated OU structure where possible.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
-                                          "Protected groups (Microsoft Docs)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
+        "Protected groups (Microsoft Docs)"
+      ]
+    },
+    {
                        "id":  "ACC-003",
                        "name":  "Privileged Computers adminCount1",
                        "category":  "Access_Control",
@@ -88,14 +88,14 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=computer)(adminCount=1)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "objectClass",
-                                                "whenCreated",
-                                                "whenChanged",
-                                                "adminCount",
-                                                "userAccountControl"
-                                            ],
+        "name",
+        "distinguishedName",
+        "objectClass",
+        "whenCreated",
+        "whenChanged",
+        "adminCount",
+        "userAccountControl"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -110,11 +110,11 @@
                        "description":  "Misconfiguration: computer accounts with adminCount=1; validate each is an intentional protected object.",
                        "remediation":  "Confirm Tier0/Tier1 systems only; remove adminCount=1 from non-DC servers that should not be adminSDHolder-protected; align with tiering model.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
-                                          "Persistence on domain infrastructure (MITRE T1098)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-c--protected-accounts-and-groups-in-active-directory",
+        "Persistence on domain infrastructure (MITRE T1098)"
+      ]
+    },
+    {
                        "id":  "ACC-004",
                        "name":  "Users with SIDHistory",
                        "category":  "Access_Control",
@@ -122,15 +122,15 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(sIDHistory=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "objectClass",
-                                                "whenCreated",
-                                                "whenChanged",
-                                                "sIDHistory",
-                                                "userAccountControl",
-                                                "samAccountName"
-                                            ],
+        "name",
+        "distinguishedName",
+        "objectClass",
+        "whenCreated",
+        "whenChanged",
+        "sIDHistory",
+        "userAccountControl",
+        "samAccountName"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -146,11 +146,11 @@
                        "description":  "Exposure: user accounts with sIDHistory populated (migration or attack persistence); validate legitimacy.",
                        "remediation":  "Remove stale sIDHistory values after migration cutover; investigate unexpected values; restrict who can write sIDHistory (e.g. domain admin only).",
                        "references":  [
-                                          "https://learn.microsoft.com/windows/win32/ad/sid-history",
-                                          "SID-History injection (MITRE T1134.005)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows/win32/ad/sid-history",
+        "SID-History injection (MITRE T1134.005)"
+      ]
+    },
+    {
                        "id":  "ACC-006",
                        "name":  "Computers with RBCD",
                        "category":  "Access_Control",
@@ -158,14 +158,14 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=computer)(msDS-AllowedToActOnBehalfOfOtherIdentity=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "objectClass",
-                                                "whenCreated",
-                                                "whenChanged",
-                                                "msDS-AllowedToActOnBehalfOfOtherIdentity",
-                                                "userAccountControl"
-                                            ],
+        "name",
+        "distinguishedName",
+        "objectClass",
+        "whenCreated",
+        "whenChanged",
+        "msDS-AllowedToActOnBehalfOfOtherIdentity",
+        "userAccountControl"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -180,11 +180,11 @@
                        "description":  "Misconfiguration: resource-based constrained delegation (RBCD) on computers; review msDS-AllowedToActOnBehalfOfOtherIdentity.",
                        "remediation":  "Clear msDS-AllowedToActOnBehalfOfOtherIdentity where not required; scope principals to least privilege; monitor changes to RBCD attributes.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/resource-based-constrained-delegation-overview",
-                                          "Resource-based constrained delegation abuse (MITRE T1558.001)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/resource-based-constrained-delegation-overview",
+        "Resource-based constrained delegation abuse (MITRE T1558.001)"
+      ]
+    },
+    {
                        "id":  "ACC-007",
                        "name":  "Users with RBCD",
                        "category":  "Access_Control",
@@ -192,15 +192,15 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(msDS-AllowedToActOnBehalfOfOtherIdentity=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "objectClass",
-                                                "whenCreated",
-                                                "whenChanged",
-                                                "msDS-AllowedToActOnBehalfOfOtherIdentity",
-                                                "userAccountControl",
-                                                "samAccountName"
-                                            ],
+        "name",
+        "distinguishedName",
+        "objectClass",
+        "whenCreated",
+        "whenChanged",
+        "msDS-AllowedToActOnBehalfOfOtherIdentity",
+        "userAccountControl",
+        "samAccountName"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -216,11 +216,11 @@
                        "description":  "Misconfiguration: RBCD on user accounts; review delegation to constrained targets.",
                        "remediation":  "Remove RBCD from user objects unless required; prefer computer-based delegation patterns; audit who can modify these attributes.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/resource-based-constrained-delegation-overview",
-                                          "Resource-based constrained delegation abuse (MITRE T1558.001)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/resource-based-constrained-delegation-overview",
+        "Resource-based constrained delegation abuse (MITRE T1558.001)"
+      ]
+    },
+    {
                        "id":  "ACC-034",
                        "name":  "Kerberoastable Accounts",
                        "category":  "Access_Control",
@@ -228,14 +228,14 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(servicePrincipalName=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(!(samAccountName=krbtgt)))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "whenCreated",
-                                                "whenChanged",
-                                                "servicePrincipalName",
-                                                "samAccountName",
-                                                "userAccountControl"
-                                            ],
+        "name",
+        "distinguishedName",
+        "whenCreated",
+        "whenChanged",
+        "servicePrincipalName",
+        "samAccountName",
+        "userAccountControl"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -250,10 +250,10 @@
                        "description":  "Misconfiguration: user accounts with SPNs (Kerberoastable); review SPNs and use group managed service accounts where possible.",
                        "remediation":  "Remove unnecessary SPNs from user accounts; prefer gMSA for services; enforce strong password policy for remaining SPN owners.",
                        "references":  [
-                                          "Kerberoasting (MITRE T1558.003)"
-                                      ]
-                   },
-                   {
+        "Kerberoasting (MITRE T1558.003)"
+      ]
+    },
+    {
                        "id":  "KRB-001",
                        "name":  "Kerberoastable User Accounts",
                        "category":  "Kerberos_Security",
@@ -261,14 +261,14 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(servicePrincipalName=*))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "samAccountName",
-                                                "servicePrincipalName",
-                                                "pwdLastSet",
-                                                "description",
-                                                "userAccountControl"
-                                            ],
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "servicePrincipalName",
+        "pwdLastSet",
+        "description",
+        "userAccountControl"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -279,15 +279,15 @@
                                                 "UserAccountControl":  "userAccountControl"
                                             },
                        "excludeSamAccountName":  [
-                                                     "krbtgt"
-                                                 ],
+        "krbtgt"
+      ],
                        "sourcePath":  "Kerberos_Security/KRB-001_Kerberoastable_User_Accounts/adsi.ps1",
                        "severity":  "high",
                        "description":  "Misconfiguration: Kerberoastable user accounts (SPN on user); overlaps conceptually with ACC-034 — use for Kerberos category reporting.",
                        "remediation":  "Remove unnecessary SPNs from user accounts; prefer gMSA for services; enforce strong password policy for remaining SPN owners (same as ACC-034).",
                        "references":  [
-                                          "Kerberoasting (MITRE T1558.003)"
-                                      ],
+        "Kerberoasting (MITRE T1558.003)"
+      ],
                        "scoreWeight":  0
                    },
                    {
@@ -298,11 +298,11 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=4194304))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "samAccountName",
-                                                "userAccountControl"
-                                            ],
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "userAccountControl"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -313,7 +313,7 @@
                        "description":  "Misconfiguration: accounts with Kerberos pre-authentication disabled (AS-REP roastable).",
                        "remediation":  "Enable Kerberos pre-authentication for affected accounts (or disable accounts that do not require interactive logon). Prefer group-based policies over per-account exceptions.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows/security/threat-protection/auditing/event-4768",
+        "https://learn.microsoft.com/windows/security/threat-protection/auditing/event-4768",
                                           "AS-REP roasting (MITRE ATT\u0026CK)"
                                       ],
                        "scoreWeight":  1
@@ -326,13 +326,13 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288)(!(primaryGroupID=516)))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "samAccountName",
-                                                "operatingSystem",
-                                                "userAccountControl",
-                                                "primaryGroupID"
-                                            ],
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "operatingSystem",
+        "userAccountControl",
+        "primaryGroupID"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -346,11 +346,11 @@
                        "description":  "Misconfiguration: non-DC computers with unconstrained delegation (TGT exposure risk).",
                        "remediation":  "Remove unconstrained delegation or constrain to required services; treat as Tier0 adjacent.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-unconstrained",
-                                          "Unconstrained delegation (MITRE T1558.001)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-unconstrained",
+        "Unconstrained delegation (MITRE T1558.001)"
+      ]
+    },
+    {
                        "id":  "KRB-004",
                        "name":  "Unconstrained Delegation Users",
                        "category":  "Kerberos_Security",
@@ -358,11 +358,11 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=524288))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "samAccountName",
-                                                "userAccountControl"
-                                            ],
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "userAccountControl"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -374,11 +374,11 @@
                        "description":  "Misconfiguration: user accounts with unconstrained delegation enabled.",
                        "remediation":  "Remove unconstrained delegation from user accounts unless business-critical; use constrained or resource-based delegation; treat as credential theft risk.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-unconstrained",
-                                          "Unconstrained delegation (MITRE T1558.001)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-unconstrained",
+        "Unconstrained delegation (MITRE T1558.001)"
+      ]
+    },
+    {
                        "id":  "KRB-005",
                        "name":  "Constrained Delegation Computers",
                        "category":  "Kerberos_Security",
@@ -386,13 +386,13 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToDelegateTo=*))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "samAccountName",
-                                                "msDS-AllowedToDelegateTo",
-                                                "operatingSystem",
-                                                "userAccountControl"
-                                            ],
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "msDS-AllowedToDelegateTo",
+        "operatingSystem",
+        "userAccountControl"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -406,11 +406,11 @@
                        "description":  "Exposure: computers with constrained delegation (msDS-AllowedToDelegateTo); validate SPN targets.",
                        "remediation":  "Restrict msDS-AllowedToDelegateTo to required SPNs; remove stale delegation; prefer resource-based delegation where possible.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-constrained",
-                                          "Constrained delegation (MITRE T1558.001)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-constrained",
+        "Constrained delegation (MITRE T1558.001)"
+      ]
+    },
+    {
                        "id":  "KRB-006",
                        "name":  "Constrained Delegation Users",
                        "category":  "Kerberos_Security",
@@ -418,12 +418,12 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(msDS-AllowedToDelegateTo=*))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "samAccountName",
-                                                "msDS-AllowedToDelegateTo",
-                                                "userAccountControl"
-                                            ],
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "msDS-AllowedToDelegateTo",
+        "userAccountControl"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -436,11 +436,11 @@
                        "description":  "Exposure: users with constrained delegation; review allowed SPNs.",
                        "remediation":  "Tighten allowed SPNs; remove user-based constrained delegation if not required; monitor changes to msDS-AllowedToDelegateTo.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-constrained",
-                                          "Constrained delegation (MITRE T1558.001)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-delegation-constrained",
+        "Constrained delegation (MITRE T1558.001)"
+      ]
+    },
+    {
                        "id":  "KRB-009",
                        "name":  "DES-Only Kerberos Users",
                        "category":  "Kerberos_Security",
@@ -448,11 +448,11 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(userAccountControl:1.2.840.113556.1.4.803:=2097152))",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "samAccountName",
-                                                "userAccountControl"
-                                            ],
+        "name",
+        "distinguishedName",
+        "samAccountName",
+        "userAccountControl"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -464,11 +464,11 @@
                        "description":  "Weak crypto: accounts allowed DES-only Kerberos (UAC bit); disable DES for the domain and clear per-account use of DES-only.",
                        "remediation":  "Disable DES for Kerberos at domain level; clear the Use Kerberos DES encryption types only flag on accounts; migrate legacy apps off DES.",
                        "references":  [
-                                          "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-encryption-types",
-                                          "Weak encryption (MITRE T1558)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-encryption-types",
+        "Weak encryption (MITRE T1558)"
+      ]
+    },
+    {
                        "id":  "GPO-ACL-001",
                        "name":  "SYSVOL Policies insecure ACLs",
                        "category":  "Group_Policy",
@@ -478,11 +478,11 @@
                        "description":  "Misconfiguration: GPO folders under SYSVOL\\\\Policies where Everyone or Authenticated Users have Modify/Write/FullControl (review and tighten).",
                        "remediation":  "Remove excessive Modify/Write/FullControl from SYSVOL\\\\Policies subfolders; grant Domain Admins/Creator Owner and required DC groups only; validate GPO delegation.",
                        "references":  [
-                                          "https://learn.microsoft.com/previous-versions/windows/it-pro/windows-server-2003/cc770880(v=ws.10)",
-                                          "Group Policy abuse (MITRE T1484.001)"
-                                      ]
-                   },
-                   {
+        "https://learn.microsoft.com/previous-versions/windows/it-pro/windows-server-2003/cc770880(v=ws.10)",
+        "Group Policy abuse (MITRE T1484.001)"
+      ]
+    },
+    {
                        "id":  "ADCS-ESC1",
                        "name":  "ESC1 Enrollee-supplied SAN (certificate template)",
                        "category":  "Certificate_Services",
@@ -2094,6 +2094,223 @@
                        "scoreWeight":  0
                    },
                    {
+                       "id":  "DC-033",
+                       "name":  "DCs with SMB Signing Disabled (SYSVOL GPO)",
+                       "category":  "Domain_Controllers",
+                       "engine":  "filesystem",
+                       "filesystemKind":  "SysvolGptTmplSecedit",
+                       "gptTmplRules":  [
+                                            {
+                                                "ruleId":  "LanmanServer_RequireSecuritySignature",
+                                                "matchSubstr":  "LanmanServer\\Parameters\\RequireSecuritySignature",
+                                                "findingWhenDwordIn":  [
+                                                                           0
+                                                                       ],
+                                                "detail":  "GPO explicitly sets SMB server RequireSecuritySignature to disabled (0). Read from SYSVOL SecEdit GptTmpl.inf (domain user readable)."
+                                            }
+                                        ],
+                       "severity":  "medium",
+                       "description":  "Scans Group Policy SecEdit templates on SYSVOL for SMB server packet signing. Does not use remote registry; requires read access to \\\\domain\\\\SYSVOL like any domain-joined client.",
+                       "remediation":  "Set SMB server signing to required via GPO (or remove weak values); validate with security baseline.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/storage/file-server/smb-security",
+                                          "MITRE T1021.002"
+                                      ]
+                   },
+                   {
+                       "id":  "DC-034",
+                       "name":  "DCs LDAP Signing Not Required (SYSVOL GPO)",
+                       "category":  "Domain_Controllers",
+                       "engine":  "filesystem",
+                       "filesystemKind":  "SysvolGptTmplSecedit",
+                       "gptTmplRules":  [
+                                            {
+                                                "ruleId":  "NTDS_LDAPServerIntegrity",
+                                                "matchSubstr":  "NTDS\\Parameters\\LDAPServerIntegrity",
+                                                "findingWhenDwordIn":  [
+                                                                           0,
+                                                                           1
+                                                                       ],
+                                                "detail":  "GPO sets LDAPServerIntegrity to 0/1 (none or negotiate). Value 2 requires signing."
+                                            }
+                                        ],
+                       "severity":  "medium",
+                       "description":  "Detects weak LDAP signing policy pushed via GPO registry values in GptTmpl.inf (not a live DC registry probe).",
+                       "remediation":  "Require LDAP signing on domain controllers; set LDAPServerIntegrity to required in GPO.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites",
+                                          "MITRE T1040"
+                                      ]
+                   },
+                   {
+                       "id":  "DC-035",
+                       "name":  "DCs LDAP Channel Binding Disabled (SYSVOL GPO)",
+                       "category":  "Domain_Controllers",
+                       "engine":  "filesystem",
+                       "filesystemKind":  "SysvolGptTmplSecedit",
+                       "gptTmplRules":  [
+                                            {
+                                                "ruleId":  "ldapEnforceChannelBinding_off",
+                                                "matchSubstr":  "ldapEnforceChannelBinding",
+                                                "findingWhenDwordIn":  [
+                                                                           0
+                                                                       ],
+                                                "detail":  "GPO sets LDAP channel binding enforcement to disabled (0)."
+                                            }
+                                        ],
+                       "severity":  "high",
+                       "description":  "Reads ldapEnforceChannelBinding from SYSVOL GptTmpl.inf when present. Matches either NTDS or LSA policy paths under [Registry Values].",
+                       "remediation":  "Enable LDAP channel binding (EPA) per Microsoft guidance for DCs and clients.",
+                       "references":  [
+                                          "https://support.microsoft.com/help/4034879"
+                                      ]
+                   },
+                   {
+                       "id":  "DCONF-009",
+                       "name":  "LDAP Signing Requirements (SYSVOL GPO)",
+                       "category":  "Domain_Configuration",
+                       "engine":  "filesystem",
+                       "filesystemKind":  "SysvolGptTmplSecedit",
+                       "gptTmplRules":  [
+                                            {
+                                                "ruleId":  "NTDS_LDAPServerIntegrity",
+                                                "matchSubstr":  "NTDS\\Parameters\\LDAPServerIntegrity",
+                                                "findingWhenDwordIn":  [
+                                                                           0,
+                                                                           1
+                                                                       ],
+                                                "detail":  "GPO sets LDAPServerIntegrity to 0/1 (not require signing)."
+                                            }
+                                        ],
+                       "severity":  "medium",
+                       "description":  "Domain-wide LDAP signing posture via GPO SecEdit templates on SYSVOL.",
+                       "remediation":  "Require LDAP signing for domain controllers.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/security-best-practices/appendix-a--sites"
+                                      ]
+                   },
+                   {
+                       "id":  "DCONF-010",
+                       "name":  "LDAP Channel Binding (SYSVOL GPO)",
+                       "category":  "Domain_Configuration",
+                       "engine":  "filesystem",
+                       "filesystemKind":  "SysvolGptTmplSecedit",
+                       "gptTmplRules":  [
+                                            {
+                                                "ruleId":  "ldapEnforceChannelBinding_off",
+                                                "matchSubstr":  "ldapEnforceChannelBinding",
+                                                "findingWhenDwordIn":  [
+                                                                           0
+                                                                       ],
+                                                "detail":  "GPO disables LDAP channel binding enforcement."
+                                            }
+                                        ],
+                       "severity":  "high",
+                       "description":  "SYSVOL-based detection of ldapEnforceChannelBinding=0 in GptTmpl.inf.",
+                       "remediation":  "Enable channel binding enforcement for LDAP over TLS.",
+                       "references":  [
+                                          "https://support.microsoft.com/help/4034879"
+                                      ]
+                   },
+                   {
+                       "id":  "DCONF-011",
+                       "name":  "SMB Signing Configuration (SYSVOL GPO)",
+                       "category":  "Domain_Configuration",
+                       "engine":  "filesystem",
+                       "filesystemKind":  "SysvolGptTmplSecedit",
+                       "gptTmplRules":  [
+                                            {
+                                                "ruleId":  "LanmanServer_RequireSecuritySignature",
+                                                "matchSubstr":  "LanmanServer\\Parameters\\RequireSecuritySignature",
+                                                "findingWhenDwordIn":  [
+                                                                           0
+                                                                       ],
+                                                "detail":  "SMB server signing not required by GPO (0)."
+                                            },
+                                            {
+                                                "ruleId":  "LanmanWorkstation_RequireSecuritySignature",
+                                                "matchSubstr":  "LanmanWorkstation\\Parameters\\RequireSecuritySignature",
+                                                "findingWhenDwordIn":  [
+                                                                           0
+                                                                       ],
+                                                "detail":  "SMB client signing not required by GPO (0)."
+                                            }
+                                        ],
+                       "severity":  "medium",
+                       "description":  "Evaluates SMB signing-related registry values as deployed via GPO SecEdit (SYSVOL), not live registry on endpoints.",
+                       "remediation":  "Require SMB signing on clients and servers per baseline.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/storage/file-server/smb-security"
+                                      ]
+                   },
+                   {
+                       "id":  "DCONF-014",
+                       "name":  "NTLM Authentication Settings (SYSVOL GPO)",
+                       "category":  "Domain_Configuration",
+                       "engine":  "filesystem",
+                       "filesystemKind":  "SysvolGptTmplSecedit",
+                       "gptTmplRules":  [
+                                            {
+                                                "ruleId":  "LmCompatibilityLevel_weak",
+                                                "matchSubstr":  "Control\\Lsa\\LmCompatibilityLevel",
+                                                "findingWhenDwordLessThan":  3,
+                                                "detail":  "LmCompatibilityLevel below 3 (send NTLMv2 responses only / refuse LM). Review domain baseline."
+                                            }
+                                        ],
+                       "severity":  "high",
+                       "description":  "Reads LmCompatibilityLevel from SYSVOL GptTmpl.inf [Registry Values] when administrators deploy it via security templates.",
+                       "remediation":  "Set LAN Manager authentication level to send NTLMv2 responses only (typically 3-5).",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/security/credentials-protection-and-management/understanding-lm-ntlm-ntlmv2-authentication"
+                                      ]
+                   },
+                   {
+                       "id":  "SMB-001",
+                       "name":  "SMBv1 Enabled (SYSVOL GPO)",
+                       "category":  "SMB_Security",
+                       "engine":  "filesystem",
+                       "filesystemKind":  "SysvolGptTmplSecedit",
+                       "gptTmplRules":  [
+                                            {
+                                                "ruleId":  "LanmanServer_SMB1_enabled",
+                                                "matchSubstr":  "LanmanServer\\Parameters\\SMB1",
+                                                "findingWhenDwordIn":  [
+                                                                           1
+                                                                       ],
+                                                "detail":  "GPO enables SMB1 (dword 1)."
+                                            }
+                                        ],
+                       "severity":  "high",
+                       "description":  "Detects SMB1 enabled via GPO-deployed registry values in SecEdit templates.",
+                       "remediation":  "Disable SMBv1 via GPO and Server Manager features.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/storage/file-server/smb-v1-not-installed-by-default-in-windows"
+                                      ]
+                   },
+                   {
+                       "id":  "SMB-002",
+                       "name":  "SMB Signing Not Required (SYSVOL GPO)",
+                       "category":  "SMB_Security",
+                       "engine":  "filesystem",
+                       "filesystemKind":  "SysvolGptTmplSecedit",
+                       "gptTmplRules":  [
+                                            {
+                                                "ruleId":  "LanmanWorkstation_RequireSecuritySignature",
+                                                "matchSubstr":  "LanmanWorkstation\\Parameters\\RequireSecuritySignature",
+                                                "findingWhenDwordIn":  [
+                                                                           0
+                                                                       ],
+                                                "detail":  "Workstation GPO does not require SMB signing (0)."
+                                            }
+                                        ],
+                       "severity":  "medium",
+                       "description":  "Client-side SMB signing requirement as expressed in GptTmpl.inf. Server-side coverage is in DC-033 / DCONF-011.",
+                       "remediation":  "Require SMB signing for workstations and servers.",
+                       "references":  [
+                                          "https://learn.microsoft.com/windows-server/storage/file-server/smb-security"
+                                      ]
+                   },
+                   {
                        "id":  "DC-003",
                        "name":  "Forest Functional Level",
                        "category":  "Domain_Configuration",
@@ -2101,10 +2318,10 @@
                        "searchBase":  "Configuration",
                        "ldapFilter":  "(objectClass=crossRefContainer)",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "msDS-Behavior-Version"
-                                            ],
+        "name",
+        "distinguishedName",
+        "msDS-Behavior-Version"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -2127,10 +2344,10 @@
                        "searchScope":  "Subtree",
                        "ldapFilter":  "(objectClass=dMD)",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName",
-                                                "fSMORoleOwner"
-                                            ],
+        "name",
+        "distinguishedName",
+        "fSMORoleOwner"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName",
@@ -2152,10 +2369,10 @@
                        "searchBase":  "Domain",
                        "ldapFilter":  "(\u0026(objectCategory=person)(objectClass=user))",
                        "propertiesToLoad":  [
-                                                "samAccountName",
-                                                "distinguishedName",
-                                                "userAccountControl"
-                                            ],
+        "samAccountName",
+        "distinguishedName",
+        "userAccountControl"
+      ],
                        "userAccountControlMustExclude":  2,
                        "outputProperties":  {
                                                 "SamAccountName":  "samAccountName",
@@ -2179,9 +2396,9 @@
                        "searchScope":  "OneLevel",
                        "ldapFilter":  "(objectClass=*)",
                        "propertiesToLoad":  [
-                                                "name",
-                                                "distinguishedName"
-                                            ],
+        "name",
+        "distinguishedName"
+      ],
                        "outputProperties":  {
                                                 "Name":  "name",
                                                 "DistinguishedName":  "distinguishedName"
@@ -2193,6 +2410,6 @@
                                           "https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-schema",
                                           "https://learn.microsoft.com/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview"
                                       ]
-                   }
-               ]
+    }
+  ]
 }

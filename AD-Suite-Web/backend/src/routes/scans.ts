@@ -1,38 +1,25 @@
 import express from 'express';
 import { authenticate, authorize } from '../middleware/auth';
+import { auditMutations } from '../middleware/auditMiddleware';
 import { ScanController } from '../controllers/scanController';
 
 const router = express.Router();
 const scanController = new ScanController();
 
-// All routes require authentication
+const readRoles = authorize('admin', 'analyst', 'viewer');
+const writeRoles = authorize('admin', 'analyst');
+
 router.use(authenticate);
+router.use(auditMutations);
 
-// Get all scans for organization
-router.get('/', scanController.getScans);
-
-// Get single scan
-router.get('/:id', scanController.getScan);
-
-// Create new scan
-router.post('/', authorize('admin', 'analyst'), scanController.createScan);
-
-// Start scan execution
-router.post('/:id/execute', authorize('admin', 'analyst'), scanController.executeScan);
-
-// Stop running scan
-router.post('/:id/stop', authorize('admin', 'analyst'), scanController.stopScan);
-
-// Delete scan
+router.get('/', readRoles, scanController.getScans);
+router.get('/:id', readRoles, scanController.getScan);
+router.post('/', writeRoles, scanController.createScan);
+router.post('/:id/execute', writeRoles, scanController.executeScan);
+router.post('/:id/stop', writeRoles, scanController.stopScan);
 router.delete('/:id', authorize('admin'), scanController.deleteScan);
-
-// Get scan results
-router.get('/:id/results', scanController.getScanResults);
-
-// Get scan findings
-router.get('/:id/findings', scanController.getScanFindings);
-
-// Export scan results
-router.get('/:id/export/:format', scanController.exportScan);
+router.get('/:id/results', readRoles, scanController.getScanResults);
+router.get('/:id/findings', readRoles, scanController.getScanFindings);
+router.get('/:id/export/:format', readRoles, scanController.exportScan);
 
 export default router;

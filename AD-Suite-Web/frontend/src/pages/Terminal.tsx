@@ -108,9 +108,10 @@ export default function TerminalPage() {
         xtermRef.current = term;
         fitAddonRef.current = fitAddon;
 
-        // Connect WebSocket
+        // Connect WebSocket (always use WS port on the same host — not the Vite dev port)
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        const host = window.location.hostname === 'localhost' ? 'localhost:3001' : window.location.host;
+        const wsPort = import.meta.env.VITE_WS_PORT || '3001';
+        const host = `${window.location.hostname}:${wsPort}`;
         const ws = new WebSocket(`${protocol}://${host}/terminal`);
         wsRef.current = ws;
 

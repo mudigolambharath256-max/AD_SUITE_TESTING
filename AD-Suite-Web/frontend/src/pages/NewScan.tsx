@@ -70,9 +70,15 @@ export default function NewScan() {
         }
     }, [initialCategory, catalogData]);
 
-    // Setup WebSocket connection
+    // Setup WebSocket connection (use server hostname when UI is opened via LAN IP / DNS name)
     useEffect(() => {
-        const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
+        const wsUrl =
+            import.meta.env.VITE_WS_URL ||
+            (() => {
+                const p = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const port = import.meta.env.VITE_WS_PORT || '3001';
+                return `${p}//${window.location.hostname}:${port}`;
+            })();
         const websocket = new WebSocket(wsUrl);
 
         websocket.onmessage = (event) => {

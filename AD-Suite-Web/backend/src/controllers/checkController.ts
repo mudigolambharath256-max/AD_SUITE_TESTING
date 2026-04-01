@@ -1,49 +1,40 @@
 import { Request, Response, NextFunction } from 'express';
-import fs from 'fs';
-import path from 'path';
 import { logger } from '../utils/logger';
+import { getRepoRoot } from '../utils/repoRoot';
+import { loadMergedChecksCatalog, isRunnableEngine } from '../utils/loadChecksCatalog';
 
 export class CheckController {
-    private getCatalogPath(): string {
-        // Corrected path to reach the root AD_SUITE folder from backend/src/controllers
-        // src/controllers -> src -> backend -> AD-Suite-Web -> AD_SUITE
-        return path.resolve(__dirname, '../../../../checks.generated.json');
-    }
-
     public getChecks = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const catalogPath = this.getCatalogPath();
-            logger.info(`Fetching catalog from: ${catalogPath}`);
+            const rootDir = getRepoRoot();
+            const loaded = loadMergedChecksCatalog(rootDir);
 
-            if (!fs.existsSync(catalogPath)) {
-                logger.warn(`Catalog not found at ${catalogPath}`);
+            if (!loaded.ok) {
+                logger.warn(`Catalog load failed: ${loaded.error}`);
                 return res.status(404).json({
                     error: 'Catalog not found',
-                    message: `checks.generated.json not found at expected path: ${catalogPath}`
+                    message: loaded.error,
+                    checksJsonPath: loaded.checksJsonPath
                 });
             }
 
-            const catalogData = fs.readFileSync(catalogPath, 'utf-8');
-            const catalog = JSON.parse(catalogData);
+            const { document, checksJsonPath, checksOverridesPath } = loaded;
+            const allChecks = document.checks ?? [];
 
-            if (!catalog.checks || !Array.isArray(catalog.checks)) {
-                return res.status(500).json({
-                    error: 'Invalid catalog format',
-                    message: 'Catalog does not contain a valid checks array'
-                });
-            }
+            const includeInventory = req.query.includeInventory === '1' || req.query.includeInventory === 'true';
+            const pool = includeInventory
+                ? allChecks
+                : allChecks.filter((check) => isRunnableEngine(check.engine));
 
-            // Extract unique categories
             const categoriesSet = new Set<string>();
-            catalog.checks.forEach((check: any) => {
+            pool.forEach((check) => {
                 if (check.category) {
-                    categoriesSet.add(check.category);
+                    categoriesSet.add(String(check.category));
                 }
             });
             const categories = Array.from(categoriesSet).sort();
 
-            // Map checks to a cleaner format
-            const checks = catalog.checks.map((check: any) => ({
+            const checks = pool.map((check) => ({
                 id: check.id,
                 name: check.name,
                 category: check.category,
@@ -53,7 +44,9 @@ export class CheckController {
                 sourcePath: check.sourcePath
             }));
 
-            logger.info(`Returning ${categories.length} categories and ${checks.length} checks`);
+            logger.info(
+                `Returning ${categories.length} categories and ${checks.length} checks (catalog ${checksJsonPath})`
+            );
 
             res.json({
                 categories,
@@ -61,14 +54,17 @@ export class CheckController {
                 meta: {
                     totalChecks: checks.length,
                     totalCategories: categories.length,
-                    catalogPath: catalogPath
+                    checksJsonPath,
+                    checksOverridesPath: checksOverridesPath ?? null,
+                    includeInventory
                 }
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Unknown error';
             logger.error('Error reading catalog:', error);
             res.status(500).json({
                 error: 'Failed to read catalog',
-                message: error.message
+                message
             });
         }
     }
@@ -76,18 +72,17 @@ export class CheckController {
     public getCheck = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { id } = req.params;
-            const catalogPath = this.getCatalogPath();
+            const rootDir = getRepoRoot();
+            const loaded = loadMergedChecksCatalog(rootDir);
 
-            if (!fs.existsSync(catalogPath)) {
+            if (!loaded.ok) {
                 return res.status(404).json({
-                    error: 'Catalog not found'
+                    error: 'Catalog not found',
+                    message: loaded.error
                 });
             }
 
-            const catalogData = fs.readFileSync(catalogPath, 'utf-8');
-            const catalog = JSON.parse(catalogData);
-
-            const check = catalog.checks.find((c: any) => c.id === id);
+            const check = loaded.document.checks?.find((c) => String(c.id) === id);
 
             if (!check) {
                 return res.status(404).json({
@@ -97,11 +92,12 @@ export class CheckController {
             }
 
             res.json({ check });
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Unknown error';
             logger.error('Error reading check:', error);
             res.status(500).json({
                 error: 'Failed to read check',
-                message: error.message
+                message
             });
         }
     }

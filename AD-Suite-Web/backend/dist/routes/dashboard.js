@@ -9,6 +9,7 @@ const auth_1 = require("../middleware/auth");
 const scanService_1 = require("../services/scanService");
 const router = express_1.default.Router();
 router.use(auth_1.authenticate);
+router.use((0, auth_1.authorize)('admin', 'analyst', 'viewer'));
 async function getAvailableScans() {
     const summaries = await scanService_1.ScanService.listAvailableScans();
     const details = await Promise.all(summaries.map(async (s) => {

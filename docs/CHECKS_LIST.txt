@@ -1,0 +1,771 @@
+AAD-001	Azure AD Connect Accounts MSOL
+AAD-002	Azure AD Connect Accounts AAD
+AAD-003	Seamless SSO Computer Account AZUREADSSOACC
+AAD-004	AAD Connect Accounts with Admin Rights
+AAD-005	Sync Accounts with Password Never Expires
+AAD-006	Sync Accounts with Old Passwords 180 Days
+AAD-007	Sync Accounts with SIDHistory
+AAD-008	AAD DC Administrators Group
+AAD-009	Accounts Synced to Azure AD UPN Set
+AAD-010	Accounts with ms-DS-ConsistencyGuid
+AAD-011	Accounts with Cloud Keywords in Description
+AAD-012	Azure AD Provisioning Groups
+AAD-013	Device Registration Service Account
+AAD-014	Password Hash Sync Enabled Indicators
+AAD-015	Passthrough Authentication Indicators
+AAD-016	Federation Service Accounts
+AAD-017	Sync Accounts in Domain Admins
+AAD-018	Entra ID Connect Cloud Sync Accounts
+AAD-019	Accounts with ProxyAddresses Mail-Enabled
+AAD-020	Sync Server Computer Accounts
+AAD-021	Service Principals with Azure in Name
+AAD-022	Accounts Blocked from Sync
+AAD-023	Directory Sync Status Container
+AAD-024	Hybrid Azure AD Joined Devices
+AAD-025	Accounts with Azure AD Device Registration
+AAD-026	Sync Account Last Logon
+AAD-027	Azure AD Application Proxy Connectors
+AAD-028	Writeback Enabled Indicators
+AAD-029	Accounts with ExtensionAttributes Exchange
+AAD-030	Hybrid Identity Security Summary
+AAD-031	Hybrid Join Status
+AAD-032	Password Hash Sync Status
+AAD-033	Azure AD Connect Sync Errors
+AAD-034	Pass Through Authentication Security
+AAD-035	Seamless SSO Configuration
+AAD-036	Azure AD Joined Device Compliance
+AAD-037	Conditional Access Policy Gaps
+AAD-038	MFA Enforcement Status
+AAD-039	Azure AD Connect Permissions
+AAD-040	Hybrid Identity Attack Surface
+AAD-041	Cloud Kerberos Trust Issues
+AAD-042	Azure AD Connect Health Status
+ACC-001	Privileged Users adminCount1
+ACC-002	Privileged Groups adminCount1
+ACC-003	Privileged Computers adminCount1
+ACC-004	Users with SIDHistory
+ACC-006	Computers with RBCD
+ACC-007	Users with RBCD
+ACC-009	KeyCredentialLink on Computers
+ACC-011	Trust Accounts for Delegation
+ACC-012	Users Can Create DNS Records
+ACC-013	GPO Folder Rights Review
+ACC-014	Domain Admins Group Members
+ACC-015	Enterprise Admins Group Members
+ACC-017	Backup Operators Group Members
+ACC-020	Print Operators Group Members
+ACC-021	DNS Admins Group Members
+ACC-025	Users Can Add Computers to Domain
+ACC-026	Accounts with Reversible Encryption Enabled
+ACC-030	Accounts with Not Delegated Flag
+ACC-031	Shortest Path to Domain Admin
+ACC-034	Kerberoastable Accounts
+ACC-037	Shadow Credentials Detection
+ACC-038	Constrained Delegation Targets
+ACC-039	Resource Based Constrained Delegation
+ACC-043	Constrained Delegation Principals
+ACC-044	Admin SDHolder Template
+ACC-045	Privileged Access Workstation PAW Computers
+ACE-001	Dangerous ACE: GenericAll (non-privileged principal)
+ACE-002	Dangerous ACE: GenericWrite (non-privileged principal)
+ACE-003	Dangerous ACE: WriteDacl (non-privileged principal)
+ACE-004	Dangerous ACE: WriteOwner (non-privileged principal)
+ACE-005	Broad ACE: WriteProperty (non-privileged principal)
+AD-005	KRBTGT Account Password Age
+ADCS-ESC1	ESC1 Enrollee-supplied SAN (certificate template)
+ADCS-ESC2	ESC2 Any Purpose or missing EKU (certificate template)
+ADCS-ESC3	ESC3 Certificate Request Agent chain (templates)
+ADCS-ESC4	ESC4 Weak template object ACLs
+ADCS-ESC5	ESC5 Weak ACLs on critical PKI containers
+ADCS-ESC6	ESC6 CA EDITF_ATTRIBUTESUBJECTALTNAME2 (policy module)
+ADCS-ESC7	ESC7 Weak ACLs on Enterprise CA object
+ADCS-ESC8	ESC8 Web Enrollment over HTTP / relay surface
+ADV-001	Print Spooler Service on DCs
+ADV-002	Zerologon Vulnerability Check
+ADV-003	PetitPotam Vulnerability
+ADV-004	NoPac Vulnerability Check
+ADV-005	sAMAccountName Spoofing
+ADV-006	Coerced Authentication Vectors
+ADV-007	NTLM Relay Attack Surface
+ADV-008	Machine Account Quota Abuse
+ADV-009	ADCS Web Enrollment Vulnerabilities
+ADV-010	Domain Trust Authentication Vulnerabilities
+AUTH-001	Accounts Without Kerberos Pre-Auth
+AUTH-002	Accounts with Reversible Encryption
+AUTH-003	Accounts with Password Not Required
+AUTH-004	Accounts with Never Expiring Password
+AUTH-005	Locked Out Accounts
+AUTH-006	Accounts Requiring Password Change
+AUTH-007	Smart Card Required Accounts
+AUTH-008	Service Accounts SPN Set
+AUTH-009	Protected Users Group Members
+AUTH-010	Accounts Using DES Encryption
+AUTH-011	Default Password Policy
+AUTH-012	Fine-Grained Password Policies
+AUTH-013	Accounts with userPassword Attribute
+AUTH-014	Accounts with unixUserPassword
+AUTH-015	gMSA Accounts Best Practice
+AUTH-016	Accounts with altSecurityIdentities
+AUTH-017	Accounts Not Allowed to Delegate
+AUTH-018	Admin Accounts Without Delegation Protection
+AUTH-019	Native Administrator Account
+AUTH-020	Native Guest Account
+AUTH-021	Accounts with Description Field
+AUTH-022	Accounts with Logon Scripts
+AUTH-023	Accounts with Home Directories
+AUTH-024	Accounts with Profile Paths
+AUTH-025	Accounts with Workstation Restrictions
+AUTH-026	Accounts with Logon Hours Restrictions
+AUTH-027	Accounts with Account Expiration
+AUTH-028	Authentication Policy Silos
+AUTH-029	Anonymous LDAP Access Check
+AUTH-030	KRBTGT Password Age
+AUTH-031	Accounts with Never Expiring Passwords
+AUTH-032	Accounts with Blank Passwords
+AUTH-033	Privileged Accounts with Stale Passwords
+BCK-001	AD Backup Status
+BCK-002	System State Backup Validation
+BCK-003	Tombstone Lifetime Check
+BCK-004	Deleted Object Recovery Capability
+BCK-005	AD Recycle Bin Status
+BCK-006	Backup Retention Policy
+BCK-007	Disaster Recovery Plan Validation
+BCK-008	Backup Encryption Status
+CERT-001	Certificate templates (configuration partition listing)
+CERT-002	ESC1 Templates Allowing SAN Specification
+CERT-003	ESC2 Templates with Any Purpose EKU
+CERT-004	ESC3 Templates with Certificate Request Agent
+CERT-005	ESC4 Templates with Weak Access Control
+CERT-006	Templates Allowing Client Authentication
+CERT-007	Templates Allowing Smart Card Logon
+CERT-008	Templates Allowing PKINIT Client Auth
+CERT-009	Templates Allowing Code Signing
+CERT-010	Templates Without Manager Approval
+CERT-011	Templates Without Authorized Signatures Required
+CERT-012	Enterprise Certificate Authorities
+CERT-013	NTAuth Certificate Store
+CERT-014	Trusted Root CAs in AD
+CERT-015	Templates with No Expiration Validation
+CERT-016	Templates Allowing Key Archival
+CERT-017	Templates with Exportable Private Key
+CERT-018	Templates for Machine Certificates
+CERT-019	Templates Allowing Renewal with Different Key
+CERT-020	ESC6 CA Allowing SAN in Requests
+CERT-021	ESC7 CA with Manage Certificates Permission
+CERT-022	ESC8 NTLM Relay to Web Enrollment
+CERT-023	Accounts with Certificate Published
+CERT-024	Computers with Certificate Published
+CERT-025	CRL Distribution Points
+CERT-026	[DACL review] Certificate templates (nTSecurityDescriptor for enrollment ACL analysis)
+CERT-027	Offline Root CA References
+CERT-028	AIA Authority Information Access Objects
+CERT-029	Templates with Subject Name from AD
+CERT-030	[Listing] Template schema version fields (all templates)
+CERT-031	[Listing] Certificate templates (full forest set; manual ESC review)
+CERT-032	[Listing] Templates for enrollment rights review (full set)
+CERT-033	Client authentication templates (same LDAP scope as CERT-006)
+CERT-034	Certificate Authority Health
+CERT-035	CRL Distribution Point Availability
+CERT-036	OCSP Responder Status
+CERT-037	[Listing] Templates for version drift review (full set)
+CERT-038	[Listing] Templates for autoenrollment policy alignment (full set)
+CERT-039	Templates with Certificate Request Agent EKU
+CERT-040	Web Enrollment Security
+CERT-041	Templates with supersession reference (msPKI-Template-Supersede)
+CERT-042	CA Certificate Expiration
+CERT-043	Templates with minimal key size at or below 1024 bits (LDAP)
+CERT-044	[Listing] Template objects for validity period review (LDAP cannot compare periods)
+CERT-045	CA Audit Settings
+CERT-046	[DACL review] Templates with security descriptor (ACL triage)
+CERT-047	CA Database Backup Status
+CERT-048	Certificate Revocation Reasons
+CERT-049	[Listing] Smart card logon template review (full set; see CERT-007 for EKU-specific)
+CERT-050	Templates with Any Purpose or missing EKU (ESC2-style LDAP signal)
+CERT-051	CA Role Separation
+CERT-052	[Listing] Subject name policy review (all templates)
+CERT-053	CA Security Descriptor
+CMGMT-001	LAPS Schema Extended
+CMGMT-002	Windows LAPS Schema Extended
+CMGMT-003	Computers Without LAPS Password
+CMGMT-004	Computers with LAPS Inventory
+CMGMT-005	Computers with BitLocker Keys Stored
+CMGMT-006	Computers with Stale Passwords
+CMGMT-007	Computers with Weak Encryption
+CMGMT-008	Computers with Pre Windows 2000 Access
+CMGMT-009	Computers with Unconstrained Delegation
+CMGMT-010	Computers with Constrained Delegation
+CMGMT-011	Computers with Resource Based Constrained Delegation
+CMGMT-012	Computers with Duplicate SPNs
+CMGMT-013	Computers in Default Computers Container
+CMGMT-014	Computers with AdminSDHolder Protection
+CMGMT-015	Computers with Disabled Accounts
+CMGMT-016	Computers Never Logged On
+CMGMT-017	Computers with Expired Passwords
+CMGMT-018	Computers with Password Never Expires
+CMGMT-019	Computers with Reversible Encryption
+CMGMT-020	Computers with DES Encryption Only
+CMGMT-021	Computers with Trusted for Delegation
+CMGMT-022	Computers with Not Delegated Flag
+CMGMT-023	Computers with Smartcard Required
+CMGMT-024	Computers with Password Not Required
+CMGMT-025	Computers with Sensitive Flag
+CMGMT-026	Computers with Primary Group ID Not 515
+CMGMT-027	Computers with SID History
+CMGMT-028	Computers with Null Sessions Allowed
+CMGMT-029	Computers with Anonymous Access
+CMGMT-030	Computers with Legacy Operating Systems
+CMGMT-031	Local Admin Rights Mapping
+CMGMT-032	Computers with Cached Credentials
+CMGMT-033	RDP Access Mapping
+CMGMT-034	PSRemoting Enabled Computers
+CMGMT-035	Computers Without LAPS
+CMGMT-036	LAPS Passwords Expiring Soon
+CMGMT-037	LAPS Read Permissions Audit
+CMP-001	Computers with Unconstrained Delegation
+CMP-002	Computers with Constrained Delegation
+CMP-003	Computers with RBCD Configured
+CMP-004	Computers with LAPS Deployed
+CMP-005	Computers Missing LAPS
+CMP-006	Computers Running Unsupported OS
+CMP-007	Stale Computer Accounts 90 Days
+CMP-008	Computers with adminCount1
+CMP-009	Computers with SIDHistory
+CMP-010	Computers with KeyCredentialLink
+CMP-011	Windows Servers Inventory
+CMP-012	Windows Workstations Inventory
+CMP-013	Computers with S4U Delegation
+CMP-014	Computers with DES-Only Kerberos
+CMP-015	Computers Missing Encryption Types
+CMP-016	Computers with Reversible Encryption
+CMP-017	Computers Trusted as DCs Not Actual DCs
+CMP-018	Computers with Pre-2000 Compatible Access
+CMP-019	Computers Created in Last 7 Days
+CMP-020	Disabled Computer Accounts
+CMP-021	Computers with userPassword Attribute
+CMP-022	Computers with Description Containing Sensitive Info
+CMP-023	Computers in Default Computers Container
+CMP-024	Computers with Service Principal Names
+CMP-025	Computers with AltSecurityIdentities
+CMP-026	Computer Accounts with Old Password 1 Year
+CMP-027	Computers - Windows 10 Versions
+CMP-028	Computers - Windows 11 Versions
+CMP-029	LinuxUnix Computers
+CMP-030	Computers with Managed Password gMSA Hosts
+COMPLY-001	STIG Password Policy Compliance
+COMPLY-002	CIS Benchmark Account Policies
+COMPLY-003	PCI DSS AD Requirements
+COMPLY-004	HIPAA AD Controls
+COMPLY-005	Advanced Audit Policy Validation
+COMPLY-006	Security Event Log Forwarding
+COMPLY-007	Privileged Account Naming Convention
+COMPLY-008	Account Lockout Policy Compliance
+COMPLY-009	Minimum Password Age Compliance
+COMPLY-010	Password History Compliance
+COMPLY-011	Reversible Encryption Disabled
+COMPLY-012	LAN Manager Hash Storage
+COMPLY-013	Anonymous SID Translation
+COMPLY-014	Everyone Permissions Audit
+COMPLY-015	Authenticated Users Permissions
+COMPLY-016	Guest Account Status
+COMPLY-017	Administrator Account Renamed
+COMPLY-018	Audit Policy Success Failure
+COMPLY-019	Security Log Size Compliance
+COMPLY-020	Privileged Account Separation
+DC-001	Domain Controllers Inventory
+DC-002	Domain Functional Level
+DC-003	Forest Functional Level
+DC-003-dup2	DCs with Constrained Delegation
+DC-004	DCs Running Outdated OS 2012 or Earlier
+DC-004-dup2	DFSR SYSVOL Migration Status
+DC-005	FRS SYSVOL Deprecated
+DC-005-dup2	KRBTGT Account Password Age
+DC-006	RODC Inventory
+DC-007	FSMO Role Holders
+DC-008	Schema Master (dMD FSMO holder)
+DC-033	DCs with SMB Signing Disabled
+DC-034	DCs LDAP Signing Not Required
+DC-035	DCs LDAP Channel Binding Disabled
+DC-036	DCs with Expiring Certificates
+DC-037	DCs Replication Failures
+DC-037-dup2	Domain Controllers with Unusual Services
+DC-038	DCs Null Session Enabled
+DC-038-dup2	Domain Controllers with Audit Policy Gaps
+DC-039	DCs with Print Spooler Running
+DC-039-dup2	Event Log Size and Retention
+DC-040	DC Accounts Not Protected
+DC-041	DCs with Weak Kerberos Encryption
+DC-042	DCs with Unsigned LDAP Binds Allowed
+DC-043	DCs Not Configured for Secure Time Sync
+DC-044	DCs with Excessive Open Ports
+DC-046	DCs Missing Critical Security Updates
+DC-047	DCs with Weak Audit Policy
+DC-048	DCs with RDP Enabled
+DC-049	DCs with Insecure DNS Configuration
+DC-050	DCs with Disabled Windows Firewall
+DC-051	DCs with Excessive Service Accounts
+DC-052	DCs with Old DSRM Password
+DC-053	DCs with Insecure Share Permissions
+DC-054	DCs with Disabled Security Event Log
+DC-055	DCs with Unsigned Drivers Allowed
+DC-056	DCs with PowerShell v2 Enabled
+DC-057	DCs with Insecure WMI Permissions
+DC-058	DCs with Cached Credentials Excessive
+DC-059	DCs with Anonymous SID Translation Enabled
+DC-060	DCs with Insecure Screensaver Policy
+DCONF-001	Kerberos Encryption Types Domain
+DCONF-002	Recycle Bin Enabled Check
+DCONF-003	ms-DS-MachineAccountQuota Setting
+DCONF-004	Default Domain Password Policy
+DCONF-005	Tombstone Lifetime
+DCONF-006	Anonymous LDAP Access
+DCONF-009	LDAP Signing Requirements
+DCONF-010	LDAP Channel Binding
+DCONF-011	SMB Signing Configuration
+DCONF-012	Null Session Access
+DCONF-013	LM Hash Storage
+DCONF-014	NTLM Authentication Settings
+DCONF-015	Kerberos Ticket Lifetime
+DCONF-016	Kerberos Renewal Lifetime
+DCONF-017	Domain Controller Lockout Threshold
+DCONF-018	Account Lockout Duration
+DCONF-019	Reset Account Lockout Counter
+DCONF-020	Minimum Password Length
+DCONF-021	Password Complexity Requirements
+DCONF-022	Password History Count
+DCONF-023	Maximum Password Age
+DCONF-024	Minimum Password Age
+DCONF-025	Reversible Encryption Policy
+DCONF-026	Domain Rename Status
+DCONF-027	Schema Version Check
+DCONF-028	Forest Trust Information
+DCONF-029	Global Catalog Servers
+DCONF-030	FSMO Role Holders
+DCONF-031	Unexpected Schema Modifications
+GPO-001	GPO Inventory All
+GPO-002	GPOs by Organizational Unit
+GPO-003	GPOs with Both Settings Disabled
+GPO-004	GPOs Missing SYSVOL Path
+GPO-005	GPOs with WMI Filters
+GPO-006	GPO Containing Password Naming
+GPO-007	Default Domain Policy
+GPO-008	Default Domain Controllers Policy
+GPO-009	GPOs Created Recently 7 Days
+GPO-010	GPOs Modified Recently
+GPO-011	Domain Password Policy from Domain Object
+GPO-012	Fine-Grained Password Policies
+GPO-013	OUs Without GPO Links
+GPO-014	OUs Blocking Inheritance
+GPO-015	GPOs with Enforced Links
+GPO-016	Starter GPOs
+GPO-017	WMI Filters Inventory
+GPO-018	GPO Links on Domain Root
+GPO-019	GPO Links on Sites
+GPO-020	Credential Guard GPO Check
+GPO-021	AppLocker GPO Check
+GPO-022	BitLocker GPO Check
+GPO-023	LAPS GPO Check
+GPO-024	Audit Policy GPO Check
+GPO-025	Firewall GPO Check
+GPO-026	PowerShell Logging GPO Check
+GPO-027	Security Baseline GPO Check
+GPO-028	WSUS GPO Check
+GPO-029	UAC GPO Check
+GPO-030	Remote Desktop GPO Check
+GPO-031	GPO Modification History
+GPO-032	GPOs with Weak Permissions
+GPO-033	Unlinked GPOs
+GPO-034	GPOs with Scripts
+GPO-035	GPO Security Filtering Issues
+GPO-036	WMI Filter Validation
+GPO-037	GPO Link Order Conflicts
+GPO-038	Loopback Processing Misconfigurations
+GPO-039	Slow Link Detection Settings
+GPO-040	GPO Processing Errors
+GPO-041	GPO Replication Issues
+GPO-042	GPO Backup Status
+GPO-043	GPO Preferences Passwords
+GPO-044	GPO Scheduled Tasks Security
+GPO-045	GPO Registry Settings Dangerous
+GPO-046	GPO Software Installation Issues
+GPO-047	GPO Folder Redirection Security
+GPO-048	GPO Startup Shutdown Scripts
+GPO-049	GPO Enforcement Not Set
+GPO-050	GPO Block Inheritance Issues
+GPO-ACL-001	SYSVOL Policies insecure ACLs
+INFRA-001	Sites Configuration
+INFRA-002	Subnets Configuration
+INFRA-003	DNS Zones
+INFRA-004	Organizational Units OU Inventory
+INFRA-005	Replication Partners
+INFRA-006	Replication Metadata
+INFRA-007	Site Links Configuration
+INFRA-008	Site Link Bridges
+INFRA-009	Connection Objects
+INFRA-010	Inter Site Topology Generator
+INFRA-011	DNS Forwarders Configuration
+INFRA-012	DNS Zone Transfers
+INFRA-013	DNS Dynamic Updates
+INFRA-014	DNS Scavenging Settings
+INFRA-015	DNS Aging Configuration
+INFRA-016	DHCP Servers in AD
+INFRA-017	WINS Servers Configuration
+INFRA-018	Time Server Configuration
+INFRA-019	PDC Emulator Time Source
+INFRA-020	Bridgehead Servers
+INFRA-021	Preferred Bridgehead Servers
+INFRA-022	Site Coverage
+INFRA-023	Subnet to Site Mapping
+INFRA-024	Orphaned Subnets
+INFRA-025	Overlapping Subnets
+INFRA-026	Empty Sites
+INFRA-027	Sites Without Subnets
+INFRA-028	Universal Group Membership Caching
+INFRA-029	Replication Schedule Configuration
+INFRA-030	Replication Notification Delay
+INFRA-031	DNS Records Pointing to External IPs
+INFRA-032	Wildcard DNS Records
+INFRA-033	Stale DNS Records
+KRB-001	Kerberoastable User Accounts
+KRB-002	AS-REP Roastable Accounts
+KRB-003	Unconstrained Delegation Computers
+KRB-004	Unconstrained Delegation Users
+KRB-005	Constrained Delegation Computers
+KRB-006	Constrained Delegation Users
+KRB-007	Protocol Transition S4U2Self
+KRB-008	Resource-Based Constrained Delegation
+KRB-009	DES-Only Kerberos Users
+KRB-010	DES-Only Kerberos Computers
+KRB-011	Accounts Supporting DES Encryption
+KRB-012	Accounts Without Explicit Encryption Types
+KRB-013	KRBTGT Account
+KRB-014	Domain Kerberos Policy
+KRB-015	Accounts Not Delegated Privileged
+KRB-016	Admin Accounts Without Delegation Protection
+KRB-017	gMSA Accounts
+KRB-018	sMSA Accounts Legacy
+KRB-019	Kerberoastable Accounts with Old Password
+KRB-020	AS-REP Roastable SPN Double Risk
+KRB-021	Non-Expiring Password SPN
+KRB-022	Protected Users Group Members
+KRB-023	Accounts with AES256 Only
+KRB-024	Domain Controllers Encryption Types
+KRB-025	Computers with Protocol Transition
+KRB-026	Trust Accounts TDOs
+KRB-027	Sensitive Accounts Without AES
+KRB-028	SPN Duplicates Check Computers
+KRB-029	Authentication Policy Silos
+KRB-030	Authentication Policies
+KRB-031	Bronze Bit Attack Vulnerable Accounts
+KRB-032	Kerberos Encryption Downgrade Risk
+KRB-033	PAC Validation Disabled
+KRB-034	S4U2Self Abuse Detection
+KRB-035	S4U2Proxy Abuse Detection
+KRB-036	Kerberos AES Not Enforced
+KRB-037	Unconstrained Delegation Computers
+KRB-038	Kerberos Ticket Lifetime Excessive
+KRB-039	KRBTGT Password Age
+KRB-040	Kerberos Armoring Not Enabled
+KRB-041	Service Accounts with Unconstrained Delegation
+KRB-042	Kerberos Pre Auth Not Required Computers
+KRB-043	Duplicate SPNs
+KRB-044	Kerberos Clock Skew Issues
+KRB-045	Protected Users Group Not Used
+LDAP-001	Example: all user objects (domain partition)
+LDAP-002	LDAP Channel Binding Disabled
+LDAP-003	Anonymous LDAP Bind Allowed
+LDAP-004	LDAPS Not Configured
+LDAP-005	LDAP Query Performance Issues
+LDAP-006	LDAP Referral Chasing Issues
+LDAP-007	LDAP Server Certificate Invalid
+LDAP-008	LDAP Connection Limits
+LDAP-009	LDAP Query Policy Weak
+LDAP-010	LDAP Admin Limits Not Set
+LDAP-011	LDAP Null Base Search Allowed
+LDAP-012	LDAP Encryption Downgrade Possible
+LDAP-013	LDAP Audit Logging Disabled
+LDAP-014	LDAP Paged Results Abuse
+LDAP-015	LDAP Bind Redirect Attacks
+NET-001	IPsec Policy Validation
+NET-002	Firewall Rules for AD Ports
+NET-003	Network Segmentation Validation
+NET-004	VLAN Isolation Checks
+NET-005	Broadcast Multicast Issues
+NET-006	DNS Scavenging Configuration
+NET-007	WINS Server Configuration
+NET-008	IPv6 Security Configuration
+NET-009	Network Access Protection
+NET-010	RPC Security Configuration
+PERS-001	DCShadow Attack Indicators
+PERS-002	Golden Ticket Indicators
+PERS-003	Silver Ticket Indicators
+PERS-004	Skeleton Key Malware Detection
+PERS-005	AdminSDHolder Tampering
+PERS-006	DSRM Password Changes
+PERS-007	Malicious SPN Additions
+PERS-008	Hidden Accounts in CN Users
+PERS-009	Backdoor Accounts Detection
+PERS-010	Suspicious Group Modifications
+PERS-011	ACL Backdoors
+PERS-012	Suspicious Object Creation Patterns
+PKI-001	AD-Integrated Certificate Authorities
+PKI-002	Certificate Templates
+PKI-003	Certificate Template Permissions
+PKI-004	Certificate Template Enrollment Rights
+PKI-005	Certificate Template Auto Enrollment
+PKI-006	Certificate Template Subject Name
+PKI-007	Certificate Template SAN Configuration
+PKI-008	Certificate Template EKU Settings
+PKI-009	Certificate Template Validity Period
+PKI-010	Certificate Template Renewal Period
+PKI-011	Certificate Template Key Size
+PKI-012	Certificate Template Cryptographic Providers
+PKI-013	Certificate Template Superseded Templates
+PKI-014	Certificate Template Issuance Requirements
+PKI-015	Certificate Template Application Policies
+PKI-016	Certificate Template Manager Approval
+PKI-017	Certificate Template Authorized Signatures
+PKI-018	Certificate Template Private Key Archival
+PKI-019	Certificate Template Key Attestation
+PKI-020	Enrollment Services
+PKI-021	Enrollment Service Permissions
+PKI-022	CA Certificate Locations
+PKI-023	CA Certificate Revocation Lists
+PKI-024	CA AIA Locations
+PKI-025	CA OCSP Responders
+PKI-026	CA Key Recovery Agents
+PKI-027	CA Certificate Managers
+PKI-028	CA Auditors
+PKI-029	NTAuth Store Certificates
+PKI-030	Enterprise Root CA Certificates
+PRV-001	Membership Domain Admins
+PRV-002	Membership Enterprise Admins
+PRV-003	Membership Schema Admins
+PRV-004	Membership Administrators
+PRV-005	Membership Account Operators
+PRV-006	Membership Backup Operators
+PRV-007	Membership Server Operators
+PRV-008	Membership Print Operators
+PRV-009	Membership DnsAdmins
+PRV-010	Membership Group Policy Creator Owners
+PRV-011	Membership Cert Publishers
+PRV-012	Membership Remote Desktop Users
+PRV-013	Membership Key Admins
+PRV-014	Membership Enterprise Key Admins
+PRV-015	Privileged Users adminCount1
+PRV-016	Privileged Computers adminCount1
+PRV-017	Admin Accounts with Non-Expiring Password
+PRV-018	Admin Accounts with SPNs Kerberoasting Risk
+PRV-019	Admin Accounts Not in Protected Users
+PRV-020	Admin Accounts That Can Be Delegated
+PRV-021	Protected Users Group Members
+PRV-022	Denied RODC Password Replication Group
+PRV-023	Allowed RODC Password Replication Group
+PRV-024	Pre-Windows 2000 Compatible Access Members
+PRV-025	Incoming Forest Trust Builders
+PRV-026	AdminSDHolder Object
+PRV-027	Exchange Windows Permissions Group
+PRV-028	Exchange Trusted Subsystem Group
+PRV-029	Admin Accounts with Reversible Encryption
+PRV-030	Admin Accounts with DES Encryption
+PRV-031	PAW Compliance Check
+PRV-032	Admin Logons from Non PAW
+PUBRES-001	Printers Published in AD
+PUBRES-002	Shared Folders Published
+PUBRES-003	Shared Folder Permissions
+PUBRES-004	Shared Folder UNC Paths
+PUBRES-005	Printer Queue Permissions
+PUBRES-006	Printer Driver Versions
+PUBRES-007	Printer Server Names
+PUBRES-008	Printer Share Names
+PUBRES-009	Printer Locations
+PUBRES-010	Printer Port Names
+PUBRES-011	RPC Services Published
+PUBRES-012	RPC Service Bindings
+PUBRES-013	RPC Profiles
+PUBRES-014	RPC Profile Elements
+PUBRES-015	RPC Groups
+PUBRES-016	RPC Servers
+PUBRES-017	RPC Server Elements
+PUBRES-018	Service Connection Points
+PUBRES-019	SCP Service Bindings
+PUBRES-020	SCP Keywords
+PUBRES-021	Remote Desktop Connection Brokers
+PUBRES-022	Exchange Servers Published
+PUBRES-023	MSMQ Queue Aliases
+PUBRES-024	MSMQ Queues
+PUBRES-025	MSMQ Settings
+PUBRES-026	MSMQ Enterprise Settings
+PUBRES-027	MSMQ Site Links
+PUBRES-028	Application Settings
+PUBRES-029	Application Site Settings
+PUBRES-030	Published Resources Inventory
+SAMPLE-SCHEMA-NC	Example: schema partition root search
+SECACCT-001	Password Settings Objects Fine-Grained
+SECACCT-003	Password Settings Precedence
+SECACCT-004	PSO Minimum Password Length
+SECACCT-005	PSO Password Complexity
+SECACCT-006	PSO Password History
+SECACCT-007	PSO Maximum Password Age
+SECACCT-008	PSO Minimum Password Age
+SECACCT-009	PSO Lockout Threshold
+SECACCT-010	PSO Lockout Duration
+SECACCT-011	PSO Lockout Observation Window
+SECACCT-012	PSO Reversible Encryption
+SECACCT-013	PSO Applied To Groups
+SECACCT-014	PSO Applied To Users
+SECACCT-015	Managed Service Accounts
+SECACCT-016	Group Managed Service Accounts
+SECACCT-017	gMSA Password Interval
+SECACCT-018	gMSA Managed Password
+SECACCT-019	gMSA Principals Allowed to Retrieve
+SECACCT-020	gMSA DNS Host Name
+SECACCT-021	gMSA Service Principal Names
+SECACCT-022	Authentication Policy Silos
+SECACCT-023	Authentication Policies
+SECACCT-024	Central Access Rules
+SECACCT-025	Central Access Policies
+SECACCT-026	Resource Property Lists
+SECACCT-027	Resource Properties
+SECACCT-028	Claim Types
+SECACCT-029	Claims Transformation Policies
+SECACCT-030	Claims Transformation Rules
+SMB-001	SMBv1 Enabled
+SMB-002	SMB Signing Not Required
+SMB-003	SMB Encryption Not Enabled
+SMB-004	Anonymous SMB Shares
+SMB-005	Null Session Enumeration Possible
+SMB-006	SMB Guest Access Enabled
+SMB-007	SMB Relay Attack Vulnerable
+SMB-008	SMB Shares with Weak Permissions
+SMB-009	Administrative Shares Exposed
+SMB-010	SMB Dialect Negotiation Weak
+SMB-011	SMB Compression Vulnerabilities
+SMB-012	SMB Audit Logging Disabled
+SVC-001	Service Accounts SPN Inventory
+SVC-002	Service Accounts with Password Never Expires
+SVC-003	Service Accounts with Kerberos Pre-Auth Disabled
+SVC-004	Service Accounts with DES Only
+SVC-005	Service Accounts Advertising DES Support msDS-SupportedEncryptionTypes
+SVC-006	Service Accounts Missing msDS-SupportedEncryptionTypes
+SVC-007	Service Accounts Trusted for Delegation Unconstrained
+SVC-008	Service Accounts with Constrained Delegation Targets
+SVC-009	Service Accounts Marked adminCount1
+SVC-010	Service Accounts with SIDHistory
+SVC-011	Service Accounts with Password Not Required
+SVC-012	Service Accounts with Reversible Encryption Allowed
+SVC-013	Service Accounts with KeyCredentialLink
+SVC-014	Service Accounts with Script Path
+SVC-015	Service Accounts with Home Directory
+SVC-016	Service Accounts with Profile Path
+SVC-017	Service Accounts with Must Change Password at Next Logon
+SVC-018	Service Accounts not Marked Sensitive and Cannot be Delegated
+SVC-019	Service Accounts with altSecurityIdentities
+SVC-020	Service Accounts with AccountExpires
+SVC-021	SPN Accounts with Do not require Kerberos preauth Non-expiring password
+SVC-022	SPN Accounts with Unconstrained Delegation Non-expiring password
+SVC-023	SPN Accounts with Constrained Delegation S4U
+SVC-024	Service Accounts Missing Description
+SVC-025	Service Accounts with LogonWorkstations Restriction
+SVC-026	Service Accounts with Account is Locked Out
+SVC-027	Service Accounts with Email Attribute
+SVC-028	Service Accounts with UPN Suffix Outside Standard
+SVC-029	Service Accounts with Password Not Required Duplicate Guard
+SVC-030	Service Accounts Missing AES256 Support Inventory
+SVC-031	Service Accounts with Interactive Logon
+TMGMT-001	Trust Relationships
+TMGMT-002	Trusts Without SID Filtering
+TMGMT-003	Orphaned Foreign Security Principals
+TMGMT-004	Trust Authentication Level
+TMGMT-005	Trust Direction Configuration
+TMGMT-006	Trust Type Classification
+TMGMT-007	Trust Transitivity Settings
+TMGMT-008	Forest Trust Selective Authentication
+TMGMT-009	External Trust Relationships
+TMGMT-010	Realm Trust Relationships
+TMGMT-011	Trust Password Last Set
+TMGMT-012	Trust Encryption Types
+TMGMT-013	Trust Quarantine Status
+TMGMT-014	Trust Attributes Review
+TMGMT-015	Cross Forest Trust Validation
+TMGMT-016	Trust Partner Domain Controllers
+TMGMT-017	Trust Routing Status
+TMGMT-018	Trust Name Suffix Routing
+TMGMT-019	Trust Forest Trust Info
+TMGMT-020	Trust Posix Offset
+TMGMT-021	Trust Supported Encryption Types
+TMGMT-022	Orphaned Trust Objects
+TMGMT-023	Disabled Trust Relationships
+TMGMT-024	Trust SID Filtering Bypass
+TMGMT-025	Trust TGT Delegation
+TMGMT-026	Trust RC4 Encryption Usage
+TMGMT-027	Trust Authentication Policies
+TMGMT-028	Trust Claims Transformation
+TMGMT-029	Trust Resource Property Lists
+TMGMT-030	Trust Central Access Policies
+TMGMT-031	Trust Relationship Changes
+TMGMT-032	Trusts with Weak Encryption
+TRST-001	Trust Inventory All Trusts
+TRST-002	Outbound Trusts
+TRST-003	Inbound Trusts
+TRST-004	Bidirectional Trusts
+TRST-005	External Trusts Non-Forest
+TRST-006	Forest Trusts
+TRST-007	Trusts Without SID Filtering
+TRST-008	Trusts with SID History Enabled
+TRST-009	Trusts Without Selective Authentication
+TRST-010	Trusts with Selective Authentication
+TRST-011	RealmMIT Kerberos Trusts
+TRST-012	Cross-Forest Trusts Encryption Types
+TRST-013	Trust Partner Domains
+TRST-014	Trusts Created Recently 30 Days
+TRST-015	Trust Security Identifiers
+TRST-016	Parent-Child Domain Trusts
+TRST-017	Shortcut Trusts
+TRST-018	Foreign Security Principals
+TRST-019	Orphaned Foreign Security Principals
+TRST-020	Trusts with RC4 Only
+TRST-021	Trust Attributes Analysis
+TRST-022	Downlevel Trust Accounts
+TRST-023	Cross-Domain Group Memberships
+TRST-024	Trusts Last Modified
+TRST-025	Domain Controllers from Trusted Domains
+TRST-026	Trust Attributes - Forest Transitive
+TRST-027	Trust Attributes - Within Forest
+TRST-028	Trust Objects Without SecurityIdentifier
+TRST-029	Trust Objects Without FlatName
+TRST-030	Trust Authentication Summary
+USR-001	Accounts Vulnerable to ASRepRoasting
+USR-002	Accounts Vulnerable to Kerberoasting
+USR-003	Accounts Vulnerable to Timeroasting
+USR-004	Admin Accounts Not in Protected Users Group
+USR-005	Admin Accounts That Can Be Delegated
+USR-006	Accounts with DES Encryption Only
+USR-007	Accounts with altSecurityIdentities
+USR-008	Accounts with userPassword Attribute
+USR-009	Accounts with unixUserPassword Attribute
+USR-010	Accounts with unicodePwd Readable
+USR-011	Accounts with msDS-HostServiceAccount
+USR-012	Accounts with Blank Password Allowed
+USR-013	Locked Accounts
+USR-014	Accounts with Never Expiring Passwords
+USR-015	Accounts with Reversible Password Encryption
+USR-016	Inactive Accounts 90 Days
+USR-017	Schema Admins Members
+USR-018	Enterprise Admins Members
+USR-019	Domain Admins Members
+USR-020	Accounts That Had Admin Rights in Past
+USR-021	Accounts with Password Not Required
+USR-022	Pre-Windows 2000 Compatible Access Members
+USR-023	Users in Privilege Escalation Groups
+USR-024	Users with Description Field
+USR-025	Native Administrator Account Recent Use
+USR-026	Group Managed Service Accounts gMSA
+USR-027	Standalone Managed Service Accounts sMSA
+USR-028	Protected Users Group Members
+USR-029	Accounts with SID History
+USR-030	Accounts with KeyCredentialLink Shadow Credentials
+USR-031	Accounts with Constrained Delegation
+USR-032	Accounts Trusted for Delegation
+USR-033	Recently Created Privileged Accounts
+USR-034	Accounts with Unusual Group Memberships
+USR-035	Accounts with Suspicious Naming Patterns

@@ -19,6 +19,8 @@ export interface NormalizedFinding {
     Category: string;
     Description: string;
     Impact: string;
+    Entities?: string[];
+    Evidence?: Record<string, unknown>;
 }
 export declare function severityRank(s: string): number;
 /** Tiered structure sent to the LLM. */

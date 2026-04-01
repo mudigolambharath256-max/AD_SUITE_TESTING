@@ -14,16 +14,7 @@ const scanService_1 = require("../services/scanService");
 const settingsService_1 = require("../services/settingsService");
 const repoRoot_1 = require("../utils/repoRoot");
 const scanExportCsv_1 = require("../utils/scanExportCsv");
-function resolveChecksJsonPath(rootDir) {
-    const envPath = process.env.AD_SUITE_CHECKS_JSON || process.env.CHECKS_JSON_PATH;
-    if (envPath) {
-        if (path_1.default.isAbsolute(envPath)) {
-            return envPath;
-        }
-        return path_1.default.join(rootDir, envPath);
-    }
-    return path_1.default.join(rootDir, 'checks.json');
-}
+const catalogPaths_1 = require("../utils/catalogPaths");
 class ScanController {
     constructor() {
         this.getScans = async (_req, res) => {
@@ -73,7 +64,8 @@ class ScanController {
             });
             const rootDir = (0, repoRoot_1.getRepoRoot)();
             const scriptPath = path_1.default.join(rootDir, 'Invoke-ADSuiteScan.ps1');
-            const checksJsonPath = resolveChecksJsonPath(rootDir);
+            const checksJsonPath = (0, catalogPaths_1.resolveChecksJsonPath)(rootDir);
+            const checksOverridesPath = (0, catalogPaths_1.resolveChecksOverridesPath)(rootDir);
             const outputDir = path_1.default.join(rootDir, 'out', `scan-${scanId}`);
             if (!fs_1.default.existsSync(scriptPath)) {
                 logger_1.logger.error(`Scan script not found at: ${scriptPath}`);
@@ -82,6 +74,13 @@ class ScanController {
             if (!fs_1.default.existsSync(checksJsonPath)) {
                 logger_1.logger.error(`Checks catalog not found at: ${checksJsonPath}`);
                 return res.status(500).json({ error: `Checks catalog not found at ${checksJsonPath}` });
+            }
+            const overridesEnv = process.env.AD_SUITE_CHECKS_OVERRIDES || process.env.CHECKS_OVERRIDES_PATH;
+            if (overridesEnv && !checksOverridesPath) {
+                const attempted = path_1.default.isAbsolute(overridesEnv)
+                    ? overridesEnv
+                    : path_1.default.join(rootDir, overridesEnv);
+                logger_1.logger.warn(`Checks overrides env set but file not found: ${attempted}`);
             }
             const settings = await settingsService_1.settingsService.getSettings();
             try {
@@ -92,7 +91,8 @@ class ScanController {
                     startedAt: new Date().toISOString(),
                     categories: categories || [],
                     includeCheckIdsCount: includeCheckIds?.length ?? 0,
-                    checksJsonPath
+                    checksJsonPath,
+                    checksOverridesPath: checksOverridesPath ?? null
                 };
                 await promises_1.default.writeFile(path_1.default.join(outputDir, 'scan.meta.json'), JSON.stringify(metaSidecar, null, 2), 'utf-8');
             }
@@ -110,6 +110,9 @@ class ScanController {
             args.push('-File', scriptPath);
             args.push('-ChecksJsonPath', checksJsonPath);
             args.push('-OutputDirectory', outputDir);
+            if (checksOverridesPath) {
+                args.push('-ChecksOverridesPath', checksOverridesPath);
+            }
             if (categories && Array.isArray(categories) && categories.length > 0) {
                 categories.forEach((cat) => {
                     args.push('-Category', cat);
@@ -184,6 +187,7 @@ class ScanController {
                 id: scanId,
                 status: 'running',
                 checksJsonPath,
+                checksOverridesPath: checksOverridesPath ?? null,
                 outputDir
             });
         };

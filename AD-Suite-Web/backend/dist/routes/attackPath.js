@@ -5,32 +5,69 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const auth_1 = require("../middleware/auth");
+const auditMiddleware_1 = require("../middleware/auditMiddleware");
 const logger_1 = require("../utils/logger");
 const attackPathPayload_1 = require("../utils/attackPathPayload");
 const router = express_1.default.Router();
 router.use(auth_1.authenticate);
-const SYSTEM_PROMPT = `You are an expert Active Directory Security Architect and Red Team lead.
-I am providing you with security findings from an AD Security Suite assessment.
-
-The user message contains a JSON object with:
-- "summary": counts by severity/category and top checks by volume (for context).
-- "groupedFindings": deduplicated groups; each has "occurrenceCount" and representative "samples" (redacted). Use counts to infer scale.
+router.use(auditMiddleware_1.auditMutations);
+const SYSTEM_PROMPT = `You are an expert Active Directory penetration tester and security architect.
+You will receive deduplicated findings from an automated AD security assessment.
 
 ### YOUR MISSION
-1. Identify **Lateral Movement** and **Privilege Escalation** paths.
-2. Chain multiple low/medium/high findings together to form a "Critical Path" (e.g., a service account with high privileges + a cleartext password exposure).
-3. Identify **Choke Points**: Systems or accounts that, if compromised, grant disproportionate access (e.g., Tier-0 assets, Domain Controllers, GPO editors).
-4. Provide a Narrative and a Visual Graph (Mermaid).
+Produce a structured attack path analysis with these outputs:
+1. EXECUTIVE SUMMARY — 2-3 sentences. Overall risk level and single most critical finding.
+2. KILL CHAINS — Ordered list of attack chains, each must:
+   - Start from an unprivileged or external position
+   - Chain at least 2 findings together using → notation in "chain"
+   - Terminate at a Tier-0 asset (Domain Admin, KRBTGT, DC, GPO, AdminSDHolder)
+   - In steps[].findingId use the real finding ID (e.g. KRB-002, ACC-034)
+   - In steps[].attackerAction describe the realistic attacker action at that step
+3. CHOKE POINTS — Max 5. Accounts or systems that appear in multiple chains.
+4. IMMEDIATE ACTIONS — Top 3 remediations ordered by: (severity × occurrence count).
+
+### KILL CHAINS VS MERMAID (critical)
+- Finding IDs belong in killChains (chain string, steps[].findingId), chokePoints, immediateActions, and executiveSummary—not inside Mermaid node boxes.
+- The Mermaid diagram is an ENTITY attack graph (who/what is abused), not a list of check codes.
+
+### MERMAID GRAPH RULES — follow exactly or the render will break:
+- Use graph TD (top-down)
+- Output MUST include MULTIPLE SUBGRAPHS: one subgraph per kill chain (Chain1, Chain2, ...).
+- Each subgraph MUST visualize the corresponding killChains[i] as an ordered entity path.
+- Per-chain limit: max 15 nodes. Overall limit: max 80 nodes.
+- Node IDs: alphanumeric only (e.g. N1, A2, EXT). No hyphens in node IDs.
+- Node labels (inside brackets) MUST be ENTITY TOKENS from the payload only: U001, C002, G003, T001, GPO001, OU001, CA001, SPN001, etc.—matching tokenized Entities/Evidence in the JSON. Do NOT emit real names.
+- FORBIDDEN inside any node label or as a standalone node label: CheckId-style strings (anything like ACC-025, GPO-001, KRB-002, LDAP-003, ADCS-ESC1, DCONF-001, CERT-001, COMPLY-001). Those are not entities.
+- If you need an "external / unprivileged starting point" with no entity token, use node ID EXT or START and label EXT or START only.
+- Edges carry the attack: use short attacker-action words in edge labels, e.g. -->|Kerberoast|, -->|DCSync|, -->|Enroll|. Optional trailing ref without hyphens, e.g. via KRB002, is allowed if it fits.
+- No parentheses, colons, slashes, or backslashes inside node labels.
+- Every node must appear in at least one edge.
 
 ### OUTPUT FORMAT
-You MUST return a JSON object exactly matching this format:
+Return ONLY valid JSON with these keys:
 {
-    "narrative": "Markdown string with ## Headings. Focus on 'The Big Picture' and specific 'Kill Chains'.",
-    "mermaidChart": "A valid Mermaid.js graph string (graph TD). Example: node1[User A] -- Exploit --> node2[Admin B]. Use descriptive labels."
-}
-
-DO NOT wrap the response in markdown blocks. Return ONLY the JSON object.`;
-router.post('/analyze', async (req, res, next) => {
+  "executiveSummary": {
+    "riskLevel": "Low|Medium|High|Critical",
+    "mostCriticalFindingId": "STRING",
+    "text": "STRING"
+  },
+  "killChains": [
+    {
+      "title": "STRING",
+      "chain": "FindingA → FindingB → FindingC",
+      "steps": [{ "findingId": "STRING", "attackerAction": "STRING" }],
+      "endTier0Objective": "DomainAdmin|KRBTGT|DomainController|GPOEdit|AdminSDHolder|EnterpriseAdmin"
+    }
+  ],
+  "chokePoints": [
+    { "entity": "STRING", "whyHighLeverage": "STRING", "relatedFindingIds": ["STRING"] }
+  ],
+  "immediateActions": [
+    { "action": "STRING", "targets": ["STRING"], "relatedFindingIds": ["STRING"], "expectedImpact": "STRING" }
+  ],
+  "mermaidChart": "graph TD\\nA1[... ] -->|...| B1\\n..."
+}`;
+router.post('/analyze', (0, auth_1.authorize)('admin', 'analyst'), async (req, res, next) => {
     try {
         const { findings, llmProvider, model, apiKey } = req.body;
         if (!findings || !Array.isArray(findings) || findings.length === 0) {
@@ -48,7 +85,7 @@ router.post('/analyze', async (req, res, next) => {
             model
         });
         const startTime = Date.now();
-        const userPrompt = `Target AD Environment Assessment Data (tiered, deduplicated, redacted):\n\n${userPromptJson}`;
+        const userPrompt = `Target AD Environment Assessment Data (tiered, deduplicated, redacted):\n\n${userPromptJson}\n\nMERMAID: In samples[].Entities and Evidence, entity values are tokenized (U-prefix users, C computers, G groups, templates, GPO, OU, CA, SPN). The mermaidChart must use those same tokens as node labels—not CheckId strings.`;
         let llmResponse = '';
         if (llmProvider === 'openai') {
             if (!apiKey)
@@ -65,8 +102,10 @@ router.post('/analyze', async (req, res, next) => {
                     ]
                 })
             });
-            if (!response.ok)
-                throw new Error(`OpenAI HTTP Error: ${response.status}`);
+            if (!response.ok) {
+                const errText = await response.text().catch(() => '');
+                throw new Error(`OpenAI HTTP ${response.status}: ${errText || '(no body)'}`);
+            }
             const responseData = await response.json();
             const data = responseData;
             llmResponse = data.choices[0].message.content;
@@ -88,8 +127,10 @@ router.post('/analyze', async (req, res, next) => {
                     messages: [{ role: 'user', content: userPrompt }]
                 })
             });
-            if (!response.ok)
-                throw new Error(`Anthropic Error: ${response.status}`);
+            if (!response.ok) {
+                const errText = await response.text().catch(() => '');
+                throw new Error(`Anthropic HTTP ${response.status}: ${errText || '(no body)'}`);
+            }
             const responseData = await response.json();
             const data = responseData;
             llmResponse = data.content[0].text;
@@ -107,8 +148,10 @@ router.post('/analyze', async (req, res, next) => {
                     format: 'json'
                 })
             });
-            if (!response.ok)
-                throw new Error(`Ollama Error: ${response.status}`);
+            if (!response.ok) {
+                const errText = await response.text().catch(() => '');
+                throw new Error(`Ollama HTTP ${response.status}: ${errText || '(no body)'}`);
+            }
             const responseData = await response.json();
             const data = responseData;
             llmResponse = data.response;
@@ -121,8 +164,11 @@ router.post('/analyze', async (req, res, next) => {
         try {
             const parsed = JSON.parse(llmResponse);
             return res.json({
-                narrative: parsed.narrative || "No narrative generated.",
-                mermaidChart: parsed.mermaidChart || "",
+                executiveSummary: parsed.executiveSummary ?? null,
+                killChains: Array.isArray(parsed.killChains) ? parsed.killChains : [],
+                chokePoints: Array.isArray(parsed.chokePoints) ? parsed.chokePoints : [],
+                immediateActions: Array.isArray(parsed.immediateActions) ? parsed.immediateActions : [],
+                mermaidChart: parsed.mermaidChart || '',
                 metadata: {
                     provider: llmProvider,
                     duration: `${duration}s`,
@@ -137,7 +183,7 @@ router.post('/analyze', async (req, res, next) => {
                 }
             });
         }
-        catch (e) {
+        catch {
             return res.status(500).json({ message: 'LLM failed to return valid JSON', raw: llmResponse });
         }
     }

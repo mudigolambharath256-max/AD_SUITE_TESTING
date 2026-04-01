@@ -1,0 +1,30 @@
+{
+  "STIG_PASSWORD": {
+    "minPwdLength": { "min": 15 },
+    "pwdHistoryLength": { "min": 24 },
+    "lockoutThreshold": { "min": 3 },
+    "maxPwdAgeNeverWeak": true,
+    "reversibleEncryptionBit": { "mask": 128 }
+  },
+  "CIS_L1_PASSWORD": {
+    "minPwdLength": { "min": 14 },
+    "pwdHistoryLength": { "min": 24 },
+    "lockoutThreshold": { "min": 5 },
+    "maxPwdAgeNeverWeak": true,
+    "reversibleEncryptionBit": { "mask": 128 }
+  },
+  "PCI_PASSWORD": {
+    "minPwdLength": { "min": 12 },
+    "pwdHistoryLength": { "min": 4 },
+    "lockoutThreshold": { "min": 6 },
+    "maxPwdAgeNeverWeak": true,
+    "reversibleEncryptionBit": { "mask": 128 }
+  },
+  "HIPAA_PASSWORD": {
+    "minPwdLength": { "min": 8 },
+    "pwdHistoryLength": { "min": 24 },
+    "lockoutThreshold": { "min": 1 },
+    "maxPwdAgeNeverWeak": true,
+    "reversibleEncryptionBit": { "mask": 128 }
+  }
+}

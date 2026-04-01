@@ -196,6 +196,15 @@ function Test-ADSuiteCatalogIntegrity {
             if (-not $c.ldapFilter) { $errors.Add("$id : ldap engine requires 'ldapFilter'.") }
         } elseif ($eng -eq 'filesystem') {
             if (-not $c.filesystemKind) { $errors.Add("$id : filesystem engine requires 'filesystemKind'.") }
+            else {
+                $fk = [string]$c.filesystemKind
+                if ($fk -eq 'SysvolGptTmplSecedit') {
+                    $gr = $c.gptTmplRules
+                    if ($null -eq $gr -or @($gr).Count -eq 0) {
+                        $errors.Add("$id : filesystemKind SysvolGptTmplSecedit requires non-empty 'gptTmplRules'.")
+                    }
+                }
+            }
         } elseif ($eng -eq 'adcs') {
             if (-not $c.adcsCheck) {
                 $errors.Add("$id : adcs engine requires 'adcsCheck' (ESC1..ESC8).")
@@ -412,6 +421,138 @@ function Test-UserAccountControlMask {
     return $true
 }
 
+function Convert-ADSuiteAdsValueToInt64 {
+    param($Raw)
+    if ($null -eq $Raw) { return $null }
+    try {
+        if ($Raw -is [byte[]] -and $Raw.Length -ge 8) {
+            if ([System.BitConverter]::IsLittleEndian) {
+                return [System.BitConverter]::ToInt64($Raw, 0)
+            }
+        }
+        $s = if ($Raw -is [System.Array] -and $Raw.Length -gt 0) { [string]$Raw[0] } else { [string]$Raw }
+        if ([string]::IsNullOrWhiteSpace($s) -or $s -eq 'N/A') { return $null }
+        return [int64]::Parse($s, [System.Globalization.NumberStyles]::Any, [System.Globalization.CultureInfo]::InvariantCulture)
+    } catch {
+        return $null
+    }
+}
+
+function Test-ADSuiteLdapFindingCondition {
+    param(
+        $RawValue,
+        $Condition
+    )
+    if ($null -eq $Condition) { return $true }
+    $op = [string]$Condition.operator
+    if ([string]::IsNullOrWhiteSpace($op)) { return $true }
+    $cmp = $Condition.compare
+    $i64 = Convert-ADSuiteAdsValueToInt64 -Raw $RawValue
+    switch ($op.ToLowerInvariant()) {
+        'eq' {
+            if ($null -eq $i64) { return $false }
+            return ([int64]$i64 -eq [int64]$cmp)
+        }
+        'ne' {
+            if ($null -eq $i64) { return $false }
+            return ([int64]$i64 -ne [int64]$cmp)
+        }
+        'gt' {
+            if ($null -eq $i64) { return $false }
+            return ([int64]$i64 -gt [int64]$cmp)
+        }
+        'gte' {
+            if ($null -eq $i64) { return $false }
+            return ([int64]$i64 -ge [int64]$cmp)
+        }
+        'lt' {
+            if ($null -eq $i64) { return $false }
+            return ([int64]$i64 -lt [int64]$cmp)
+        }
+        'lte' {
+            if ($null -eq $i64) { return $false }
+            return ([int64]$i64 -le [int64]$cmp)
+        }
+        'bitandnonzero' {
+            if ($null -eq $i64) { return $false }
+            return (([int64]$i64 -band [int64]$cmp) -ne 0)
+        }
+        'bitandzero' {
+            if ($null -eq $i64) { return $false }
+            return (([int64]$i64 -band [int64]$cmp) -eq 0)
+        }
+        'maxpwdageneverisweak' {
+            if ($null -eq $i64) { return $false }
+            if ([int64]$i64 -eq 0) { return $true }
+            if ([int64]$i64 -eq -9223372036854775808) { return $true }
+            return $false
+        }
+        default { return $true }
+    }
+}
+
+function Get-ADSuiteCompliancePasswordViolationList {
+    param(
+        $Properties,
+        [string]$RuleSetName
+    )
+    $viol = [System.Collections.Generic.List[string]]::new()
+    $profPath = Join-Path $PSScriptRoot 'compliance-profiles.json'
+    if (-not (Test-Path -LiteralPath $profPath)) {
+        [void]$viol.Add("Compliance profile file missing: $profPath")
+        return @($viol)
+    }
+    $doc = Get-Content -LiteralPath $profPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $p = $null
+    try {
+        $p = $doc.$RuleSetName
+    } catch { $p = $null }
+    if ($null -eq $p) {
+        [void]$viol.Add("Unknown complianceRuleSet '$RuleSetName'.")
+        return @($viol)
+    }
+    $minLen = Get-AdsProperty -Properties $Properties -Name 'minPwdLength'
+    $hist = Get-AdsProperty -Properties $Properties -Name 'pwdHistoryLength'
+    $lock = Get-AdsProperty -Properties $Properties -Name 'lockoutThreshold'
+    $maxAge = Convert-ADSuiteAdsValueToInt64 -Raw (Get-AdsProperty -Properties $Properties -Name 'maxPwdAge')
+    $pwdProp = Convert-ADSuiteAdsValueToInt64 -Raw (Get-AdsProperty -Properties $Properties -Name 'pwdProperties')
+
+    $minNode = $p.minPwdLength
+    if ($minNode -and $null -ne $minNode.min) {
+        $m = Convert-ADSuiteAdsValueToInt64 -Raw $minLen
+        if ($null -eq $m -or [int64]$m -lt [int64]$minNode.min) {
+            [void]$viol.Add("minPwdLength $($m) below minimum $($minNode.min).")
+        }
+    }
+    $histNode = $p.pwdHistoryLength
+    if ($histNode -and $null -ne $histNode.min) {
+        $h = Convert-ADSuiteAdsValueToInt64 -Raw $hist
+        if ($null -eq $h -or [int64]$h -lt [int64]$histNode.min) {
+            [void]$viol.Add("pwdHistoryLength $($h) below minimum $($histNode.min).")
+        }
+    }
+    $lockNode = $p.lockoutThreshold
+    if ($lockNode -and $null -ne $lockNode.min) {
+        $l = Convert-ADSuiteAdsValueToInt64 -Raw $lock
+        if ($null -eq $l -or [int64]$l -lt [int64]$lockNode.min) {
+            [void]$viol.Add("lockoutThreshold $($l) below minimum $($lockNode.min).")
+        }
+    }
+    if ($p.maxPwdAgeNeverWeak -and $p.maxPwdAgeNeverWeak -eq $true) {
+        if ($null -ne $maxAge -and (Test-ADSuiteLdapFindingCondition -RawValue $maxAge -Condition @{ operator = 'maxpwdageneverisweak' })) {
+            [void]$viol.Add('maxPwdAge allows passwords to not expire (weak).')
+        }
+    }
+    $revNode = $p.reversibleEncryptionBit
+    if ($revNode -and $null -ne $revNode.mask) {
+        $mask = [int64]$revNode.mask
+        if ($null -ne $pwdProp -and (($pwdProp -band $mask) -ne 0)) {
+            [void]$viol.Add('Reversible encryption enabled in domain pwdProperties.')
+        }
+    }
+    return @($viol)
+}
+
 function Get-ADSuiteFqdnFromDefaultNc {
     [CmdletBinding()]
     param([string]$DefaultNamingContext)
@@ -478,6 +619,254 @@ function Add-ADSuiteScanScores {
     }
 }
 
+function Get-ADSuiteGptInfDwordValue {
+    param([string]$Raw)
+    if ([string]::IsNullOrWhiteSpace($Raw)) { return $null }
+    $parts = $Raw.Split(',')
+    if ($parts.Length -lt 2) { return $null }
+    $t = $parts[0].Trim()
+    $v = $parts[1].Trim()
+    if ($t -eq '4') {
+        try { return [int]$v } catch { return $null }
+    }
+    try { return [int]$v } catch { return $null }
+}
+
+function Read-ADSuiteGptTmplRegistryValueMap {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$FilePath)
+    $text = $null
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes($FilePath)
+        if ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+            $text = [System.Text.Encoding]::Unicode.GetString($bytes)
+        } else {
+            $text = [System.Text.Encoding]::UTF8.GetString($bytes)
+        }
+    } catch {
+        $text = [System.IO.File]::ReadAllText($FilePath, [System.Text.Encoding]::UTF8)
+    }
+    $map = [ordered]@{}
+    $inReg = $false
+    foreach ($line in $text -split "`r?`n") {
+        $t = $line.Trim()
+        if ($t -match '^\[Registry Values\]\s*$') {
+            $inReg = $true
+            continue
+        }
+        if ($t -match '^\[.+\]\s*$') {
+            $inReg = $false
+            continue
+        }
+        if (-not $inReg) { continue }
+        if ([string]::IsNullOrWhiteSpace($t) -or $t.StartsWith(';')) { continue }
+        $eq = $t.IndexOf('=')
+        if ($eq -lt 1) { continue }
+        $k = $t.Substring(0, $eq).Trim()
+        $v = $t.Substring($eq + 1).Trim()
+        $map[$k] = $v
+    }
+    $map
+}
+
+function Invoke-ADSuiteSysvolGptTmplSeceditCheck {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] $Check,
+        [Parameter(Mandatory)] $RootDse,
+        [string]$ServerName,
+        [string]$SourcePathOverride
+    )
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $cid = [string]$Check.id
+    $cname = if ($Check.name) { [string]$Check.name } else { $cid }
+    $cat = if ($Check.category) { [string]$Check.category } else { 'Unknown' }
+    $resolvedSourcePath = $null
+    if (-not [string]::IsNullOrWhiteSpace($SourcePathOverride)) {
+        $resolvedSourcePath = $SourcePathOverride.Trim()
+    } elseif ($Check.PSObject.Properties.Name -contains 'sourcePath' -and -not [string]::IsNullOrWhiteSpace([string]$Check.sourcePath)) {
+        $resolvedSourcePath = [string]$Check.sourcePath
+    }
+    $severity = if ($Check.PSObject.Properties.Name -contains 'severity' -and $Check.severity) {
+        [string]$Check.severity
+    } else {
+        'medium'
+    }
+    $description = $null
+    if ($Check.PSObject.Properties.Name -contains 'description' -and $Check.description) {
+        $description = [string]$Check.description
+    }
+    $meta = Get-ADSuiteOptionalCheckMeta -Check $Check
+    $rules = @($Check.gptTmplRules)
+    if ($rules.Count -eq 0) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "SysvolGptTmplSecedit requires non-empty 'gptTmplRules'."
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+        }
+    }
+
+    $fqdn = Get-ADSuiteFqdnFromDefaultNc -DefaultNamingContext $RootDse.DefaultNamingContext
+    if (-not $fqdn) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = 'Could not derive DNS domain from defaultNamingContext.'
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+        }
+    }
+
+    $policiesPath = "\\$fqdn\SYSVOL\$fqdn\Policies"
+    if ($Check.PSObject.Properties.Name -contains 'sysvolPoliciesPath' -and -not [string]::IsNullOrWhiteSpace([string]$Check.sysvolPoliciesPath)) {
+        $policiesPath = [string]$Check.sysvolPoliciesPath
+    }
+
+    if (-not (Test-Path -LiteralPath $policiesPath)) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "SYSVOL Policies path not reachable: $policiesPath (domain-joined host with SYSVOL read required)."
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+        }
+    }
+
+    $findingRows = [System.Collections.Generic.List[object]]::new()
+    try {
+        Get-ChildItem -LiteralPath $policiesPath -Directory -ErrorAction Stop | ForEach-Object {
+            $gpoDir = $_.FullName
+            $infPath = Join-Path $gpoDir 'Machine\Microsoft\Windows NT\SecEdit\GptTmpl.inf'
+            if (-not (Test-Path -LiteralPath $infPath)) { return }
+            $map = Read-ADSuiteGptTmplRegistryValueMap -FilePath $infPath
+            foreach ($rule in $rules) {
+                $rid = if ($rule.ruleId) { [string]$rule.ruleId } else { 'rule' }
+                $sub = if ($rule.matchSubstr) { [string]$rule.matchSubstr } else { '' }
+                if ([string]::IsNullOrWhiteSpace($sub)) { continue }
+                $badList = @()
+                if ($rule.PSObject.Properties.Name -contains 'findingWhenDwordIn' -and $null -ne $rule.findingWhenDwordIn) {
+                    $badList = @($rule.findingWhenDwordIn)
+                }
+                $hasLt = $rule.PSObject.Properties.Name -contains 'findingWhenDwordLessThan'
+                $thrLt = if ($hasLt) { [int]$rule.findingWhenDwordLessThan } else { -1 }
+                $det = if ($rule.detail) { [string]$rule.detail } else { '' }
+
+                foreach ($p in $map.Keys) {
+                    if ($p.IndexOf($sub, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
+                    $rawVal = [string]$map[$p]
+                    $dv = Get-ADSuiteGptInfDwordValue -Raw $rawVal
+                    if ($null -eq $dv) { continue }
+                    $hit = $false
+                    foreach ($b in $badList) {
+                        try {
+                            if ([int]$dv -eq [int]$b) { $hit = $true; break }
+                        } catch { }
+                    }
+                    if (-not $hit -and $hasLt -and [int]$dv -lt $thrLt) { $hit = $true }
+                    if ($hit) {
+                        $findingRows.Add([PSCustomObject]@{
+                                RuleId          = $rid
+                                GptTmplPath     = $infPath
+                                RegistryKeyLine = $p
+                                RawValue        = $rawVal
+                                ParsedDword     = $dv
+                                Detail          = $det
+                            })
+                    }
+                }
+            }
+        }
+    } catch {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = 0
+            Result        = 'Error'
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = "SYSVOL GptTmpl scan failed: $($_.Exception.Message)"
+            ExitCode      = 1
+            Findings      = [object[]]@()
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+        }
+    }
+
+    $fc = $findingRows.Count
+    $resultWord = if ($fc -eq 0) { 'Pass' } else { 'Fail' }
+    $rows = foreach ($row in $findingRows) {
+        $o = [ordered]@{}
+        foreach ($p in $row.PSObject.Properties) { $o[$p.Name] = $p.Value }
+        $o['CheckId'] = $cid
+        $o['CheckName'] = $cname
+        $o['FindingCount'] = $fc
+        $o['Result'] = $resultWord
+        $o['Severity'] = $severity
+        if ($description) { $o['Description'] = $description }
+        if ($resolvedSourcePath) { $o['SourcePath'] = $resolvedSourcePath }
+        [PSCustomObject]$o
+    }
+
+    $sw.Stop()
+    return [PSCustomObject]@{
+        CheckId       = $cid
+        CheckName     = $cname
+        Category      = $cat
+        Severity      = $severity
+        Description   = $description
+        FindingCount  = $fc
+        Result        = $resultWord
+        DurationMs    = [int]$sw.ElapsedMilliseconds
+        Error         = $null
+        ExitCode      = 0
+        Findings      = @($rows)
+        SourcePath    = $resolvedSourcePath
+        Remediation   = $meta.Remediation
+        References    = $meta.References
+        ScoreWeight   = $meta.ScoreWeight
+    }
+}
+
 function Invoke-ADSuiteFilesystemCheck {
     [CmdletBinding()]
     param(
@@ -522,6 +911,11 @@ function Invoke-ADSuiteFilesystemCheck {
         ''
     }
 
+    if ($kind -eq 'SysvolGptTmplSecedit') {
+        $sw.Stop()
+        return Invoke-ADSuiteSysvolGptTmplSeceditCheck -Check $Check -RootDse $RootDse -ServerName $ServerName -SourcePathOverride $SourcePathOverride
+    }
+
     if ($kind -ne 'SysvolPoliciesInsecureAcl') {
         $sw.Stop()
         return [PSCustomObject]@{
@@ -533,7 +927,7 @@ function Invoke-ADSuiteFilesystemCheck {
             FindingCount  = 0
             Result        = 'Error'
             DurationMs    = [int]$sw.ElapsedMilliseconds
-            Error         = "Unknown filesystemKind '$kind'. Supported: SysvolPoliciesInsecureAcl."
+            Error         = "Unknown filesystemKind '$kind'. Supported: SysvolPoliciesInsecureAcl, SysvolGptTmplSecedit."
             ExitCode      = 1
             Findings      = [object[]]@()
             SourcePath    = $resolvedSourcePath
@@ -1181,6 +1575,19 @@ function Invoke-ADSuiteLdapCheck {
         [void]$propsToLoad.Add('samAccountName')
     }
 
+    if ($Check.PSObject.Properties.Name -contains 'ldapFindingCondition' -and $Check.ldapFindingCondition) {
+        $lfc0 = $Check.ldapFindingCondition
+        if ($lfc0.attribute) { [void]$propsToLoad.Add([string]$lfc0.attribute) }
+    }
+    if ($Check.PSObject.Properties.Name -contains 'complianceRuleSet' -and $Check.complianceRuleSet) {
+        foreach ($a in @('minPwdLength', 'pwdHistoryLength', 'lockoutThreshold', 'lockoutDuration', 'lockoutObservationWindow', 'maxPwdAge', 'minPwdAge', 'pwdProperties')) {
+            [void]$propsToLoad.Add($a)
+        }
+    }
+    if ($Check.PSObject.Properties.Name -contains 'ldapWhenChangedWithinDays' -and $null -ne $Check.ldapWhenChangedWithinDays) {
+        [void]$propsToLoad.Add('whenChanged')
+    }
+
     try {
         $results = Invoke-ADSuiteLdapQuery -LdapFilter $ldapFilter -SearchRoot $searchRoot -SearchScope $scope -PropertiesToLoad @($propsToLoad) -PageSize $pageSize
     } catch {
@@ -1230,6 +1637,127 @@ function Invoke-ADSuiteLdapCheck {
             $filtered2.Add($sr)
         }
         $filtered = $filtered2
+    }
+
+    if ($Check.PSObject.Properties.Name -contains 'complianceRuleSet' -and $Check.complianceRuleSet) {
+        $rsName = [string]$Check.complianceRuleSet
+        if ($filtered.Count -eq 0) {
+            $sw.Stop()
+            return [PSCustomObject]@{
+                CheckId       = $cid
+                CheckName     = $cname
+                Category      = $cat
+                Severity      = $severity
+                Description   = $description
+                FindingCount  = 0
+                Result        = 'Error'
+                DurationMs    = [int]$sw.ElapsedMilliseconds
+                Error         = "complianceRuleSet '$rsName': no LDAP results (domain object missing)."
+                ExitCode      = 1
+                Findings      = [object[]]@()
+                SourcePath    = $resolvedSourcePath
+                Remediation   = $meta.Remediation
+                References    = $meta.References
+                ScoreWeight   = $meta.ScoreWeight
+            }
+        }
+        $viol = Get-ADSuiteCompliancePasswordViolationList -Properties $filtered[0].Properties -RuleSetName $rsName
+        $fcV = $viol.Count
+        $rwV = if ($fcV -eq 0) { 'Pass' } else { 'Fail' }
+        $rowV = [ordered]@{
+            Violations = ($viol -join ' ')
+            CheckId    = $cid
+            CheckName  = $cname
+            FindingCount = $fcV
+            Result     = $rwV
+            Severity   = $severity
+        }
+        if ($description) { $rowV['Description'] = $description }
+        if ($resolvedSourcePath) { $rowV['SourcePath'] = $resolvedSourcePath }
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId       = $cid
+            CheckName     = $cname
+            Category      = $cat
+            Severity      = $severity
+            Description   = $description
+            FindingCount  = $fcV
+            Result        = $rwV
+            DurationMs    = [int]$sw.ElapsedMilliseconds
+            Error         = $null
+            ExitCode      = 0
+            Findings      = @([PSCustomObject]$rowV)
+            SourcePath    = $resolvedSourcePath
+            Remediation   = $meta.Remediation
+            References    = $meta.References
+            ScoreWeight   = $meta.ScoreWeight
+        }
+    }
+
+    if ($Check.PSObject.Properties.Name -contains 'ldapEmptyResultIsFinding' -and [bool]$Check.ldapEmptyResultIsFinding) {
+        if ($filtered.Count -eq 0) {
+            $rowE = [ordered]@{
+                Detail      = 'No matching LDAP object; policy or feature may be absent (misconfiguration).'
+                CheckId     = $cid
+                CheckName   = $cname
+                FindingCount = 1
+                Result      = 'Fail'
+                Severity    = $severity
+            }
+            if ($description) { $rowE['Description'] = $description }
+            if ($resolvedSourcePath) { $rowE['SourcePath'] = $resolvedSourcePath }
+            $sw.Stop()
+            return [PSCustomObject]@{
+                CheckId       = $cid
+                CheckName     = $cname
+                Category      = $cat
+                Severity      = $severity
+                Description   = $description
+                FindingCount  = 1
+                Result        = 'Fail'
+                DurationMs    = [int]$sw.ElapsedMilliseconds
+                Error         = $null
+                ExitCode      = 0
+                Findings      = @([PSCustomObject]$rowE)
+                SourcePath    = $resolvedSourcePath
+                Remediation   = $meta.Remediation
+                References    = $meta.References
+                ScoreWeight   = $meta.ScoreWeight
+            }
+        }
+    }
+
+    if ($Check.PSObject.Properties.Name -contains 'ldapFindingCondition' -and $Check.ldapFindingCondition) {
+        $lfc = $Check.ldapFindingCondition
+        $attrNm = [string]$lfc.attribute
+        if (-not [string]::IsNullOrWhiteSpace($attrNm)) {
+            $fCond = [System.Collections.Generic.List[object]]::new()
+            foreach ($sr in $filtered) {
+                $rawV = Get-AdsProperty -Properties $sr.Properties -Name $attrNm
+                if (Test-ADSuiteLdapFindingCondition -RawValue $rawV -Condition $lfc) {
+                    $fCond.Add($sr)
+                }
+            }
+            $filtered = $fCond
+        }
+    }
+
+    if ($Check.PSObject.Properties.Name -contains 'ldapWhenChangedWithinDays' -and $null -ne $Check.ldapWhenChangedWithinDays) {
+        $wdays = [int]$Check.ldapWhenChangedWithinDays
+        if ($wdays -gt 0) {
+            $cut = (Get-Date).ToUniversalTime().AddDays(-$wdays)
+            $fTime = [System.Collections.Generic.List[object]]::new()
+            foreach ($sr in $filtered) {
+                $wcRaw = Get-AdsProperty -Properties $sr.Properties -Name 'whenChanged'
+                $ok = $false
+                try {
+                    $dt = if ($wcRaw -is [DateTime]) { [DateTime]$wcRaw } else { [DateTime]::Parse([string]$wcRaw, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::AssumeUniversal) }
+                    if ($dt -ge $cut) { $ok = $true }
+                } catch { $ok = $false }
+                if ($ok) { $fTime.Add($sr) }
+            }
+            $filtered = $fTime
+        }
     }
 
     $outputMap = Get-ADSuiteOutputPropertyMap -Check $Check

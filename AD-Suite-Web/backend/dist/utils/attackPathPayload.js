@@ -15,16 +15,73 @@ function severityRank(s) {
     const k = (s || '').trim().toLowerCase();
     return SEVERITY_RANK[k] ?? 99;
 }
+const ENTITY_KEYS = [
+    'SamAccountName',
+    'samAccountName',
+    'Account',
+    'account',
+    'User',
+    'user',
+    'Computer',
+    'computer',
+    'TargetComputer',
+    'targetComputer',
+    'Principal',
+    'principal',
+    'Trustee',
+    'trustee',
+    'Group',
+    'group',
+    'Template',
+    'template',
+    'CaName',
+    'caName',
+    'ServicePrincipalName',
+    'servicePrincipalName',
+    'GpoName',
+    'gpoName',
+    'LinkedOu',
+    'linkedOu'
+];
+function toEntityString(v) {
+    if (v === null || v === undefined)
+        return null;
+    const s = String(v).trim();
+    if (!s)
+        return null;
+    // keep entity hints compact for prompting
+    if (s.length > 80)
+        return s.slice(0, 80) + '…';
+    return s;
+}
+function extractEntities(raw) {
+    const evidence = {};
+    const entities = [];
+    for (const k of ENTITY_KEYS) {
+        if (Object.prototype.hasOwnProperty.call(raw, k)) {
+            const v = raw[k];
+            const s = toEntityString(v);
+            if (s) {
+                entities.push(s);
+                evidence[k] = v;
+            }
+        }
+    }
+    return { entities: Array.from(new Set(entities)).slice(0, 8), evidence };
+}
 function normalizeFinding(raw) {
     const sev = String(raw.Severity ?? raw.severity ?? 'Unknown').trim() || 'Unknown';
     const cat = String(raw.Category ?? raw.category ?? 'Unknown').trim() || 'Unknown';
+    const { entities, evidence } = extractEntities(raw);
     return {
         CheckId: String(raw.CheckId ?? raw.checkId ?? '').trim() || 'UNKNOWN',
         CheckName: String(raw.CheckName ?? raw.checkName ?? '').trim() || 'Unknown check',
         Severity: sev,
         Category: cat,
         Description: String(raw.Description ?? raw.Name ?? '').trim(),
-        Impact: String(raw.Impact ?? raw.RiskData ?? raw.Message ?? '').trim()
+        Impact: String(raw.Impact ?? raw.RiskData ?? raw.Message ?? '').trim(),
+        Entities: entities.length ? entities : undefined,
+        Evidence: Object.keys(evidence).length ? evidence : undefined
     };
 }
 function snippetKey(f) {

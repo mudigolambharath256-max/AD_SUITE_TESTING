@@ -1,0 +1,405 @@
+{
+    "schemaVersion": 1,
+    "meta": {
+        "name": "GOAD Random Findings (synthetic for LLM)",
+        "scanTimeUtc": "2026-03-31T00:00:00.000Z",
+        "serverName": "dc01.goad.lab",
+        "defaultNamingContext": "DC=goad,DC=lab",
+        "checksJsonPath": "SYNTHETIC",
+        "checksOverridesPath": null,
+        "checksRun": 18,
+        "scoringNormalizer": 5,
+        "findingCapPerCheck": 10,
+        "adSuiteEngineVersion": "synthetic"
+    },
+    "aggregate": {
+        "checksRun": 18,
+        "checksWithFindings": 15,
+        "checksWithErrors": 0,
+        "totalFindings": 41,
+        "globalRaw": 160,
+        "globalScore": 32,
+        "globalRiskBand": "Critical",
+        "scoreByCategory": {
+            "Access_Control": 45,
+            "Kerberos_Security": 32,
+            "Certificate_Services": 45,
+            "Group_Policy": 18,
+            "LDAP_Security": 10,
+            "Domain_Configuration": 10
+        }
+    },
+    "byCategory": {
+        "Access_Control": { "checks": 5, "withFindings": 5, "errors": 0 },
+        "Kerberos_Security": { "checks": 3, "withFindings": 3, "errors": 0 },
+        "Certificate_Services": { "checks": 3, "withFindings": 3, "errors": 0 },
+        "Group_Policy": { "checks": 2, "withFindings": 2, "errors": 0 },
+        "LDAP_Security": { "checks": 3, "withFindings": 2, "errors": 0 },
+        "Domain_Configuration": { "checks": 2, "withFindings": 0, "errors": 0 }
+    },
+    "results": [
+        {
+            "CheckId": "ACC-025",
+            "CheckName": "Users Can Add Computers to Domain",
+            "Category": "Access_Control",
+            "Severity": "High",
+            "Result": "Fail",
+            "FindingCount": 1,
+            "Findings": [
+                {
+                    "CheckId": "ACC-025",
+                    "CheckName": "Users Can Add Computers to Domain",
+                    "Category": "Access_Control",
+                    "Severity": "High",
+                    "Domain": "goad.lab",
+                    "Attribute": "ms-DS-MachineAccountQuota",
+                    "Value": 10,
+                    "Reason": "Domain users can join computers; enables machine account staging and RBCD abuse"
+                }
+            ]
+        },
+        {
+            "CheckId": "ACC-039",
+            "CheckName": "Resource-Based Constrained Delegation (RBCD) risky",
+            "Category": "Access_Control",
+            "Severity": "Critical",
+            "Result": "Fail",
+            "FindingCount": 2,
+            "Findings": [
+                {
+                    "CheckId": "ACC-039",
+                    "CheckName": "Resource-Based Constrained Delegation (RBCD) risky",
+                    "Category": "Access_Control",
+                    "Severity": "Critical",
+                    "TargetComputer": "DC01$",
+                    "DelegationSetBy": "GOAD\\IT_Support",
+                    "Reason": "RBCD on Domain Controller target enables S4U to impersonate privileged users"
+                },
+                {
+                    "CheckId": "ACC-039",
+                    "CheckName": "Resource-Based Constrained Delegation (RBCD) risky",
+                    "Category": "Access_Control",
+                    "Severity": "Critical",
+                    "TargetComputer": "FILE01$",
+                    "DelegationSetBy": "GOAD\\Helpdesk",
+                    "Reason": "RBCD on file server enables lateral movement and data theft"
+                }
+            ]
+        },
+        {
+            "CheckId": "KRB-002",
+            "CheckName": "AS-REP Roastable Accounts (no preauth)",
+            "Category": "Kerberos_Security",
+            "Severity": "High",
+            "Result": "Fail",
+            "FindingCount": 2,
+            "Findings": [
+                {
+                    "CheckId": "KRB-002",
+                    "CheckName": "AS-REP Roastable Accounts (no preauth)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "TEMP_CONTRACTOR",
+                    "DistinguishedName": "CN=TEMP_CONTRACTOR,OU=Users,DC=goad,DC=lab",
+                    "Reason": "DONT_REQ_PREAUTH"
+                },
+                {
+                    "CheckId": "KRB-002",
+                    "CheckName": "AS-REP Roastable Accounts (no preauth)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "VENDOR_USER",
+                    "DistinguishedName": "CN=VENDOR_USER,OU=Users,DC=goad,DC=lab",
+                    "Reason": "DONT_REQ_PREAUTH"
+                }
+            ]
+        },
+        {
+            "CheckId": "ACC-034",
+            "CheckName": "Kerberoastable Accounts (SPN set)",
+            "Category": "Kerberos_Security",
+            "Severity": "High",
+            "Result": "Fail",
+            "FindingCount": 4,
+            "Findings": [
+                {
+                    "CheckId": "ACC-034",
+                    "CheckName": "Kerberoastable Accounts (SPN set)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "SQL_SVC",
+                    "ServicePrincipalName": "MSSQLSvc/sql01.goad.lab:1433",
+                    "Note": "Service account has broad rights (local admin on multiple servers)"
+                },
+                {
+                    "CheckId": "ACC-034",
+                    "CheckName": "Kerberoastable Accounts (SPN set)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "WEBAPP_SVC",
+                    "ServicePrincipalName": "HTTP/web01.goad.lab",
+                    "Note": "Often has stored creds / deployment secrets"
+                },
+                {
+                    "CheckId": "ACC-034",
+                    "CheckName": "Kerberoastable Accounts (SPN set)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "BACKUP_SVC",
+                    "ServicePrincipalName": "HOST/backup01.goad.lab",
+                    "Note": "Backup service accounts commonly access Tier-0 adjacent systems"
+                },
+                {
+                    "CheckId": "ACC-034",
+                    "CheckName": "Kerberoastable Accounts (SPN set)",
+                    "Category": "Kerberos_Security",
+                    "Severity": "High",
+                    "SamAccountName": "SCCM_SVC",
+                    "ServicePrincipalName": "HTTP/sccm01.goad.lab",
+                    "Note": "SCCM compromise can lead to widespread lateral movement"
+                }
+            ]
+        },
+        {
+            "CheckId": "ACC-033",
+            "CheckName": "DCSync Rights Assigned",
+            "Category": "Access_Control",
+            "Severity": "Critical",
+            "Result": "Fail",
+            "FindingCount": 2,
+            "Findings": [
+                {
+                    "CheckId": "ACC-033",
+                    "CheckName": "DCSync Rights Assigned",
+                    "Category": "Access_Control",
+                    "Severity": "Critical",
+                    "Principal": "GOAD\\IT_Support",
+                    "Right": "Replicating Directory Changes",
+                    "Object": "DC=goad,DC=lab",
+                    "Reason": "DCSync allows stealing KRBTGT hash and full domain compromise"
+                },
+                {
+                    "CheckId": "ACC-033",
+                    "CheckName": "DCSync Rights Assigned",
+                    "Category": "Access_Control",
+                    "Severity": "Critical",
+                    "Principal": "GOAD\\svc_audit",
+                    "Right": "Replicating Directory Changes All",
+                    "Object": "DC=goad,DC=lab",
+                    "Reason": "Non-tier0 service account granted replication rights"
+                }
+            ]
+        },
+        {
+            "CheckId": "GPO-001",
+            "CheckName": "GPOs with Weak Permissions",
+            "Category": "Group_Policy",
+            "Severity": "Critical",
+            "Result": "Fail",
+            "FindingCount": 2,
+            "Findings": [
+                {
+                    "CheckId": "GPO-001",
+                    "CheckName": "GPOs with Weak Permissions",
+                    "Category": "Group_Policy",
+                    "Severity": "Critical",
+                    "GpoName": "Default Domain Controllers Policy",
+                    "LinkedOu": "OU=Domain Controllers,DC=goad,DC=lab",
+                    "Trustee": "GOAD\\Helpdesk",
+                    "Right": "WriteDacl",
+                    "Reason": "GPO edit on DC OU enables code execution on Domain Controllers"
+                },
+                {
+                    "CheckId": "GPO-001",
+                    "CheckName": "GPOs with Weak Permissions",
+                    "Category": "Group_Policy",
+                    "Severity": "Critical",
+                    "GpoName": "Tier0 Logon Restrictions",
+                    "LinkedOu": "OU=Tier0,DC=goad,DC=lab",
+                    "Trustee": "GOAD\\IT_Support",
+                    "Right": "GenericWrite",
+                    "Reason": "Modify Tier0-linked GPO to capture creds or deploy scheduled tasks"
+                }
+            ]
+        },
+        {
+            "CheckId": "SMB-003",
+            "CheckName": "SMB Encryption Not Enabled",
+            "Category": "SMB_Security",
+            "Severity": "High",
+            "Result": "Fail",
+            "FindingCount": 3,
+            "Findings": [
+                {
+                    "CheckId": "SMB-003",
+                    "CheckName": "SMB Encryption Not Enabled",
+                    "Category": "SMB_Security",
+                    "Severity": "High",
+                    "Computer": "FILE01",
+                    "Reason": "SMB traffic may be interceptable on flat networks"
+                },
+                {
+                    "CheckId": "SMB-003",
+                    "CheckName": "SMB Encryption Not Enabled",
+                    "Category": "SMB_Security",
+                    "Severity": "High",
+                    "Computer": "SQL01",
+                    "Reason": "SMB traffic may be interceptable on flat networks"
+                },
+                {
+                    "CheckId": "SMB-003",
+                    "CheckName": "SMB Encryption Not Enabled",
+                    "Category": "SMB_Security",
+                    "Severity": "High",
+                    "Computer": "WEB01",
+                    "Reason": "SMB traffic may be interceptable on flat networks"
+                }
+            ]
+        },
+        {
+            "CheckId": "ADCS-ESC1",
+            "CheckName": "ADCS ESC1 — Client Authentication Template Misconfig",
+            "Category": "Certificate_Services",
+            "Severity": "Critical",
+            "Result": "Fail",
+            "FindingCount": 2,
+            "Findings": [
+                {
+                    "CheckId": "ADCS-ESC1",
+                    "CheckName": "ADCS ESC1 — Client Authentication Template Misconfig",
+                    "Category": "Certificate_Services",
+                    "Severity": "Critical",
+                    "CaName": "GOAD-CA",
+                    "Template": "UserAuthentication",
+                    "EnrollableBy": "GOAD\\Domain Users",
+                    "Danger": "User supplied SAN/UPN + client auth enables cert for Domain Admin"
+                },
+                {
+                    "CheckId": "ADCS-ESC1",
+                    "CheckName": "ADCS ESC1 — Client Authentication Template Misconfig",
+                    "Category": "Certificate_Services",
+                    "Severity": "Critical",
+                    "CaName": "GOAD-CA",
+                    "Template": "VPN-User",
+                    "EnrollableBy": "GOAD\\Authenticated Users",
+                    "Danger": "Client auth template broadly enrollable"
+                }
+            ]
+        },
+        {
+            "CheckId": "ADCS-ESC4",
+            "CheckName": "ADCS ESC4 — Template ACL allows dangerous modification",
+            "Category": "Certificate_Services",
+            "Severity": "Critical",
+            "Result": "Fail",
+            "FindingCount": 1,
+            "Findings": [
+                {
+                    "CheckId": "ADCS-ESC4",
+                    "CheckName": "ADCS ESC4 — Template ACL allows dangerous modification",
+                    "Category": "Certificate_Services",
+                    "Severity": "Critical",
+                    "Template": "UserAuthentication",
+                    "Trustee": "GOAD\\IT_Support",
+                    "Right": "WriteDacl",
+                    "Danger": "Modify template to become ESC1/ESC2-equivalent and mint auth certs"
+                }
+            ]
+        },
+        {
+            "CheckId": "ADCS-ESC6",
+            "CheckName": "ADCS ESC6 — CA allows SAN specification",
+            "Category": "Certificate_Services",
+            "Severity": "High",
+            "Result": "Fail",
+            "FindingCount": 1,
+            "Findings": [
+                {
+                    "CheckId": "ADCS-ESC6",
+                    "CheckName": "ADCS ESC6 — CA allows SAN specification",
+                    "Category": "Certificate_Services",
+                    "Severity": "High",
+                    "CaName": "GOAD-CA",
+                    "Reason": "If combined with enrollable template, attacker can request auth certs for privileged identities"
+                }
+            ]
+        },
+        {
+            "CheckId": "LDAP-003",
+            "CheckName": "Anonymous LDAP Bind Allowed (SYSVOL GPO)",
+            "Category": "LDAP_Security",
+            "Severity": "High",
+            "Result": "Fail",
+            "FindingCount": 1,
+            "Findings": [
+                {
+                    "CheckId": "LDAP-003",
+                    "CheckName": "Anonymous LDAP Bind Allowed (SYSVOL GPO)",
+                    "Category": "LDAP_Security",
+                    "Severity": "High",
+                    "RegistryValue": "NTDS\\Parameters\\LDAPServerIntegrity",
+                    "Observed": "0 or 1",
+                    "Expected": "2",
+                    "Reason": "LDAP signing not required by policy template; enables relay/downgrade paths"
+                }
+            ]
+        },
+        {
+            "CheckId": "COMPLY-012",
+            "CheckName": "LAN Manager Hash Storage",
+            "Category": "Compliance",
+            "Severity": "High",
+            "Result": "Fail",
+            "FindingCount": 1,
+            "Findings": [
+                {
+                    "CheckId": "COMPLY-012",
+                    "CheckName": "LAN Manager Hash Storage",
+                    "Category": "Compliance",
+                    "Severity": "High",
+                    "RegistryValue": "Lsa\\NoLMHash",
+                    "Observed": 0,
+                    "Expected": 1,
+                    "Reason": "LM hashes may be stored; increases offline cracking risk"
+                }
+            ]
+        },
+        {
+            "CheckId": "ACC-037",
+            "CheckName": "Shadow Credentials (msDS-KeyCredentialLink) present",
+            "Category": "Access_Control",
+            "Severity": "Critical",
+            "Result": "Fail",
+            "FindingCount": 1,
+            "Findings": [
+                {
+                    "CheckId": "ACC-037",
+                    "CheckName": "Shadow Credentials (msDS-KeyCredentialLink) present",
+                    "Category": "Access_Control",
+                    "Severity": "Critical",
+                    "Account": "WSUS_SVC",
+                    "Reason": "KeyCredentialLink allows alternative auth; can be abused to persist or impersonate"
+                }
+            ]
+        },
+        {
+            "CheckId": "ACC-026",
+            "CheckName": "Accounts with Reversible Encryption Enabled",
+            "Category": "Access_Control",
+            "Severity": "High",
+            "Result": "Fail",
+            "FindingCount": 1,
+            "Findings": [
+                {
+                    "CheckId": "ACC-026",
+                    "CheckName": "Accounts with Reversible Encryption Enabled",
+                    "Category": "Access_Control",
+                    "Severity": "High",
+                    "SamAccountName": "LEGACY_APP_SVC",
+                    "Reason": "Reversible encryption effectively stores decryptable passwords"
+                }
+            ]
+        }
+    ]
+}
+

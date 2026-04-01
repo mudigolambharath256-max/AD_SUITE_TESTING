@@ -22,6 +22,12 @@ export function getBackendOrigin(): string {
     if (explicit) {
         return explicit.replace(/\/$/, '');
     }
-    const api = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-    return api.replace(/\/api\/?$/, '') || 'http://localhost:3000';
+    const api = import.meta.env.VITE_API_URL;
+    if (api && !api.startsWith('/')) {
+        return api.replace(/\/api\/?$/, '') || 'http://localhost:3000';
+    }
+    if (typeof window !== 'undefined' && window.location?.origin) {
+        return window.location.origin;
+    }
+    return 'http://localhost:3000';
 }
