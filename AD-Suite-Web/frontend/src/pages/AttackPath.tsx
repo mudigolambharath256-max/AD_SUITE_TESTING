@@ -25,6 +25,7 @@ import {
     type TokenMaps
 } from '../lib/llmTokenize';
 import AttackPathKillChainGraph from '../components/AttackPathKillChainGraph';
+import { flattenFindingRows, canonicalSeverityForFilter } from '../lib/extractEntityGraph';
 
 // --- Types ---
 interface ReportSummary {
@@ -200,10 +201,14 @@ export default function AttackPath() {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    // Filter Findings prior to payload
+    /** Flatten nested Findings[] into rows (matches scan file shape). Severity filter is case-insensitive. */
     const payloadFindings = useMemo(() => {
         const sourceFindings = localFindings.length > 0 ? localFindings : (activeFindings || []);
-        return sourceFindings.filter(f => selectedSeverities.has(f.Severity || f.severity));
+        const rows = flattenFindingRows(sourceFindings, { includeParentWhenNoNestedFindings: true });
+        return rows.filter((f) => {
+            const bucket = canonicalSeverityForFilter(f.Severity ?? f.severity);
+            return selectedSeverities.has(bucket);
+        });
     }, [activeFindings, localFindings, selectedSeverities]);
 
     const toggleSeverity = (sev: string) => {
@@ -467,7 +472,8 @@ export default function AttackPath() {
                         
                         {(selectedScanId || localFindings.length > 0) && (
                             <p className="text-center text-xs text-text-tertiary mt-3">
-                                {payloadFindings.length} findings queued for analysis.
+                                {payloadFindings.length} finding row{payloadFindings.length === 1 ? '' : 's'} after
+                                severity filter — enable Critical/High/Medium/Low if this is 0.
                             </p>
                         )}
 

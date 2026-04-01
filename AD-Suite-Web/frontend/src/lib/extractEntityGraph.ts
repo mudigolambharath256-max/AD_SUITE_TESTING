@@ -129,10 +129,37 @@ function registerNodeFinding(
     byNode.get(nodeId)!.push(ref);
 }
 
+/**
+ * Map engine/API severity strings to the four UI buckets (case-insensitive).
+ * Informational/info map to Low so the four severity toggles still apply.
+ */
+export function canonicalSeverityForFilter(raw: unknown): 'Critical' | 'High' | 'Medium' | 'Low' {
+    const s = String(raw ?? '')
+        .trim()
+        .toLowerCase();
+    if (s === 'critical' || s === 'crit') return 'Critical';
+    if (s === 'high') return 'High';
+    if (s === 'medium' || s === 'med') return 'Medium';
+    if (s === 'low') return 'Low';
+    if (s === 'informational' || s === 'info') return 'Low';
+    if (!s) return 'Low';
+    return 'Low';
+}
+
+export type FlattenFindingRowsOptions = {
+    /** When a check has no nested Findings[], still emit one row from the check object (Attack Path / LLM payloads). */
+    includeParentWhenNoNestedFindings?: boolean;
+};
+
 /** Flatten scan results[] into individual finding rows; merge parent check metadata when missing on the row. */
-export function flattenFindingRows(scanResults: unknown[]): Array<Record<string, unknown>> {
+export function flattenFindingRows(
+    scanResults: unknown[],
+    opts?: FlattenFindingRowsOptions
+): Array<Record<string, unknown>> {
+    const includeParent = opts?.includeParentWhenNoNestedFindings === true;
     const out: Array<Record<string, unknown>> = [];
     for (const r of scanResults as any[]) {
+        if (!r || typeof r !== 'object') continue;
         const findings = (r?.Findings ?? r?.findings) as unknown;
         const parentCheckName = r?.CheckName ?? r?.checkName;
         const parentCategory = r?.Category ?? r?.category;
@@ -147,6 +174,8 @@ export function flattenFindingRows(scanResults: unknown[]): Array<Record<string,
                     out.push(o);
                 }
             }
+        } else if (includeParent) {
+            out.push({ ...(r as Record<string, unknown>) });
         }
     }
     return out;
