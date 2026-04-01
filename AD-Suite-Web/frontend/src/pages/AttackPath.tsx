@@ -25,7 +25,11 @@ import {
     type TokenMaps
 } from '../lib/llmTokenize';
 import AttackPathKillChainGraph from '../components/AttackPathKillChainGraph';
-import { flattenFindingRows, canonicalSeverityForFilter } from '../lib/extractEntityGraph';
+import {
+    flattenFindingRows,
+    canonicalSeverityForFilter,
+    effectiveFindingSeverity
+} from '../lib/extractEntityGraph';
 
 // --- Types ---
 interface ReportSummary {
@@ -167,10 +171,19 @@ export default function AttackPath() {
         queryFn: async () => (await api.get('/reports/scans')).data as ReportSummary[]
     });
 
-    // Fetch Findings for selected scan
-    const { data: activeFindings } = useQuery({
+    // Fetch Findings for selected scan (data undefined while loading — do not treat as empty)
+    const {
+        data: activeFindings,
+        isPending: isScanFindingsLoading,
+        isError: isScanFindingsError,
+        error: scanFindingsError
+    } = useQuery({
         queryKey: ['attack-path-findings', selectedScanId],
-        queryFn: async () => (await api.get('/reports/scans/' + selectedScanId + '/findings')).data.findings as Finding[],
+        queryFn: async () => {
+            const id = encodeURIComponent(selectedScanId);
+            const res = await api.get(`/reports/scans/${id}/findings`);
+            return res.data.findings as Finding[];
+        },
         enabled: !!selectedScanId
     });
 
@@ -201,15 +214,32 @@ export default function AttackPath() {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    /** Flatten nested Findings[] into rows (matches scan file shape). Severity filter is case-insensitive. */
+    /** Flatten nested Findings[] into rows (matches scan file shape). */
+    const flattenedScanRows = useMemo(() => {
+        if (localFindings.length > 0) {
+            return flattenFindingRows(localFindings, { includeParentWhenNoNestedFindings: true });
+        }
+        if (selectedScanId && activeFindings === undefined) {
+            return [];
+        }
+        return flattenFindingRows(activeFindings ?? [], { includeParentWhenNoNestedFindings: true });
+    }, [activeFindings, localFindings, selectedScanId]);
+
     const payloadFindings = useMemo(() => {
-        const sourceFindings = localFindings.length > 0 ? localFindings : (activeFindings || []);
-        const rows = flattenFindingRows(sourceFindings, { includeParentWhenNoNestedFindings: true });
-        return rows.filter((f) => {
-            const bucket = canonicalSeverityForFilter(f.Severity ?? f.severity);
+        return flattenedScanRows.filter((f) => {
+            const bucket = canonicalSeverityForFilter(effectiveFindingSeverity(f as Record<string, unknown>));
             return selectedSeverities.has(bucket);
         });
-    }, [activeFindings, localFindings, selectedSeverities]);
+    }, [flattenedScanRows, selectedSeverities]);
+
+    const findingsLoadPending = Boolean(selectedScanId && localFindings.length === 0 && isScanFindingsLoading);
+    const scanFindingsErrMsg =
+        isScanFindingsError && scanFindingsError
+            ? (scanFindingsError as { response?: { data?: { message?: string } }; message?: string }).response?.data
+                  ?.message ||
+              (scanFindingsError as Error).message ||
+              'Request failed'
+            : '';
 
     const toggleSeverity = (sev: string) => {
         const next = new Set(selectedSeverities);
@@ -460,7 +490,12 @@ export default function AttackPath() {
                         {/* Process Button */}
                         <button 
                             onClick={() => analyzeMutation.mutate()}
-                            disabled={!(selectedScanId || localFindings.length > 0) || payloadFindings.length === 0 || analyzeMutation.isPending}
+                            disabled={
+                                !(selectedScanId || localFindings.length > 0) ||
+                                findingsLoadPending ||
+                                payloadFindings.length === 0 ||
+                                analyzeMutation.isPending
+                            }
                             className="w-full flex items-center justify-center gap-2 bg-accent-orange hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
                         >
                             {analyzeMutation.isPending ? (
@@ -471,10 +506,40 @@ export default function AttackPath() {
                         </button>
                         
                         {(selectedScanId || localFindings.length > 0) && (
-                            <p className="text-center text-xs text-text-tertiary mt-3">
-                                {payloadFindings.length} finding row{payloadFindings.length === 1 ? '' : 's'} after
-                                severity filter — enable Critical/High/Medium/Low if this is 0.
-                            </p>
+                            <div className="text-center text-xs mt-3 space-y-1">
+                                {findingsLoadPending ? (
+                                    <p className="text-text-secondary flex items-center justify-center gap-2">
+                                        <Loader2 size={14} className="animate-spin shrink-0" />
+                                        Loading findings from server…
+                                    </p>
+                                ) : isScanFindingsError ? (
+                                    <p className="text-critical">{scanFindingsErrMsg}</p>
+                                ) : (
+                                    <>
+                                        <p className="text-text-tertiary">
+                                            {flattenedScanRows.length} finding row
+                                            {flattenedScanRows.length === 1 ? '' : 's'} in payload ·{' '}
+                                            {payloadFindings.length} match severity filter
+                                        </p>
+                                        {flattenedScanRows.length > 0 && payloadFindings.length === 0 ? (
+                                            <p className="text-amber-500/90">
+                                                No rows match the selected severities — enable Medium/Low or all levels.
+                                            </p>
+                                        ) : null}
+                                        {!findingsLoadPending &&
+                                        selectedScanId &&
+                                        !localFindings.length &&
+                                        flattenedScanRows.length === 0 &&
+                                        !isScanFindingsError ? (
+                                            <p className="text-text-tertiary">
+                                                No finding rows were parsed. Ensure the scan JSON has{' '}
+                                                <code className="text-text-secondary">results[].Findings[]</code> or
+                                                check-level rows.
+                                            </p>
+                                        ) : null}
+                                    </>
+                                )}
+                            </div>
                         )}
 
                         {/* Token map panel (browser-only safety gateway) */}

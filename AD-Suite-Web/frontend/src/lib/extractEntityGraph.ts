@@ -129,6 +129,11 @@ function registerNodeFinding(
     byNode.get(nodeId)!.push(ref);
 }
 
+/** Prefer standard fields; some exports use Risk / RiskLevel instead of Severity. */
+export function effectiveFindingSeverity(f: Record<string, unknown>): unknown {
+    return f.Severity ?? f.severity ?? f.Risk ?? f.risk ?? f.RiskLevel ?? f.riskLevel;
+}
+
 /**
  * Map engine/API severity strings to the four UI buckets (case-insensitive).
  * Informational/info map to Low so the four severity toggles still apply.

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
     Upload, ChevronDown, ChevronUp, Download, AlertCircle,
     Activity, Shield, TrendingUp, FileWarning, Server, Clock,
-    Database, ChevronRight, ExternalLink, X
+    Database, ChevronRight, ExternalLink, X, ListChecks, Loader2
 } from 'lucide-react';
 import api from '../lib/api';
 import { useSettings } from '../contexts/SettingsContext';
@@ -52,6 +52,13 @@ interface UploadedFile {
     filename: string;
     size: number;
     uploadedAt: string;
+}
+
+/** Same list as Attack Path: uploads + out/ scan-results.json (see ScanService.listAvailableScans). */
+interface ReportScanSummary {
+    id: string;
+    name: string;
+    totalFindings: number;
 }
 
 type SortDir = 1 | -1;
@@ -248,6 +255,9 @@ export default function Analysis() {
     const [error, setError] = useState<string | null>(null);
     const [loadedName, setLoadedName] = useState<string | null>(null);
     const [showServerFiles, setShowServerFiles] = useState(false);
+    const [showRegisteredPicker, setShowRegisteredPicker] = useState(false);
+    const [selectedRegisteredScanId, setSelectedRegisteredScanId] = useState('');
+    const [loadingRegisteredScan, setLoadingRegisteredScan] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
     const { tableDensity } = useSettings();
     const { addScanHistory, setActiveScanId } = useAppStore();
@@ -256,7 +266,7 @@ export default function Analysis() {
     const thPad = tableDensity === 'compact' ? 'py-2' : tableDensity === 'spacious' ? 'py-4' : 'py-3';
     const tdPad = tableDensity === 'compact' ? 'py-1.5' : tableDensity === 'spacious' ? 'py-4' : 'py-2.5';
 
-    // Fetch uploaded scans from server
+    // Fetch uploaded scans from server (analysis uploads list only)
     const { data: serverScans, refetch: refetchScans } = useQuery({
         queryKey: ['analysis-scans'],
         queryFn: async () => {
@@ -265,6 +275,14 @@ export default function Analysis() {
         },
         retry: false,
         enabled: false // only fetch on demand
+    });
+
+    // All registered scans (same as Attack Path data source)
+    const { data: reportScans, isLoading: isLoadingReportScans } = useQuery({
+        queryKey: ['reports-scans-for-analysis'],
+        queryFn: async () => (await api.get('/reports/scans')).data as ReportScanSummary[],
+        enabled: showRegisteredPicker,
+        staleTime: 60_000
     });
 
     /* ─── File loading ─── */
@@ -383,20 +401,14 @@ export default function Analysis() {
             setUploading(false);
             e.target.value = '';
         }
-    }, [refetchScans]);
+    }, [refetchScans, normalizeScanDoc]);
 
-    const loadFromServer = useCallback(async (filename: string) => {
-        setError(null);
-        try {
-            const r = await api.get(`/analysis/scans/${filename}`);
-            const doc = normalizeScanDoc(r.data);
+    const applyLoadedScanDoc = useCallback(
+        (doc: ScanDocument, displayName: string, scanId: string) => {
             setScanDoc(doc);
-            setLoadedName(filename);
+            setLoadedName(displayName);
             setFilterCats(new Set());
             setFilterSevs(new Set());
-            setShowServerFiles(false);
-            
-            const scanId = filename;
             setActiveScanId(scanId);
             setFindings(scanId, doc.results?.flatMap((r: any) => r.Findings || []) || []);
             addScanHistory({
@@ -406,10 +418,42 @@ export default function Analysis() {
                 durationMs: 0,
                 status: 'success'
             });
+        },
+        [addScanHistory, setActiveScanId, setFindings]
+    );
+
+    const loadFromServer = useCallback(
+        async (filename: string) => {
+            setError(null);
+            try {
+                const r = await api.get(`/analysis/scans/${encodeURIComponent(filename)}`);
+                const doc = normalizeScanDoc(r.data);
+                applyLoadedScanDoc(doc, filename, filename);
+                setShowServerFiles(false);
+            } catch (err: any) {
+                setError(err.response?.data?.message || 'Failed to load scan');
+            }
+        },
+        [applyLoadedScanDoc, normalizeScanDoc]
+    );
+
+    const loadRegisteredScan = useCallback(async () => {
+        if (!selectedRegisteredScanId) return;
+        setError(null);
+        setLoadingRegisteredScan(true);
+        try {
+            const r = await api.get(`/analysis/scans/${encodeURIComponent(selectedRegisteredScanId)}`);
+            const doc = normalizeScanDoc(r.data);
+            const label =
+                reportScans?.find((s) => s.id === selectedRegisteredScanId)?.name ?? selectedRegisteredScanId;
+            applyLoadedScanDoc(doc, label, selectedRegisteredScanId);
+            setShowRegisteredPicker(false);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to load scan');
+        } finally {
+            setLoadingRegisteredScan(false);
         }
-    }, []);
+    }, [applyLoadedScanDoc, normalizeScanDoc, reportScans, selectedRegisteredScanId]);
 
     /* ─── Filtering & sorting ─── */
     const results = scanDoc?.results || [];
@@ -478,7 +522,9 @@ export default function Analysis() {
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-semibold text-text-primary mb-2">Analysis Dashboard</h1>
-                <p className="text-md text-text-secondary">Load a scan-results.json to view scores, checks, and findings.</p>
+                <p className="text-md text-text-secondary">
+                    Load a local file, pick from uploaded server files, or choose a registered scan (same catalog as Attack Path).
+                </p>
             </div>
 
             {/* Upload bar */}
@@ -495,11 +541,35 @@ export default function Analysis() {
                         <input type="file" accept=".json,application/json" className="hidden" onChange={uploadToServer} disabled={uploading} />
                     </label>
                     <button
-                        onClick={() => { setShowServerFiles(v => !v); refetchScans(); }}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-bg-tertiary border border-border-medium rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-all"
+                        type="button"
+                        onClick={() => {
+                            setShowServerFiles((v) => !v);
+                            setShowRegisteredPicker(false);
+                            refetchScans();
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg text-sm font-medium transition-all ${
+                            showServerFiles
+                                ? 'bg-accent-orange-light/20 border-accent-orange/40 text-accent-orange'
+                                : 'bg-bg-tertiary border-border-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover'
+                        }`}
                     >
                         <Server size={18} />
                         Server files
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setShowRegisteredPicker((v) => !v);
+                            setShowServerFiles(false);
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg text-sm font-medium transition-all ${
+                            showRegisteredPicker
+                                ? 'bg-accent-orange-light/20 border-accent-orange/40 text-accent-orange'
+                                : 'bg-bg-tertiary border-border-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover'
+                        }`}
+                    >
+                        <ListChecks size={18} />
+                        Registered scans
                     </button>
                     {loadedName && (
                         <span className="ml-auto px-3 py-1.5 bg-bg-tertiary rounded-lg text-sm text-text-secondary font-mono flex items-center gap-2">
@@ -541,6 +611,44 @@ export default function Analysis() {
                         )}
                     </div>
                 )}
+                {showRegisteredPicker && (
+                    <div className="mt-3 flex flex-wrap items-end gap-3 p-4 border border-border-light rounded-lg bg-bg-tertiary/40">
+                        <div className="flex flex-col gap-1 min-w-[min(100%,280px)] flex-1">
+                            <label className="text-xs font-medium text-text-secondary">Select scan</label>
+                            <select
+                                value={selectedRegisteredScanId}
+                                onChange={(e) => setSelectedRegisteredScanId(e.target.value)}
+                                className="w-full bg-bg-tertiary border border-border-medium rounded-lg px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-orange"
+                            >
+                                <option value="">Choose a scan…</option>
+                                {(reportScans ?? []).map((s) => (
+                                    <option key={s.id} value={s.id}>
+                                        {s.name} ({s.totalFindings} findings)
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <button
+                            type="button"
+                            disabled={!selectedRegisteredScanId || loadingRegisteredScan || isLoadingReportScans}
+                            onClick={() => void loadRegisteredScan()}
+                            className="inline-flex items-center justify-center gap-2 bg-accent-orange hover:bg-accent-orange-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium px-5 py-2 rounded-lg text-sm transition-all"
+                        >
+                            {loadingRegisteredScan ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" /> Loading…
+                                </>
+                            ) : (
+                                'Load'
+                            )}
+                        </button>
+                        {isLoadingReportScans && (
+                            <span className="text-xs text-text-tertiary flex items-center gap-1 pb-2">
+                                <Loader2 size={12} className="animate-spin" /> Scan list…
+                            </span>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Empty state */}
@@ -550,7 +658,10 @@ export default function Analysis() {
                         <Activity size={24} className="text-text-tertiary" />
                     </div>
                     <h3 className="text-lg font-semibold text-text-primary mb-2">No scan loaded</h3>
-                    <p className="text-sm text-text-secondary">Choose a scan-results.json file to visualize scores, checks, and findings.</p>
+                    <p className="text-sm text-text-secondary">
+                        Use <span className="text-text-primary font-medium">Registered scans</span>, load a local JSON, or open{' '}
+                        <span className="text-text-primary font-medium">Server files</span> for uploads.
+                    </p>
                 </div>
             )}
 
