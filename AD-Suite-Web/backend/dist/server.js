@@ -29,14 +29,34 @@ dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 const WS_PORT = process.env.WS_PORT || 3001;
+/** Comma-separated browser origins allowed for CORS (e.g. LAN: http://192.168.1.10:5173,http://host.domain.local:5173). */
+const corsOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 // Middleware
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+        if (corsOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+        logger_1.logger.warn(`CORS blocked for origin: ${origin} (set FRONTEND_URL to include this origin)`);
+        callback(null, false);
+    },
     credentials: true
 }));
-app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({ extended: true }));
+/** Large scan flatten payloads exceed the default ~100kb JSON limit and caused 500 on POST /api/attack-path/analyze */
+const ATTACK_PATH_JSON_LIMIT = process.env.ATTACK_PATH_JSON_LIMIT || '32mb';
+const DEFAULT_JSON_LIMIT = process.env.JSON_BODY_LIMIT || '2mb';
+app.use('/api/attack-path', express_1.default.json({ limit: ATTACK_PATH_JSON_LIMIT }), attackPath_1.default);
+app.use(express_1.default.json({ limit: DEFAULT_JSON_LIMIT }));
+app.use(express_1.default.urlencoded({ extended: true, limit: DEFAULT_JSON_LIMIT }));
 // Request logging
 app.use((req, res, next) => {
     logger_1.logger.info(`${req.method} ${req.path}`);
@@ -68,7 +88,6 @@ app.use('/api/users', users_1.default);
 app.use('/api/dashboard', dashboard_1.default);
 app.use('/api/analysis', analysis_1.default);
 app.use('/api/settings', settings_1.default);
-app.use('/api/attack-path', attackPath_1.default);
 // API Documentation
 app.get('/api/docs', (req, res) => {
     res.json({
@@ -99,9 +118,10 @@ async function bootstrap() {
         logger_1.logger.error(`Startup failed: ${e}`);
         process.exit(1);
     }
-    server.listen(PORT, () => {
-        logger_1.logger.info(`🚀 Server running on port ${PORT}`);
-        logger_1.logger.info(`📡 WebSocket server running on port ${WS_PORT}`);
+    const listenHost = process.env.HOST || '0.0.0.0';
+    server.listen(Number(PORT), listenHost, () => {
+        logger_1.logger.info(`🚀 HTTP API listening on http://${listenHost}:${PORT}`);
+        logger_1.logger.info(`📡 WebSocket server running on port ${WS_PORT} (all interfaces)`);
         logger_1.logger.info(`🌍 Environment: ${process.env.NODE_ENV}`);
     });
 }

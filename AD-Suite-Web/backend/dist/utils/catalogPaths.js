@@ -23,6 +23,10 @@ function resolveChecksJsonPath(rootDir) {
     if (fs_1.default.existsSync(unified)) {
         return unified;
     }
+    const generated = path_1.default.join(rootDir, 'checks.generated.json');
+    if (fs_1.default.existsSync(generated)) {
+        return generated;
+    }
     return path_1.default.join(rootDir, 'checks.json');
 }
 /**

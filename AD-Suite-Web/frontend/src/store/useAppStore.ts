@@ -23,7 +23,6 @@ export const useAppStore = create<AppState>()(
                 domain: state.domain,
                 serverIp: state.serverIp,
                 targetIps: state.targetIps,
-                enginePreference: state.enginePreference,
                 recentScans: state.recentScans
             })
         }

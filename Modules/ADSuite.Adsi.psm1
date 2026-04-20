@@ -331,6 +331,44 @@ function Resolve-ADSuiteSearchRoot {
     }
 }
 
+<#
+.SYNOPSIS
+    Resolve catalog searchBase to a distinguished name string (no LDAP bind).
+    Used by RSAT Get-ADObject -SearchBase and external C# runners.
+#>
+function Get-ADSuiteSearchBaseDnString {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Domain', 'Configuration', 'Schema', 'SchemaContainer', 'Custom')]
+        [string]$SearchBase,
+
+        [string]$SearchBaseDn,
+
+        [Parameter(Mandatory)]
+        [object]$RootDse
+    )
+
+    $def = [string]$RootDse.DefaultNamingContext
+    $cfg = [string]$RootDse.ConfigurationNamingContext
+    $sch = [string]$RootDse.SchemaNamingContext
+
+    switch ($SearchBase) {
+        'Domain' { return $def }
+        'Configuration' { return $cfg }
+        'Schema' { return $sch }
+        'SchemaContainer' {
+            if (-not $cfg) { throw 'ConfigurationNamingContext is empty; cannot build SchemaContainer path.' }
+            return "CN=Schema,$cfg"
+        }
+        'Custom' {
+            if (-not $SearchBaseDn) { throw 'searchBaseDn is required when searchBase is Custom.' }
+            return [string]$SearchBaseDn
+        }
+    }
+    throw "Unknown searchBase: $SearchBase"
+}
+
 function Invoke-ADSuiteLdapQuery {
     [CmdletBinding()]
     param(
@@ -1812,6 +1850,404 @@ function Invoke-ADSuiteLdapCheck {
     }
 }
 
+function Get-RsatAdObjectProperty {
+    param(
+        [Parameter(Mandatory)]
+        $AdObject,
+
+        [Parameter(Mandatory)]
+        [string]$AttributeName
+    )
+    if ($null -eq $AdObject) { return $null }
+    foreach ($n in $AdObject.PSObject.Properties.Name) {
+        if ([string]::Equals($n, $AttributeName, [StringComparison]::OrdinalIgnoreCase)) {
+            $v = $AdObject.$n
+            if ($null -eq $v) { return $null }
+            if ($v -is [System.Array] -and $v.Length -gt 1) { return ($v -join ';') }
+            if ($v -is [System.Array] -and $v.Length -eq 1) { return $v[0] }
+            return $v
+        }
+    }
+    return $null
+}
+
+<#
+.SYNOPSIS
+    Run an ldap-engine catalog check via RSAT Get-ADObject when possible; otherwise delegates to Invoke-ADSuiteLdapCheck (ADSI DirectorySearcher).
+#>
+function Invoke-ADSuiteLdapCheckViaRsat {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $Check,
+
+        [Parameter(Mandatory)]
+        $RootDse,
+
+        [string]$ServerName,
+
+        [string]$SourcePathOverride
+    )
+
+    if ($Check.PSObject.Properties.Name -contains 'complianceRuleSet' -and $Check.complianceRuleSet) {
+        return Invoke-ADSuiteLdapCheck -Check $Check -RootDse $RootDse -ServerName $ServerName -SourcePathOverride $SourcePathOverride
+    }
+    if ($Check.PSObject.Properties.Name -contains 'ldapEmptyResultIsFinding' -and [bool]$Check.ldapEmptyResultIsFinding) {
+        return Invoke-ADSuiteLdapCheck -Check $Check -RootDse $RootDse -ServerName $ServerName -SourcePathOverride $SourcePathOverride
+    }
+    if ($Check.PSObject.Properties.Name -contains 'ldapFindingCondition' -and $Check.ldapFindingCondition) {
+        return Invoke-ADSuiteLdapCheck -Check $Check -RootDse $RootDse -ServerName $ServerName -SourcePathOverride $SourcePathOverride
+    }
+    if ($Check.PSObject.Properties.Name -contains 'ldapWhenChangedWithinDays' -and $null -ne $Check.ldapWhenChangedWithinDays) {
+        return Invoke-ADSuiteLdapCheck -Check $Check -RootDse $RootDse -ServerName $ServerName -SourcePathOverride $SourcePathOverride
+    }
+
+    if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) {
+        return Invoke-ADSuiteLdapCheck -Check $Check -RootDse $RootDse -ServerName $ServerName -SourcePathOverride $SourcePathOverride
+    }
+    Import-Module ActiveDirectory -ErrorAction SilentlyContinue
+    if (-not (Get-Module ActiveDirectory)) {
+        return Invoke-ADSuiteLdapCheck -Check $Check -RootDse $RootDse -ServerName $ServerName -SourcePathOverride $SourcePathOverride
+    }
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $cid = [string]$Check.id
+    $cname = if ($Check.name) { [string]$Check.name } else { $cid }
+    $cat = if ($Check.category) { [string]$Check.category } else { 'Unknown' }
+    $resolvedSourcePath = $null
+    if (-not [string]::IsNullOrWhiteSpace($SourcePathOverride)) {
+        $resolvedSourcePath = $SourcePathOverride.Trim()
+    } elseif ($Check.PSObject.Properties.Name -contains 'sourcePath' -and -not [string]::IsNullOrWhiteSpace([string]$Check.sourcePath)) {
+        $resolvedSourcePath = [string]$Check.sourcePath
+    }
+    $severity = if ($Check.PSObject.Properties.Name -contains 'severity' -and $Check.severity) { [string]$Check.severity } else { 'medium' }
+    $description = $null
+    if ($Check.PSObject.Properties.Name -contains 'description' -and $Check.description) { $description = [string]$Check.description }
+    $meta = Get-ADSuiteOptionalCheckMeta -Check $Check
+
+    $engine = if ($Check.engine) { $Check.engine.ToLowerInvariant() } else { 'ldap' }
+    if ($engine -ne 'ldap') {
+        $sw.Stop()
+        return Invoke-ADSuiteLdapCheck -Check $Check -RootDse $RootDse -ServerName $ServerName -SourcePathOverride $SourcePathOverride
+    }
+
+    $searchBaseDnParam = $null
+    if ($Check.PSObject.Properties.Name -contains 'searchBaseDn') { $searchBaseDnParam = $Check.searchBaseDn }
+    try {
+        $baseDn = Get-ADSuiteSearchBaseDnString -SearchBase $Check.searchBase -SearchBaseDn $searchBaseDnParam -RootDse $RootDse
+    } catch {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId = $cid; CheckName = $cname; Category = $cat; Severity = $severity; Description = $description
+            FindingCount = 0; Result = 'Error'; DurationMs = [int]$sw.ElapsedMilliseconds
+            Error = $_.Exception.Message; ExitCode = 1; Findings = [object[]]@()
+            SourcePath = $resolvedSourcePath; Remediation = $meta.Remediation; References = $meta.References; ScoreWeight = $meta.ScoreWeight
+            EngineUsed = 'RSAT'
+        }
+    }
+
+    $ldapFilter = [string]$Check.ldapFilter
+    $scopeStr = if ($Check.searchScope) { [string]$Check.searchScope } else { 'Subtree' }
+    $propsToLoad = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    if ($Check.propertiesToLoad) {
+        foreach ($p in $Check.propertiesToLoad) { if ($p) { [void]$propsToLoad.Add($p) } }
+    }
+    [void]$propsToLoad.Add('distinguishedName')
+    $mustInc = 0
+    $mustExc = 0
+    if ($null -ne $Check.userAccountControlMustInclude) { $mustInc = [int]$Check.userAccountControlMustInclude }
+    if ($null -ne $Check.userAccountControlMustExclude) { $mustExc = [int]$Check.userAccountControlMustExclude }
+    if ($mustInc -ne 0 -or $mustExc -ne 0) { [void]$propsToLoad.Add('userAccountControl') }
+    if ($Check.PSObject.Properties.Name -contains 'excludeSamAccountName' -and $Check.excludeSamAccountName) {
+        [void]$propsToLoad.Add('samAccountName')
+    }
+
+    $gao = @{
+        LDAPFilter  = $ldapFilter
+        SearchBase  = $baseDn
+        SearchScope = $scopeStr
+        Properties  = [string[]]@($propsToLoad)
+    }
+    if ($ServerName) { $gao['Server'] = $ServerName }
+
+    try {
+        $rawObjs = @(Get-ADObject @gao -ErrorAction Stop)
+    } catch {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId = $cid; CheckName = $cname; Category = $cat; Severity = $severity; Description = $description
+            FindingCount = 0; Result = 'Error'; DurationMs = [int]$sw.ElapsedMilliseconds
+            Error = "RSAT Get-ADObject failed: $($_.Exception.Message)"; ExitCode = 1; Findings = [object[]]@()
+            SourcePath = $resolvedSourcePath; Remediation = $meta.Remediation; References = $meta.References; ScoreWeight = $meta.ScoreWeight
+            EngineUsed = 'RSAT'
+        }
+    }
+
+    $filtered = [System.Collections.Generic.List[object]]::new()
+    foreach ($o in $rawObjs) {
+        if ($mustInc -ne 0 -or $mustExc -ne 0) {
+            $uacVal = Get-RsatAdObjectProperty -AdObject $o -AttributeName 'userAccountControl'
+            if (-not (Test-UserAccountControlMask -UserAccountControlValue $uacVal -MustInclude $mustInc -MustExclude $mustExc)) { continue }
+        }
+        [void]$filtered.Add($o)
+    }
+
+    $excludeSams = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    if ($Check.PSObject.Properties.Name -contains 'excludeSamAccountName' -and $Check.excludeSamAccountName) {
+        foreach ($x in @($Check.excludeSamAccountName)) { if ($x) { [void]$excludeSams.Add([string]$x) } }
+    }
+    if ($excludeSams.Count -gt 0) {
+        $f2 = [System.Collections.Generic.List[object]]::new()
+        foreach ($o in $filtered) {
+            $sam = Get-RsatAdObjectProperty -AdObject $o -AttributeName 'samAccountName'
+            $s = if ($null -eq $sam) { '' } else { [string]$sam }
+            if ($excludeSams.Contains($s)) { continue }
+            [void]$f2.Add($o)
+        }
+        $filtered = $f2
+    }
+
+    $outputMap = Get-ADSuiteOutputPropertyMap -Check $Check
+    if ($outputMap.Count -eq 0) {
+        foreach ($p in $propsToLoad) { $outputMap[$p] = $p }
+    }
+
+    $findingCount = $filtered.Count
+    $resultWord = if ($findingCount -eq 0) { 'Pass' } else { 'Fail' }
+
+    $rows = foreach ($o in $filtered) {
+        $row = [ordered]@{}
+        foreach ($entry in $outputMap.GetEnumerator()) {
+            $colName = $entry.Key
+            $attrName = $entry.Value
+            $val = Get-RsatAdObjectProperty -AdObject $o -AttributeName $attrName
+            if ($null -eq $val) { $val = 'N/A' }
+            $row[$colName] = $val
+        }
+        $row['CheckId'] = $cid
+        $row['CheckName'] = $cname
+        $row['FindingCount'] = $findingCount
+        $row['Result'] = $resultWord
+        $row['Severity'] = $severity
+        if ($description) { $row['Description'] = $description }
+        if ($resolvedSourcePath) { $row['SourcePath'] = $resolvedSourcePath }
+        [PSCustomObject]$row
+    }
+
+    $sw.Stop()
+    return [PSCustomObject]@{
+        CheckId       = $cid
+        CheckName     = $cname
+        Category      = $cat
+        Severity      = $severity
+        Description   = $description
+        FindingCount  = $findingCount
+        Result        = $resultWord
+        DurationMs    = [int]$sw.ElapsedMilliseconds
+        Error         = $null
+        ExitCode      = 0
+        Findings      = @($rows)
+        SourcePath    = $resolvedSourcePath
+        Remediation   = $meta.Remediation
+        References    = $meta.References
+        ScoreWeight   = $meta.ScoreWeight
+        EngineUsed    = 'RSAT'
+    }
+}
+
+function Resolve-ADSuiteCsharpRunnerPath {
+    [CmdletBinding()]
+    param([string]$CsharpRunnerPath)
+    if (-not [string]::IsNullOrWhiteSpace($CsharpRunnerPath) -and (Test-Path -LiteralPath $CsharpRunnerPath)) {
+        return (Resolve-Path -LiteralPath $CsharpRunnerPath).Path
+    }
+    $repoRoot = Split-Path -Parent $PSScriptRoot
+    $candidates = @(
+        (Join-Path $repoRoot 'engines\csharp\publish\ADSuite.LdapRunner.exe'),
+        (Join-Path $repoRoot 'engines\csharp\ADSuite.LdapRunner\bin\Release\net8.0-windows\ADSuite.LdapRunner.exe'),
+        (Join-Path $repoRoot 'engines\csharp\ADSuite.LdapRunner\bin\Release\net8.0\ADSuite.LdapRunner.exe')
+    )
+    foreach ($p in $candidates) {
+        if (Test-Path -LiteralPath $p) { return (Resolve-Path -LiteralPath $p).Path }
+    }
+    return $null
+}
+
+<#
+.SYNOPSIS
+    Run an ldap check via ADSuite.LdapRunner.exe (C#). Falls back to Invoke-ADSuiteLdapCheck when rules exceed C# runner capabilities.
+#>
+function Invoke-ADSuiteLdapCheckViaCsharp {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $Check,
+
+        [Parameter(Mandatory)]
+        $RootDse,
+
+        [string]$ServerName,
+
+        [string]$SourcePathOverride,
+
+        [Parameter(Mandatory)]
+        [string]$ChecksJsonPath,
+
+        [string]$CsharpRunnerPath
+    )
+
+    $needsAdsi = {
+        param($Chk)
+        if ($Chk.PSObject.Properties.Name -contains 'complianceRuleSet' -and $Chk.complianceRuleSet) { return $true }
+        if ($Chk.PSObject.Properties.Name -contains 'ldapEmptyResultIsFinding' -and [bool]$Chk.ldapEmptyResultIsFinding) { return $true }
+        if ($Chk.PSObject.Properties.Name -contains 'ldapFindingCondition' -and $Chk.ldapFindingCondition) { return $true }
+        if ($Chk.PSObject.Properties.Name -contains 'ldapWhenChangedWithinDays' -and $null -ne $Chk.ldapWhenChangedWithinDays) { return $true }
+        if ($Chk.PSObject.Properties.Name -contains 'userAccountControlMustInclude' -and $null -ne $Chk.userAccountControlMustInclude -and [int]$Chk.userAccountControlMustInclude -ne 0) { return $true }
+        if ($Chk.PSObject.Properties.Name -contains 'userAccountControlMustExclude' -and $null -ne $Chk.userAccountControlMustExclude -and [int]$Chk.userAccountControlMustExclude -ne 0) { return $true }
+        if ($Chk.PSObject.Properties.Name -contains 'excludeSamAccountName' -and $Chk.excludeSamAccountName) { return $true }
+        return $false
+    }
+
+    if (& $needsAdsi $Check) {
+        return Invoke-ADSuiteLdapCheck -Check $Check -RootDse $RootDse -ServerName $ServerName -SourcePathOverride $SourcePathOverride
+    }
+
+    $exe = Resolve-ADSuiteCsharpRunnerPath -CsharpRunnerPath $CsharpRunnerPath
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $cid = [string]$Check.id
+    $cname = if ($Check.name) { [string]$Check.name } else { $cid }
+    $cat = if ($Check.category) { [string]$Check.category } else { 'Unknown' }
+    $resolvedSourcePath = $null
+    if (-not [string]::IsNullOrWhiteSpace($SourcePathOverride)) {
+        $resolvedSourcePath = $SourcePathOverride.Trim()
+    } elseif ($Check.PSObject.Properties.Name -contains 'sourcePath' -and -not [string]::IsNullOrWhiteSpace([string]$Check.sourcePath)) {
+        $resolvedSourcePath = [string]$Check.sourcePath
+    }
+    $severity = if ($Check.PSObject.Properties.Name -contains 'severity' -and $Check.severity) { [string]$Check.severity } else { 'medium' }
+    $description = $null
+    if ($Check.PSObject.Properties.Name -contains 'description' -and $Check.description) { $description = [string]$Check.description }
+    $meta = Get-ADSuiteOptionalCheckMeta -Check $Check
+
+    $engine = if ($Check.engine) { $Check.engine.ToLowerInvariant() } else { 'ldap' }
+    if ($engine -ne 'ldap') {
+        $sw.Stop()
+        return Invoke-ADSuiteLdapCheck -Check $Check -RootDse $RootDse -ServerName $ServerName -SourcePathOverride $SourcePathOverride
+    }
+
+    if (-not $exe) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId = $cid; CheckName = $cname; Category = $cat; Severity = $severity; Description = $description
+            FindingCount = 0; Result = 'Error'; DurationMs = [int]$sw.ElapsedMilliseconds
+            Error = 'C# runner ADSuite.LdapRunner.exe not found. Build engines/csharp/ADSuite.LdapRunner or set -CsharpRunnerPath.'
+            ExitCode = 1; Findings = [object[]]@(); SourcePath = $resolvedSourcePath
+            Remediation = $meta.Remediation; References = $meta.References; ScoreWeight = $meta.ScoreWeight
+            EngineUsed = 'CSharp'
+        }
+    }
+
+    if (-not (Test-Path -LiteralPath $ChecksJsonPath)) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId = $cid; CheckName = $cname; Category = $cat; Severity = $severity; Description = $description
+            FindingCount = 0; Result = 'Error'; DurationMs = [int]$sw.ElapsedMilliseconds
+            Error = "Checks catalog not found: $ChecksJsonPath"; ExitCode = 1; Findings = [object[]]@()
+            SourcePath = $resolvedSourcePath; Remediation = $meta.Remediation; References = $meta.References; ScoreWeight = $meta.ScoreWeight
+            EngineUsed = 'CSharp'
+        }
+    }
+
+    $catFull = (Resolve-Path -LiteralPath $ChecksJsonPath).Path
+    $argList = [System.Collections.Generic.List[string]]::new()
+    $argList.Add($catFull)
+    $argList.Add($cid)
+    if (-not [string]::IsNullOrWhiteSpace($ServerName)) { $argList.Add($ServerName.Trim()) }
+
+    $tmpOut = [System.IO.Path]::GetTempFileName()
+    $tmpErr = [System.IO.Path]::GetTempFileName()
+    try {
+        $proc = Start-Process -FilePath $exe -ArgumentList $argList -Wait -PassThru -NoNewWindow `
+            -RedirectStandardOutput $tmpOut -RedirectStandardError $tmpErr
+        $exitCode = $proc.ExitCode
+        $stderr = [System.IO.File]::ReadAllText($tmpErr)
+        $stdout = [System.IO.File]::ReadAllText($tmpOut)
+    } finally {
+        Remove-Item -LiteralPath $tmpOut -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $tmpErr -Force -ErrorAction SilentlyContinue
+    }
+
+    if ($exitCode -ne 0) {
+        $sw.Stop()
+        $msg = if ($stderr.Trim()) { $stderr.Trim() } else { "C# runner exited with code $exitCode" }
+        return [PSCustomObject]@{
+            CheckId = $cid; CheckName = $cname; Category = $cat; Severity = $severity; Description = $description
+            FindingCount = 0; Result = 'Error'; DurationMs = [int]$sw.ElapsedMilliseconds
+            Error = $msg; ExitCode = [int]$exitCode; Findings = [object[]]@()
+            SourcePath = $resolvedSourcePath; Remediation = $meta.Remediation; References = $meta.References; ScoreWeight = $meta.ScoreWeight
+            EngineUsed = 'CSharp'
+        }
+    }
+
+    $lines = @($stdout -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+    if ($lines.Count -eq 0) {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId = $cid; CheckName = $cname; Category = $cat; Severity = $severity; Description = $description
+            FindingCount = 0; Result = 'Error'; DurationMs = [int]$sw.ElapsedMilliseconds
+            Error = 'C# runner produced no output.'; ExitCode = 1; Findings = [object[]]@()
+            SourcePath = $resolvedSourcePath; Remediation = $meta.Remediation; References = $meta.References; ScoreWeight = $meta.ScoreWeight
+            EngineUsed = 'CSharp'
+        }
+    }
+
+    $summary = $null
+    try {
+        $summary = $lines[0] | ConvertFrom-Json
+    } catch {
+        $sw.Stop()
+        return [PSCustomObject]@{
+            CheckId = $cid; CheckName = $cname; Category = $cat; Severity = $severity; Description = $description
+            FindingCount = 0; Result = 'Error'; DurationMs = [int]$sw.ElapsedMilliseconds
+            Error = "Invalid C# summary JSON: $($_.Exception.Message)"; ExitCode = 1; Findings = [object[]]@()
+            SourcePath = $resolvedSourcePath; Remediation = $meta.Remediation; References = $meta.References; ScoreWeight = $meta.ScoreWeight
+            EngineUsed = 'CSharp'
+        }
+    }
+
+    $findingRows = [System.Collections.Generic.List[object]]::new()
+    for ($i = 1; $i -lt $lines.Count; $i++) {
+        try {
+            [void]$findingRows.Add(($lines[$i] | ConvertFrom-Json))
+        } catch {
+            # skip malformed lines
+        }
+    }
+
+    $fc = [int]$summary.findingCount
+    $rw = [string]$summary.result
+    if ([string]::IsNullOrWhiteSpace($rw)) { $rw = if ($fc -eq 0) { 'Pass' } else { 'Fail' } }
+
+    $sw.Stop()
+    return [PSCustomObject]@{
+        CheckId       = $cid
+        CheckName     = $cname
+        Category      = $cat
+        Severity      = $severity
+        Description   = $description
+        FindingCount  = $fc
+        Result        = $rw
+        DurationMs    = [int]$sw.ElapsedMilliseconds
+        Error         = $null
+        ExitCode      = 0
+        Findings      = @($findingRows)
+        SourcePath    = $resolvedSourcePath
+        Remediation   = $meta.Remediation
+        References    = $meta.References
+        ScoreWeight   = $meta.ScoreWeight
+        EngineUsed    = 'CSharp'
+    }
+}
+
 function Invoke-ADSuiteAdcsCheck {
     [CmdletBinding()]
     param(
@@ -2255,6 +2691,7 @@ section.check{margin:1.5rem 0;padding:1rem;border:1px solid #e0e0e0;border-radiu
 
 Export-ModuleMember -Function @(
     'Get-ADSuiteRootDse',
+    'Get-ADSuiteSearchBaseDnString',
     'Merge-ADSuiteCheckDefaults',
     'Merge-ADSuiteCatalogOverrides',
     'Import-ADSuiteCatalogJson',
@@ -2266,6 +2703,8 @@ Export-ModuleMember -Function @(
     'Resolve-ADSuiteSearchRoot',
     'Invoke-ADSuiteLdapQuery',
     'Invoke-ADSuiteLdapCheck',
+    'Invoke-ADSuiteLdapCheckViaRsat',
+    'Invoke-ADSuiteLdapCheckViaCsharp',
     'Invoke-ADSuiteAclCheck',
     'Invoke-ADSuiteAdcsCheck',
     'Invoke-ADSuiteFilesystemCheck',

@@ -14,7 +14,9 @@ const scanService_1 = require("../services/scanService");
 const settingsService_1 = require("../services/settingsService");
 const repoRoot_1 = require("../utils/repoRoot");
 const scanExportCsv_1 = require("../utils/scanExportCsv");
+const scanDocumentResults_1 = require("../utils/scanDocumentResults");
 const catalogPaths_1 = require("../utils/catalogPaths");
+const scanEngineMapping_1 = require("../utils/scanEngineMapping");
 class ScanController {
     constructor() {
         this.getScans = async (_req, res) => {
@@ -54,9 +56,11 @@ class ScanController {
         };
         this.executeScan = async (req, res) => {
             const { id } = req.params;
-            const { categories, includeCheckIds, name } = req.body;
+            const { categories, includeCheckIds, name, scanEngine: scanEngineBody, serverName: serverNameBody } = req.body;
             const scanId = parseInt(id, 10) || Date.now();
-            logger_1.logger.info(`Starting scan ${scanId} with categories: ${categories?.length || 0}, checkIds: ${includeCheckIds?.length || 0}`);
+            const { scanEngine, ldapEngine: ldapEnginePs, launchViaCmd } = (0, scanEngineMapping_1.scanMetaSidecarFromApi)(scanEngineBody);
+            const serverName = typeof serverNameBody === 'string' && serverNameBody.trim() ? serverNameBody.trim() : undefined;
+            logger_1.logger.info(`Starting scan ${scanId} scanEngine=${scanEngine} ldapEngine=${ldapEnginePs} server=${serverName ?? '(default)'} categories: ${categories?.length || 0}, checkIds: ${includeCheckIds?.length || 0}`);
             (0, websocket_1.broadcastScanUpdate)(scanId, {
                 status: 'running',
                 message: 'Initializing Security Assessment Engine...',
@@ -92,7 +96,11 @@ class ScanController {
                     categories: categories || [],
                     includeCheckIdsCount: includeCheckIds?.length ?? 0,
                     checksJsonPath,
-                    checksOverridesPath: checksOverridesPath ?? null
+                    checksOverridesPath: checksOverridesPath ?? null,
+                    scanEngine,
+                    ldapEngine: ldapEnginePs,
+                    serverName: serverName ?? null,
+                    launchViaCmd
                 };
                 await promises_1.default.writeFile(path_1.default.join(outputDir, 'scan.meta.json'), JSON.stringify(metaSidecar, null, 2), 'utf-8');
             }
@@ -128,8 +136,20 @@ class ScanController {
                     logger_1.logger.info(`Large check count (${includeCheckIds.length}), skipping individual -IncludeCheckId to avoid CLI limits.`);
                 }
             }
-            logger_1.logger.info(`Spawning: powershell.exe ${args.join(' ')}`);
-            const ps = (0, child_process_1.spawn)('powershell.exe', args);
+            args.push('-LdapEngine', ldapEnginePs);
+            if (serverName) {
+                args.push('-ServerName', serverName);
+            }
+            const csharpRunnerEnv = process.env.AD_SUITE_CSHARP_RUNNER?.trim();
+            if (ldapEnginePs === 'Csharp' && csharpRunnerEnv) {
+                args.push('-CsharpRunnerPath', csharpRunnerEnv);
+            }
+            const useCmdLauncher = launchViaCmd;
+            const spawnMsg = useCmdLauncher
+                ? `cmd.exe /c powershell.exe ${args.join(' ')}`
+                : `powershell.exe ${args.join(' ')}`;
+            logger_1.logger.info(`Spawn: ${spawnMsg}`);
+            const ps = useCmdLauncher ? (0, child_process_1.spawn)('cmd.exe', ['/c', 'powershell.exe', ...args]) : (0, child_process_1.spawn)('powershell.exe', args);
             let errorOutput = '';
             ps.stdout.on('data', (data) => {
                 const lines = data.toString();
@@ -188,7 +208,11 @@ class ScanController {
                 status: 'running',
                 checksJsonPath,
                 checksOverridesPath: checksOverridesPath ?? null,
-                outputDir
+                outputDir,
+                scanEngine,
+                ldapEngine: ldapEnginePs,
+                serverName: serverName ?? null,
+                launchViaCmd: useCmdLauncher
             });
         };
         this.stopScan = (_req, res) => {
@@ -238,11 +262,8 @@ class ScanController {
                 if (!doc) {
                     return res.status(404).json({ message: 'Scan not found' });
                 }
-                let results = doc.results || doc.Results || doc.checks || doc.Checks || [];
-                if (!Array.isArray(results) && results && Array.isArray(results.checks)) {
-                    results = results.checks;
-                }
-                res.json({ findings: Array.isArray(results) ? results : [] });
+                const findings = (0, scanDocumentResults_1.extractResultsArrayFromScanDocument)(doc);
+                res.json({ findings });
             }
             catch (e) {
                 res.status(404).json({ message: 'Scan not found or parsing failed' });

@@ -6,6 +6,7 @@ import {
     Database, ChevronRight, ExternalLink, X, ListChecks, Loader2
 } from 'lucide-react';
 import api from '../lib/api';
+import { extractScanResultsArray } from '../lib/scanFindings';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAppStore } from '../store/useAppStore';
 import { useFindingsStore } from '../store/useFindingsStore';
@@ -298,7 +299,7 @@ export default function Analysis() {
             c = raw.scan;
         }
 
-        let rawResults = Array.isArray(c) ? c : (c.results ?? c.Results ?? []);
+        let rawResults = Array.isArray(c) ? c : extractScanResultsArray(c);
 
         // Normalize keys for each result to standard PascalCase so the UI bindings work
         const normalizedResults = rawResults.map((r: any) => ({

@@ -17,6 +17,10 @@ export function resolveChecksJsonPath(rootDir: string): string {
     if (fs.existsSync(unified)) {
         return unified;
     }
+    const generated = path.join(rootDir, 'checks.generated.json');
+    if (fs.existsSync(generated)) {
+        return generated;
+    }
     return path.join(rootDir, 'checks.json');
 }
 

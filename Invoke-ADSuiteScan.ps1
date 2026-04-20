@@ -36,8 +36,16 @@
 .PARAMETER SkipCatalogValidation
     Skip structural validation (duplicate ids, required fields per engine). Not recommended for CI.
 
+.PARAMETER LdapEngine
+    How to run ldap-engine checks: Adsi (DirectorySearcher), Rsat (Get-ADObject), Combined (same as Rsat; RSAT with in-process ADSI fallback), Csharp (ADSuite.LdapRunner.exe per check).
+
+.PARAMETER CsharpRunnerPath
+    Optional path to ADSuite.LdapRunner.exe when LdapEngine is Csharp.
+
 .EXAMPLE
     .\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -OutputDirectory .\out\latest
+.EXAMPLE
+    .\Invoke-ADSuiteScan.ps1 -LdapEngine Rsat -ServerName dc01.contoso.com
 #>
 [CmdletBinding()]
 param(
@@ -65,7 +73,12 @@ param(
 
     [switch]$AdcsSkipACLChecks,
 
-    [switch]$AdcsSkipNetworkProbes
+    [switch]$AdcsSkipNetworkProbes,
+
+    [ValidateSet('Adsi', 'Rsat', 'Combined', 'Csharp')]
+    [string]$LdapEngine = 'Adsi',
+
+    [string]$CsharpRunnerPath
 )
 
 function Expand-ObjectsToUniformCsvRows {
@@ -198,7 +211,7 @@ foreach ($raw in $candidates) {
     $checksToRun.Add($merged)
 }
 
-Write-Host "AD Suite scan: $($checksToRun.Count) check(s) (ldap/filesystem/registry/adcs/acl). Output: $OutputDirectory" -ForegroundColor Cyan
+Write-Host "AD Suite scan: $($checksToRun.Count) check(s) (ldap/filesystem/registry/adcs/acl). LdapEngine: $LdapEngine. Output: $OutputDirectory" -ForegroundColor Cyan
 
 try {
     $rootDse = Get-ADSuiteRootDse -ServerName $ServerName
@@ -211,13 +224,21 @@ $results = [System.Collections.Generic.List[object]]::new()
 $totalFindings = 0
 $checksWithFindings = 0
 $checksWithErrors = 0
+$checksPathResolved = (Resolve-Path -LiteralPath $ChecksJsonPath).Path
 
 foreach ($chk in $checksToRun) {
     $eng = if ($chk.engine) { $chk.engine.ToLowerInvariant() } else { 'ldap' }
     $r = $null
     switch ($eng) {
         'ldap' {
-            $r = Invoke-ADSuiteLdapCheck -Check $chk -RootDse $rootDse -ServerName $ServerName -SourcePathOverride $null
+            if ($LdapEngine -eq 'Rsat' -or $LdapEngine -eq 'Combined') {
+                $r = Invoke-ADSuiteLdapCheckViaRsat -Check $chk -RootDse $rootDse -ServerName $ServerName -SourcePathOverride $null
+            } elseif ($LdapEngine -eq 'Csharp') {
+                $r = Invoke-ADSuiteLdapCheckViaCsharp -Check $chk -RootDse $rootDse -ServerName $ServerName -SourcePathOverride $null `
+                    -ChecksJsonPath $checksPathResolved -CsharpRunnerPath $CsharpRunnerPath
+            } else {
+                $r = Invoke-ADSuiteLdapCheck -Check $chk -RootDse $rootDse -ServerName $ServerName -SourcePathOverride $null
+            }
         }
         'filesystem' {
             $r = Invoke-ADSuiteFilesystemCheck -Check $chk -RootDse $rootDse -ServerName $ServerName -SourcePathOverride $null
@@ -315,6 +336,7 @@ $scanMeta['checksRun'] = $results.Count
 $scanMeta['scoringNormalizer'] = $ScoringNormalizer
 $scanMeta['findingCapPerCheck'] = $FindingCapPerCheck
 $scanMeta['adSuiteEngineVersion'] = '1.6.0'
+$scanMeta['ldapEngine'] = $LdapEngine
 try {
     $gitOut = & git -C $scriptDir rev-parse HEAD 2>$null
     if ($gitOut) { $scanMeta['sourceGitCommit'] = [string]$gitOut.Trim() }

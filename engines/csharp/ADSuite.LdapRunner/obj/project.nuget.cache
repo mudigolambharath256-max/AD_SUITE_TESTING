@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "fo8b704JB/0=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\acer\\Music\\AD_SUITE\\engines\\csharp\\ADSuite.LdapRunner\\ADSuite.LdapRunner.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\acer\\.nuget\\packages\\system.directoryservices\\8.0.0\\system.directoryservices.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

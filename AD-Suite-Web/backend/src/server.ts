@@ -51,8 +51,12 @@ app.use(cors({
     },
     credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+/** Large scan flatten payloads exceed the default ~100kb JSON limit and caused 500 on POST /api/attack-path/analyze */
+const ATTACK_PATH_JSON_LIMIT = process.env.ATTACK_PATH_JSON_LIMIT || '32mb';
+const DEFAULT_JSON_LIMIT = process.env.JSON_BODY_LIMIT || '2mb';
+app.use('/api/attack-path', express.json({ limit: ATTACK_PATH_JSON_LIMIT }), attackPathRoutes);
+app.use(express.json({ limit: DEFAULT_JSON_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: DEFAULT_JSON_LIMIT }));
 
 // Request logging
 app.use((req, res, next) => {
@@ -88,7 +92,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/settings', settingsRoutes);
-app.use('/api/attack-path', attackPathRoutes);
 
 // API Documentation
 app.get('/api/docs', (req, res) => {

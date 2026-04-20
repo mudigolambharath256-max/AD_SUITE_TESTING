@@ -5,6 +5,7 @@ import { Plus, Search, Shield, Clock, AlertCircle, Loader2, Upload, Maximize2, M
 import api from '../lib/api';
 import ScanEntityGraph from '../components/ScanEntityGraph';
 import { extractEntityGraphFromFindings, flattenFindingRows } from '../lib/extractEntityGraph';
+import { extractScanResultsArray } from '../lib/scanFindings';
 
 interface ScanSummary {
     id: string;
@@ -72,8 +73,9 @@ export default function Scans() {
     }, [scans, search]);
 
     const graph = useMemo(() => {
-        if (!selectedScanDetail?.results) return null;
-        const rows = flattenFindingRows(selectedScanDetail.results);
+        const checks = extractScanResultsArray(selectedScanDetail);
+        if (!checks.length) return null;
+        const rows = flattenFindingRows(checks);
         const domain =
             String(selectedScanDetail?.meta?.defaultNamingContext ?? selectedScanDetail?.meta?.defaultNamingContext ?? 'Domain');
         return extractEntityGraphFromFindings(rows, { domainLabel: domain });

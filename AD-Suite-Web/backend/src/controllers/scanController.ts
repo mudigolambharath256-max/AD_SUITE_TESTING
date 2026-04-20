@@ -9,7 +9,9 @@ import { ScanService } from '../services/scanService';
 import { settingsService } from '../services/settingsService';
 import { getRepoRoot } from '../utils/repoRoot';
 import { findingsToCsv } from '../utils/scanExportCsv';
+import { extractResultsArrayFromScanDocument } from '../utils/scanDocumentResults';
 import { resolveChecksJsonPath, resolveChecksOverridesPath } from '../utils/catalogPaths';
+import { scanMetaSidecarFromApi } from '../utils/scanEngineMapping';
 
 export class ScanController {
     public getScans = async (_req: Request, res: Response) => {
@@ -50,15 +52,20 @@ export class ScanController {
 
     public executeScan = async (req: Request, res: Response) => {
         const { id } = req.params;
-        const { categories, includeCheckIds, name } = req.body as {
+        const { categories, includeCheckIds, name, scanEngine: scanEngineBody, serverName: serverNameBody } = req.body as {
             categories?: string[];
             includeCheckIds?: string[];
             name?: string;
+            scanEngine?: string;
+            serverName?: string;
         };
         const scanId = parseInt(id, 10) || Date.now();
+        const { scanEngine, ldapEngine: ldapEnginePs, launchViaCmd } = scanMetaSidecarFromApi(scanEngineBody);
+        const serverName =
+            typeof serverNameBody === 'string' && serverNameBody.trim() ? serverNameBody.trim() : undefined;
 
         logger.info(
-            `Starting scan ${scanId} with categories: ${categories?.length || 0}, checkIds: ${includeCheckIds?.length || 0}`
+            `Starting scan ${scanId} scanEngine=${scanEngine} ldapEngine=${ldapEnginePs} server=${serverName ?? '(default)'} categories: ${categories?.length || 0}, checkIds: ${includeCheckIds?.length || 0}`
         );
         broadcastScanUpdate(scanId, {
             status: 'running',
@@ -101,7 +108,11 @@ export class ScanController {
                 categories: categories || [],
                 includeCheckIdsCount: includeCheckIds?.length ?? 0,
                 checksJsonPath,
-                checksOverridesPath: checksOverridesPath ?? null
+                checksOverridesPath: checksOverridesPath ?? null,
+                scanEngine,
+                ldapEngine: ldapEnginePs,
+                serverName: serverName ?? null,
+                launchViaCmd
             };
             await fsPromises.writeFile(
                 path.join(outputDir, 'scan.meta.json'),
@@ -145,9 +156,22 @@ export class ScanController {
             }
         }
 
-        logger.info(`Spawning: powershell.exe ${args.join(' ')}`);
+        args.push('-LdapEngine', ldapEnginePs);
+        if (serverName) {
+            args.push('-ServerName', serverName);
+        }
+        const csharpRunnerEnv = process.env.AD_SUITE_CSHARP_RUNNER?.trim();
+        if (ldapEnginePs === 'Csharp' && csharpRunnerEnv) {
+            args.push('-CsharpRunnerPath', csharpRunnerEnv);
+        }
 
-        const ps = spawn('powershell.exe', args);
+        const useCmdLauncher = launchViaCmd;
+        const spawnMsg = useCmdLauncher
+            ? `cmd.exe /c powershell.exe ${args.join(' ')}`
+            : `powershell.exe ${args.join(' ')}`;
+        logger.info(`Spawn: ${spawnMsg}`);
+
+        const ps = useCmdLauncher ? spawn('cmd.exe', ['/c', 'powershell.exe', ...args]) : spawn('powershell.exe', args);
         let errorOutput = '';
 
         ps.stdout.on('data', (data) => {
@@ -212,7 +236,11 @@ export class ScanController {
             status: 'running',
             checksJsonPath,
             checksOverridesPath: checksOverridesPath ?? null,
-            outputDir
+            outputDir,
+            scanEngine,
+            ldapEngine: ldapEnginePs,
+            serverName: serverName ?? null,
+            launchViaCmd: useCmdLauncher
         });
     };
 
@@ -263,11 +291,8 @@ export class ScanController {
             if (!doc) {
                 return res.status(404).json({ message: 'Scan not found' });
             }
-            let results = doc.results || doc.Results || doc.checks || doc.Checks || [];
-            if (!Array.isArray(results) && results && Array.isArray((results as any).checks)) {
-                results = (results as any).checks;
-            }
-            res.json({ findings: Array.isArray(results) ? results : [] });
+            const findings = extractResultsArrayFromScanDocument(doc);
+            res.json({ findings });
         } catch (e: unknown) {
             res.status(404).json({ message: 'Scan not found or parsing failed' });
         }

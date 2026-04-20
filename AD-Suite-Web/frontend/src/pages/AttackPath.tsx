@@ -30,6 +30,8 @@ import {
     canonicalSeverityForFilter,
     effectiveFindingSeverity
 } from '../lib/extractEntityGraph';
+import { extractScanResultsArray } from '../lib/scanFindings';
+import { buildAdGraphFromFindings, buildGraphSummary, graphSummaryToMermaid } from '../lib/buildAdGraph';
 
 // --- Types ---
 interface ReportSummary {
@@ -80,6 +82,7 @@ interface AnalysisResponse {
         approxChars?: number;
         truncatedToBudget?: boolean;
         redactionApplied?: boolean;
+        graphSummaryIncluded?: boolean;
     };
 }
 
@@ -195,13 +198,13 @@ export default function AttackPath() {
         reader.onload = (event) => {
             try {
                 const doc = JSON.parse(event.target?.result as string);
-                const results = doc.results ?? doc.Results ?? [];
-                
+                const results = extractScanResultsArray(doc);
                 if (results.length === 0) {
-                    alert("No findings found in the uploaded file.");
+                    alert(
+                        'No results array found. Expected scan-results.json with results[] (or checks[]) of check objects, each optionally containing Findings[]. See docs/SCAN_RESULTS_FINDINGS_SCHEMA.md.'
+                    );
                 }
-                
-                setLocalFindings(results);
+                setLocalFindings(results as Finding[]);
                 setSelectedScanId(''); // Clear server selection when local file is used
             } catch (err) {
                 console.error("Failed to parse file:", err);
@@ -262,6 +265,10 @@ export default function AttackPath() {
             const entries = tokenMapEntries(maps).map((e) => ({ token: e.token, real: e.real, type: e.type }));
             setTokenEntries(entries);
 
+            const tokenizedRows = rawFindingObjs.map((f) => tokenizeFinding({ ...f }, maps));
+            const adGraph = buildAdGraphFromFindings(tokenizedRows, { domainLabel: 'Domain' });
+            const graphSummary = buildGraphSummary(adGraph);
+
             const tokenized = rawFindingObjs.map((f) => deepRedact(tokenizeFinding(f, maps)));
 
             const res = await api.post('/attack-path/analyze', {
@@ -274,6 +281,7 @@ export default function AttackPath() {
                     Description: f.Description || f.Name,
                     Impact: f.Impact || f.RiskData || f.Message
                 })),
+                graphSummary,
                 llmProvider: provider,
                 model: normalizedModel,
                 apiKey: apiKey || undefined
@@ -341,6 +349,10 @@ export default function AttackPath() {
                         : a.relatedFindingIds
                 }));
             }
+            if (!String(data.mermaidChart || '').trim()) {
+                data.mermaidChart = graphSummaryToMermaid(graphSummary);
+            }
+
             // Keep Mermaid nodes as tokens (privacy + render safety). Use the mapping panel to resolve tokens.
             return data;
         }
@@ -388,7 +400,7 @@ export default function AttackPath() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
                 {/* Configuration Panel */}
-                <div className="lg:col-span-4 space-y-6">
+                <div className="lg:col-span-4 xl:col-span-3 space-y-6">
                     <div className="bg-surface-elevated border border-border-light rounded-xl p-5 shadow-sm">
                         <h2 className="text-lg font-medium text-text-primary flex items-center gap-2 mb-4">
                             <Settings size={20} className="text-text-tertiary" /> Configuration
@@ -398,13 +410,13 @@ export default function AttackPath() {
                         <div className="space-y-4 mb-6">
                             <div>
                                 <label className="block text-sm font-medium text-text-secondary mb-1">Data Source</label>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 flex-wrap">
                                     <select 
                                         value={selectedScanId} onChange={e => {
                                             setSelectedScanId(e.target.value);
                                             setLocalFindings([]); // Clear local findings if server scan selected
                                         }}
-                                        className="flex-1 bg-bg-tertiary border border-border-medium rounded-lg px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-orange"
+                                        className="flex-1 min-w-0 bg-bg-tertiary border border-border-medium rounded-lg px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-orange"
                                     >
                                         <option value="">{localFindings.length > 0 ? 'Using Local File...' : 'Select a Scan...'}</option>
                                         {scans?.map(s => (
@@ -422,7 +434,7 @@ export default function AttackPath() {
                                     <button 
                                         type="button" 
                                         onClick={() => fileInputRef.current?.click()} 
-                                        className="px-3 py-2 bg-bg-tertiary border border-border-medium rounded-lg hover:bg-surface-elevated text-text-secondary transition-colors"
+                                        className="px-3 py-2 bg-bg-tertiary border border-border-medium rounded-lg hover:bg-surface-elevated text-text-secondary transition-colors whitespace-nowrap flex-shrink-0"
                                         title="Upload local scan file"
                                     >
                                         <Upload size={18} />
@@ -637,7 +649,7 @@ export default function AttackPath() {
                 </div>
 
                 {/* Main Results Panel */}
-                <div className="lg:col-span-8 flex flex-col gap-6">
+                <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
                     {/* Graph Panel */}
                     <div
                         ref={graphPanelRef}

@@ -1,18 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findingsToCsv = findingsToCsv;
+const scanDocumentResults_1 = require("./scanDocumentResults");
 /** Flatten per-check findings from scan-results.json into CSV text. */
 function findingsToCsv(doc) {
-    const results = doc.results || doc.Results || [];
+    const results = (0, scanDocumentResults_1.extractResultsArrayFromScanDocument)(doc);
     const rows = [];
     for (const r of results) {
-        const findings = r.Findings || r.findings || [];
+        const check = r;
+        const findings = (check.Findings ?? check.findings ?? []);
         for (const f of findings) {
             rows.push({
-                CheckId: r.CheckId ?? r.checkId,
-                CheckName: r.CheckName ?? r.checkName,
-                Category: r.Category ?? r.category,
-                Severity: r.Severity ?? r.severity,
+                CheckId: check.CheckId ?? check.checkId,
+                CheckName: check.CheckName ?? check.checkName,
+                Category: check.Category ?? check.category,
+                Severity: check.Severity ?? check.severity,
                 ...(typeof f === 'object' && f !== null ? f : {})
             });
         }

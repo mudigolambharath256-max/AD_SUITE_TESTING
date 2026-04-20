@@ -9,6 +9,9 @@ import {
 import api from '../lib/api';
 import GraphVisualizer from '../components/GraphVisualizer';
 import clsx from 'clsx';
+import { buildAdGraphFromFindings, toSigmaGraphData } from '../lib/buildAdGraph';
+import { flattenFindingRows } from '../lib/extractEntityGraph';
+import { extractScanResultsArray } from '../lib/scanFindings';
 
 interface Check {
     id: string;
@@ -25,6 +28,28 @@ interface ScanProgress {
     progress: number;
     results?: any;
 }
+
+type ScanEngineOption = 'adsi' | 'rsat' | 'combined' | 'csharp' | 'cmd';
+
+const SCAN_ENGINE_OPTIONS: { value: ScanEngineOption; label: string; hint: string }[] = [
+    { value: 'adsi', label: 'ADSI (default)', hint: 'DirectorySearcher — same as classic Invoke-ADSuiteScan.' },
+    { value: 'rsat', label: 'RSAT (Get-ADObject)', hint: 'ActiveDirectory module; in-process ADSI fallback for advanced rules.' },
+    {
+        value: 'combined',
+        label: 'Combined',
+        hint: 'Same code path as RSAT in Invoke-ADSuiteScan (Get-ADObject + in-process ADSI fallback). Different from CLI engines\\ADSuite-CombinedEngine.ps1 (multi-step per check).'
+    },
+    {
+        value: 'csharp',
+        label: 'C# runner',
+        hint: 'Spawns ADSuite.LdapRunner.exe per LDAP check — slower on huge scopes; build the C# project first.'
+    },
+    {
+        value: 'cmd',
+        label: 'CMD launcher',
+        hint: 'Spawns cmd.exe /c powershell.exe then Invoke-ADSuiteScan; LDAP always uses -LdapEngine Adsi (wrapper only). For RSAT/C#/multi-engine from CMD, use engines\\ADSuite-Run-Cmd.cmd locally.'
+    }
+];
 
 const severityColors: Record<string, string> = {
     critical: 'text-critical border-critical/30 bg-critical/5',
@@ -45,15 +70,43 @@ export default function NewScan() {
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
     const [scanProgress, setScanProgress] = useState<ScanProgress | null>(null);
     const [scanResults, setScanResults] = useState<any>(null);
+    const [scanEngine, setScanEngine] = useState<ScanEngineOption>('adsi');
+    const [dcServerName, setDcServerName] = useState('');
 
     // Fetch available checks and categories
-    const { data: catalogData, isLoading: catalogLoading } = useQuery({
+    const {
+        data: catalogData,
+        isLoading: catalogLoading,
+        isError: catalogError,
+        error: catalogErrObj,
+        refetch: refetchCatalog
+    } = useQuery({
         queryKey: ['checks'],
         queryFn: async () => {
             const response = await api.get('/checks');
-            return response.data;
-        }
+            const d = response.data;
+            if (!d?.checks || !Array.isArray(d.checks)) {
+                throw new Error('Server returned no checks array');
+            }
+            return d;
+        },
+        retry: 1
     });
+
+    const catalogErrorMessage = (() => {
+        if (!catalogError) return '';
+        const ax = catalogErrObj as { message?: string; response?: { data?: { message?: string; checksJsonPath?: string } } };
+        const body = ax.response?.data;
+        if (body?.message) {
+            return body.checksJsonPath
+                ? `${body.message} (path: ${body.checksJsonPath})`
+                : body.message;
+        }
+        if (ax.message === 'Network Error' || /network/i.test(String(ax.message))) {
+            return 'Cannot reach the API. Start the backend on port 3000 and ensure the Vite dev proxy is active.';
+        }
+        return ax.message || 'Request failed';
+    })();
 
     // Auto-select category if provided in URL
     useEffect(() => {
@@ -82,28 +135,68 @@ export default function NewScan() {
         const websocket = new WebSocket(wsUrl);
 
         websocket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'scan_update') {
-                    setScanProgress(data.data);
-                    if (data.data.status === 'completed' && data.data.results) {
-                        setScanResults(data.data.results);
+            void (async () => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'scan_update') {
+                        setScanProgress(data.data);
+                        if (data.data.status === 'completed' && data.data.results) {
+                            const base = data.data.results as Record<string, unknown>;
+                            let graphData: ReturnType<typeof toSigmaGraphData> | undefined;
+                            try {
+                                const sid = data.scanId as number | undefined;
+                                if (sid != null) {
+                                    const res = await api.get(
+                                        `/scans/${encodeURIComponent(String(sid))}/results`
+                                    );
+                                    const doc = res.data as Record<string, unknown>;
+                                    const checks = extractScanResultsArray(doc);
+                                    const rows = flattenFindingRows(checks);
+                                    const meta = (doc.meta ?? doc.Meta) as
+                                        | { defaultNamingContext?: string }
+                                        | undefined;
+                                    const domain =
+                                        meta?.defaultNamingContext != null
+                                            ? String(meta.defaultNamingContext)
+                                            : 'Domain';
+                                    const ad = buildAdGraphFromFindings(rows, { 
+                                        domainLabel: domain,
+                                        defaultNamingContext: meta?.defaultNamingContext 
+                                    });
+                                    const sg = toSigmaGraphData(ad);
+                                    if (sg.nodes.length > 0) graphData = sg;
+                                }
+                            } catch (e) {
+                                console.warn('Could not build deterministic scan graph:', e);
+                            }
+                            setScanResults({ ...base, graphData });
+                        }
                     }
+                } catch (error) {
+                    console.error('WebSocket message error:', error);
                 }
-            } catch (error) {
-                console.error('WebSocket message error:', error);
-            }
+            })();
         };
 
         return () => websocket.close();
     }, []);
 
     const executeScanMutation = useMutation({
-        mutationFn: async (scanData: any) => {
-            return (await api.post(`/scans/${scanData.id}/execute`, {
-                categories: scanData.categories,
-                includeCheckIds: scanData.includeCheckIds
-            })).data;
+        mutationFn: async (scanData: {
+            id: number;
+            categories?: string[];
+            includeCheckIds: string[];
+            scanEngine: ScanEngineOption;
+            serverName?: string;
+        }) => {
+            return (
+                await api.post(`/scans/${scanData.id}/execute`, {
+                    categories: scanData.categories,
+                    includeCheckIds: scanData.includeCheckIds,
+                    scanEngine: scanData.scanEngine,
+                    ...(scanData.serverName?.trim() ? { serverName: scanData.serverName.trim() } : {})
+                })
+            ).data;
         },
         onError: () => {
             setScanProgress({ status: 'failed', message: 'Failed to start scan execution engine', progress: 0 });
@@ -171,7 +264,12 @@ export default function NewScan() {
         const includeCheckIds = Array.from(selectedChecks);
         
         setScanProgress({ status: 'starting', message: 'Initializing Security Scan Environment...', progress: 0 });
-        executeScanMutation.mutate({ id: scanId, includeCheckIds });
+        executeScanMutation.mutate({
+            id: scanId,
+            includeCheckIds,
+            scanEngine,
+            serverName: dcServerName.trim() || undefined
+        });
     };
 
     if (catalogLoading) {
@@ -221,6 +319,39 @@ export default function NewScan() {
                                     onChange={(e) => setScanName(e.target.value)}
                                     placeholder="e.g. Identity Baseline 2024"
                                     className="w-full px-4 py-3 bg-bg-secondary border border-border-medium rounded-xl text-white text-sm focus:outline-none focus:border-accent-orange/50 transition-all"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[8px] font-bold text-text-tertiary uppercase tracking-widest mb-2">
+                                    Scan engine (LDAP checks)
+                                </label>
+                                <select
+                                    value={scanEngine}
+                                    onChange={(e) => setScanEngine(e.target.value as ScanEngineOption)}
+                                    className="w-full px-4 py-3 bg-bg-secondary border border-border-medium rounded-xl text-white text-sm focus:outline-none focus:border-accent-orange/50 transition-all"
+                                >
+                                    {SCAN_ENGINE_OPTIONS.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="mt-2 text-[10px] text-text-tertiary leading-relaxed">
+                                    {SCAN_ENGINE_OPTIONS.find((o) => o.value === scanEngine)?.hint}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-[8px] font-bold text-text-tertiary uppercase tracking-widest mb-2">
+                                    Domain controller (optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={dcServerName}
+                                    onChange={(e) => setDcServerName(e.target.value)}
+                                    placeholder="e.g. dc01.contoso.com"
+                                    className="w-full px-4 py-3 bg-bg-secondary border border-border-medium rounded-xl text-white text-sm focus:outline-none focus:border-accent-orange/50 transition-all font-mono"
                                 />
                             </div>
 
@@ -306,12 +437,35 @@ export default function NewScan() {
                         </div>
 
                         <div className="space-y-2 flex-grow overflow-y-auto pr-1 max-h-[70vh]">
-                            {!catalogData?.checks || categories.length === 0 ? (
+                            {catalogLoading ? (
+                                <div className="flex flex-col items-center justify-center p-20 text-center space-y-4 text-text-tertiary">
+                                    <Loader2 size={40} className="animate-spin text-accent-orange" />
+                                    <p className="text-xs uppercase font-bold tracking-widest">Loading check catalog…</p>
+                                </div>
+                            ) : catalogError ? (
+                                <div className="flex flex-col items-center justify-center p-20 text-center space-y-4">
+                                    <XCircle size={48} className="text-critical" />
+                                    <p className="text-sm text-white tracking-wide uppercase font-bold">Failed to load check catalog</p>
+                                    {catalogErrorMessage && (
+                                        <p className="text-xs text-text-secondary max-w-lg leading-relaxed font-mono">{catalogErrorMessage}</p>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => refetchCatalog()}
+                                        className="mt-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-accent-orange/20 text-accent-orange border border-accent-orange/40 hover:bg-accent-orange/30 transition-colors"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            ) : catalogData?.checks?.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center p-20 text-center space-y-4 opacity-50">
                                     <XCircle size={48} className="text-text-tertiary" />
-                                    <p className="text-sm text-text-tertiary tracking-wide uppercase font-bold">
-                                        {!catalogData?.checks ? "Failed to load check catalog" : "No checks match your search filter"}
-                                    </p>
+                                    <p className="text-sm text-text-tertiary tracking-wide uppercase font-bold">Catalog is empty</p>
+                                </div>
+                            ) : categories.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center p-20 text-center space-y-4 opacity-50">
+                                    <XCircle size={48} className="text-text-tertiary" />
+                                    <p className="text-sm text-text-tertiary tracking-wide uppercase font-bold">No checks match your search filter</p>
                                 </div>
                             ) : (
                                 categories.map(cat => {

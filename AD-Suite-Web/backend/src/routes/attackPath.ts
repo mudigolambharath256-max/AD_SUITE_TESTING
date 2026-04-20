@@ -10,10 +10,14 @@ router.use(auditMutations);
 
 interface AnalyzeParams {
     findings: any[];
+    /** Client-built deterministic graph summary (token-aligned); canonical topology for reasoning. */
+    graphSummary?: unknown;
     llmProvider: 'openai' | 'anthropic' | 'ollama';
     model: string;
     apiKey?: string;
 }
+
+const GRAPH_SUMMARY_MAX_CHARS = 24_000;
 
 const SYSTEM_PROMPT = `You are an expert Active Directory penetration tester and security architect.
 You will receive deduplicated findings from an automated AD security assessment.
@@ -30,22 +34,14 @@ Produce a structured attack path analysis with these outputs:
 3. CHOKE POINTS — Max 5. Accounts or systems that appear in multiple chains.
 4. IMMEDIATE ACTIONS — Top 3 remediations ordered by: (severity × occurrence count).
 
-### KILL CHAINS VS MERMAID (critical)
-- Finding IDs belong in killChains (chain string, steps[].findingId), chokePoints, immediateActions, and executiveSummary—not inside Mermaid node boxes.
-- The Mermaid diagram is an ENTITY attack graph (who/what is abused), not a list of check codes.
+### DETERMINISTIC GRAPH SUMMARY (when provided in the user message)
+- A block DETERMINISTIC_GRAPH_SUMMARY contains **nodes** and **edges** already merged from the scan engine (same entity tokens as findings). Treat it as **ground truth for topology**: do **not** claim edges that are not supported by that summary or the grouped findings.
+- Choke points: prefer entities that appear in **multiple edges** or **multiple risks** (check IDs) in that summary.
 
-### MERMAID GRAPH RULES — follow exactly or the render will break:
-- Use graph TD (top-down)
-- Output MUST include MULTIPLE SUBGRAPHS: one subgraph per kill chain (Chain1, Chain2, ...).
-- Each subgraph MUST visualize the corresponding killChains[i] as an ordered entity path.
-- Per-chain limit: max 15 nodes. Overall limit: max 80 nodes.
-- Node IDs: alphanumeric only (e.g. N1, A2, EXT). No hyphens in node IDs.
-- Node labels (inside brackets) MUST be ENTITY TOKENS from the payload only: U001, C002, G003, T001, GPO001, OU001, CA001, SPN001, etc.—matching tokenized Entities/Evidence in the JSON. Do NOT emit real names.
-- FORBIDDEN inside any node label or as a standalone node label: CheckId-style strings (anything like ACC-025, GPO-001, KRB-002, LDAP-003, ADCS-ESC1, DCONF-001, CERT-001, COMPLY-001). Those are not entities.
-- If you need an "external / unprivileged starting point" with no entity token, use node ID EXT or START and label EXT or START only.
-- Edges carry the attack: use short attacker-action words in edge labels, e.g. -->|Kerberoast|, -->|DCSync|, -->|Enroll|. Optional trailing ref without hyphens, e.g. via KRB002, is allowed if it fits.
-- No parentheses, colons, slashes, or backslashes inside node labels.
-- Every node must appear in at least one edge.
+### KILL CHAINS VS MERMAID
+- Finding IDs belong in killChains (chain string, steps[].findingId), chokePoints, immediateActions, and executiveSummary.
+- **mermaidChart is optional.** If you output it, use entity tokens only in node labels (U001, G002, …). If you are unsure or the summary is large, return **mermaidChart as an empty string** ""; the client may render a diagram from the deterministic summary instead.
+- Do not put CheckId strings (ACC-033, KRB-002, …) inside Mermaid node labels as if they were entities.
 
 ### OUTPUT FORMAT
 Return ONLY valid JSON with these keys:
@@ -69,12 +65,12 @@ Return ONLY valid JSON with these keys:
   "immediateActions": [
     { "action": "STRING", "targets": ["STRING"], "relatedFindingIds": ["STRING"], "expectedImpact": "STRING" }
   ],
-  "mermaidChart": "graph TD\\nA1[... ] -->|...| B1\\n..."
+  "mermaidChart": "OPTIONAL string: Mermaid graph TD, or empty string to skip"
 }`;
 
 router.post('/analyze', authorize('admin', 'analyst'), async (req, res, next) => {
     try {
-        const { findings, llmProvider, model, apiKey } = req.body as AnalyzeParams;
+        const { findings, graphSummary, llmProvider, model, apiKey } = req.body as AnalyzeParams;
 
         if (!findings || !Array.isArray(findings) || findings.length === 0) {
             return res.status(400).json({ message: 'Valid findings array is required' });
@@ -83,6 +79,19 @@ router.post('/analyze', authorize('admin', 'analyst'), async (req, res, next) =>
         const built = buildAttackPathPayload(findings as RawFindingInput[]);
         const { userPromptJson, stats } = built;
 
+        let graphSummaryJson = '';
+        if (graphSummary != null && typeof graphSummary === 'object') {
+            try {
+                const raw = JSON.stringify(graphSummary);
+                graphSummaryJson =
+                    raw.length > GRAPH_SUMMARY_MAX_CHARS
+                        ? `${raw.slice(0, GRAPH_SUMMARY_MAX_CHARS)}\n…(truncated)`
+                        : raw;
+            } catch {
+                graphSummaryJson = '';
+            }
+        }
+
         logger.info('attack-path analyze', {
             rawInputCount: stats.rawInputCount,
             distinctGroups: stats.distinctGroups,
@@ -90,11 +99,15 @@ router.post('/analyze', authorize('admin', 'analyst'), async (req, res, next) =>
             approxChars: stats.approxChars,
             truncatedToBudget: stats.truncatedToBudget,
             provider: llmProvider,
-            model
+            model,
+            graphSummaryIncluded: Boolean(graphSummaryJson)
         });
 
         const startTime = Date.now();
-        const userPrompt = `Target AD Environment Assessment Data (tiered, deduplicated, redacted):\n\n${userPromptJson}\n\nMERMAID: In samples[].Entities and Evidence, entity values are tokenized (U-prefix users, C computers, G groups, templates, GPO, OU, CA, SPN). The mermaidChart must use those same tokens as node labels—not CheckId strings.`;
+        const graphBlock = graphSummaryJson
+            ? `\n\nDETERMINISTIC_GRAPH_SUMMARY (canonical merged entities/edges from scan; token labels align with findings):\n${graphSummaryJson}\n`
+            : '';
+        const userPrompt = `Target AD Environment Assessment Data (tiered, deduplicated, redacted):\n\n${userPromptJson}${graphBlock}\nEntity tokens in samples use U/G/C/T/GPO/OU/CA/SPN prefixes where applicable. Prefer the deterministic graph summary for topology when present.`;
         let llmResponse = '';
 
         if (llmProvider === 'openai') {
@@ -189,7 +202,8 @@ router.post('/analyze', authorize('admin', 'analyst'), async (req, res, next) =>
                     payloadRows: stats.payloadRows,
                     approxChars: stats.approxChars,
                     truncatedToBudget: stats.truncatedToBudget,
-                    redactionApplied: true
+                    redactionApplied: true,
+                    graphSummaryIncluded: Boolean(graphSummaryJson)
                 }
             });
         } catch {

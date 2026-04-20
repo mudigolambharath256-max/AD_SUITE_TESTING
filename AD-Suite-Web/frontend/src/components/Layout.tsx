@@ -39,18 +39,20 @@ export default function Layout({ children }: LayoutProps) {
                 }`}
             >
                 {/* Logo */}
-                <div className="p-6 border-b border-border-light">
-                    <div className="flex items-center gap-3">
+                <div className="p-4 sm:p-6 border-b border-border-light min-w-0 overflow-hidden">
+                    <div className="flex items-start gap-2.5 min-w-0">
                         <img
                             src="/technieum-logo.png"
                             alt=""
-                            className="h-11 w-auto object-contain object-left shrink-0"
+                            className="h-9 w-9 sm:h-10 sm:w-10 object-contain object-left shrink-0 rounded-sm"
                         />
-                        <div className="min-w-0">
-                            <h1 className="text-lg font-semibold text-text-primary leading-snug">
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                            <h1 className="text-base sm:text-lg font-semibold text-text-primary leading-snug break-words">
                                 Technieum AD suite
                             </h1>
-                            <p className="text-xs text-text-secondary mt-0.5">Security Assessment</p>
+                            <p className="text-xs text-text-secondary mt-0.5 break-words">
+                                Security Assessment
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -101,18 +103,18 @@ export default function Layout({ children }: LayoutProps) {
             {/* Main content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Top bar */}
-                <div className="h-14 bg-bg-primary border-b border-border-light flex items-center justify-between px-6">
-                    <div className="flex items-center gap-4">
+                <div className="h-14 bg-bg-primary border-b border-border-light flex items-center justify-between gap-3 px-4 sm:px-6 min-w-0">
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                         <button
                             type="button"
-                            className="lg:hidden p-2 hover:bg-bg-hover rounded-lg transition-colors"
+                            className="lg:hidden shrink-0 p-2 hover:bg-bg-hover rounded-lg transition-colors"
                             aria-expanded={mobileNavOpen}
                             aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
                             onClick={() => setMobileNavOpen((o) => !o)}
                         >
                             <Menu size={20} className="text-text-secondary" />
                         </button>
-                        <div className="text-sm font-medium text-text-primary">
+                        <div className="text-sm font-medium text-text-primary min-w-0 truncate">
                             {navigation.find(n => n.href === location.pathname)?.name || 'Technieum AD suite'}
                         </div>
                     </div>

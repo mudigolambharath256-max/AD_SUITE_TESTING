@@ -11,6 +11,7 @@ const auth_1 = require("../middleware/auth");
 const auditMiddleware_1 = require("../middleware/auditMiddleware");
 const scanService_1 = require("../services/scanService");
 const scanExportCsv_1 = require("../utils/scanExportCsv");
+const scanDocumentResults_1 = require("../utils/scanDocumentResults");
 const router = express_1.default.Router();
 const readRoles = (0, auth_1.authorize)('admin', 'analyst', 'viewer');
 const writeRoles = (0, auth_1.authorize)('admin', 'analyst');
@@ -117,15 +118,7 @@ router.get('/scans/:id/findings', readRoles, async (req, res, next) => {
         if (!doc) {
             return res.status(404).json({ message: 'Scan not found' });
         }
-        // Normalize extraction
-        let results = doc.results || doc.Results || doc.checks || doc.Checks || [];
-        let findingsArray = [];
-        if (Array.isArray(results)) {
-            findingsArray = results;
-        }
-        else if (results && Array.isArray(results.checks)) {
-            findingsArray = results.checks;
-        }
+        const findingsArray = (0, scanDocumentResults_1.extractResultsArrayFromScanDocument)(doc);
         res.json({ findings: findingsArray });
     }
     catch (error) {

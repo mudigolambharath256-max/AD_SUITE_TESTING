@@ -6,6 +6,7 @@ import { authenticate, authorize } from '../middleware/auth';
 import { auditMutations } from '../middleware/auditMiddleware';
 import { ScanService } from '../services/scanService';
 import { findingsToCsv } from '../utils/scanExportCsv';
+import { extractResultsArrayFromScanDocument } from '../utils/scanDocumentResults';
 
 const router = express.Router();
 const readRoles = authorize('admin', 'analyst', 'viewer');
@@ -123,15 +124,7 @@ router.get('/scans/:id/findings', readRoles, async (req, res, next) => {
             return res.status(404).json({ message: 'Scan not found' });
         }
 
-        // Normalize extraction
-        let results = doc.results || doc.Results || doc.checks || doc.Checks || [];
-        
-        let findingsArray = [];
-        if (Array.isArray(results)) {
-            findingsArray = results;
-        } else if (results && Array.isArray(results.checks)) {
-             findingsArray = results.checks;
-        }
+        const findingsArray = extractResultsArrayFromScanDocument(doc);
 
         res.json({ findings: findingsArray });
     } catch (error) {

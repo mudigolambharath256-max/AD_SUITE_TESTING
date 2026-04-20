@@ -8,6 +8,7 @@
         "build": "tsc",
         "start": "node dist/server.js",
         "test": "jest",
+        "test:scan-engine": "ts-node --transpile-only src/utils/scanEngineMapping.selftest.ts",
         "lint": "eslint src/**/*.ts"
     },
     "dependencies": {
