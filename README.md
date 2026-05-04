@@ -1,514 +1,366 @@
-# AD Suite - Active Directory Security Auditing Framework
+# AD Suite - Active Directory Security Assessment Platform
 
-[![PowerShell](https://img.shields.io/badge/PowerShell-5.1+-blue.svg)](https://github.com/PowerShell/PowerShell)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
-
-**AD Suite** is a Windows PowerShell AD assessment toolkit. It reads check definitions from JSON catalogs, runs LDAP (and filesystem) checks using ADSI/DirectorySearcher—**no ActiveDirectory module required**. Results can be JSON, CSV, HTML, and optionally viewed in a static browser UI.
-
-## 🎯 Features
-
-- ✅ **756 Security Checks** across 26 categories
-- ✅ **Pure ADSI Implementation** - No AD module dependency
-- ✅ **Three Execution Modes** - Single check, batch scanner, UI dashboard
-- ✅ **Purple Knight-Style Dashboard** - Interactive visual analysis
-- ✅ **Risk Scoring System** - Global 0-100 score with severity weighting
-- ✅ **GOAD Lab Compatible** - Perfect for penetration testing practice
-- ✅ **JSON-Based Configuration** - Easy to extend and customize
-- ✅ **Comprehensive Coverage** - Kerberos, ADCS, Delegation, Trusts, and more
-
-## 📊 Check Categories
-
-| Category | Checks | Focus Area |
-|----------|--------|------------|
-| Certificate Services | 53 | ADCS, PKI, ESC1-8 vulnerabilities |
-| Group Policy | 50 | GPO security and configuration |
-| Kerberos Security | 45 | Kerberoasting, delegation, encryption |
-| Azure AD Integration | 42 | Hybrid identity security |
-| Domain Controllers | 38 | DC inventory and hardening |
-| Computer Management | 37 | Computer account security |
-| Users & Accounts | 35 | User account vulnerabilities |
-| And 19 more... | 456 | Complete AD security coverage |
+Enterprise-grade Active Directory security assessment platform with 756 automated security checks and modern web interface.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Windows with PowerShell 5.1+
-- LDAP access to Active Directory (typically domain-joined machine)
-- No additional modules required
 
-### Installation
+- **Node.js** 18+ and npm
+- **PowerShell** 5.1+ or PowerShell Core 7+
+- **Git**
+- **Windows** operating system (for AD scanning)
+- **Active Directory** access (for running scans)
 
-```powershell
-# Clone the repository
-git clone -b mod https://github.com/mudigolambharath256-max/AD_SUITE_TESTING.git
+### Installation Steps
+
+#### 1. Clone the Repository
+
+```bash
+git clone https://github.com/mudigolambharath256-max/AD_SUITE_TESTING.git
 cd AD_SUITE_TESTING
-
-# Set execution policy
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 ```
 
-### Basic Usage
+#### 2. Backend Setup
 
-```powershell
-# Single check (curated catalog)
-.\adsi.ps1 -CheckId ACC-001
-.\adsi.ps1 -CheckId ACC-001 -ServerName dc01.contoso.local -CompactOutput
+```bash
+# Navigate to backend directory
+cd AD-Suite-Web/backend
 
-# Full risk scan (curated checks.json)
-.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json
-.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -OutputDirectory .\out\latest
+# Install dependencies
+npm install
 
-# Full scan using generated catalog + Phase B overrides (hundreds of checks)
-.\Invoke-ADSuiteScan.ps1 `
-    -ChecksJsonPath .\checks.generated.json `
-    -ChecksOverridesPath .\checks.overrides.phaseB-complete.json `
-    -OutputDirectory .\out\latest
+# Copy environment file
+copy .env.example .env
 
-# Validate catalog
-.\Test-ADSuiteCatalog.ps1 -CatalogPath .\checks.json
+# Edit .env file and configure:
+# - JWT_SECRET (use at least 32 characters)
+# - Database credentials (if using PostgreSQL)
+# - SMTP settings (if using email notifications)
+# - FRONTEND_URL (default: http://localhost:5173)
+
+# Build the backend
+npm run build
+
+# Start the backend server
+npm run dev
 ```
 
-## 🔥 Popular Security Checks
+The backend will start on:
+- **HTTP API:** http://localhost:3000
+- **WebSocket:** ws://localhost:3001
 
-### Kerberos Attacks
-```powershell
-# AS-REP Roastable Accounts
-.\adsi.ps1 -CheckId KRB-002 -CompactOutput
+#### 3. Frontend Setup
 
-# Kerberoastable Accounts
-.\adsi.ps1 -CheckId ACC-034 -CompactOutput
+Open a **new terminal** and run:
 
-# Unconstrained Delegation
-.\adsi.ps1 -CheckId ACC-027 -CompactOutput
+```bash
+# Navigate to frontend directory
+cd AD-Suite-Web/frontend
 
-# Resource-Based Constrained Delegation (RBCD)
-.\adsi.ps1 -CheckId ACC-039 -CompactOutput
+# Install dependencies
+npm install
+
+# Copy environment file (optional)
+copy .env.example .env
+
+# Start the frontend development server
+npm run dev
 ```
 
-### Privileged Access
-```powershell
-# Privileged Users (adminCount=1)
-.\adsi.ps1 -CheckId ACC-001 -CompactOutput
+The frontend will start on:
+- **Web UI:** http://localhost:5173
 
-# Domain Admins
-.\adsi.ps1 -CheckId ACC-014 -CompactOutput
+#### 4. Access the Application
 
-# Enterprise Admins
-.\adsi.ps1 -CheckId ACC-015 -CompactOutput
+Open your browser and navigate to:
+```
+http://localhost:5173
 ```
 
-### Certificate Services (ADCS)
-```powershell
-# ESC1 / ESC4 — use curated adcs checks (CERT-002/CERT-005 stubs are not in checks.json; see ADCS-ESC*)
-.\adsi.ps1 -CheckId ADCS-ESC1 -CompactOutput
-.\adsi.ps1 -CheckId ADCS-ESC4 -CompactOutput
-
-# Example promoted LDAP rule (client-auth templates)
-.\adsi.ps1 -CheckId CERT-006 -CompactOutput
-```
-
-### Advanced Attacks
-```powershell
-# Shadow Credentials
-.\adsi.ps1 -CheckId ACC-037 -CompactOutput
-
-# DCSync Rights
-.\adsi.ps1 -CheckId ACC-033 -CompactOutput
-```
-
-## 📋 Execution Modes
-
-### Mode 1: Single Check Runner (`adsi.ps1`)
-Execute individual security checks interactively or in automation.
-
-```powershell
-# Basic usage
-.\adsi.ps1 -CheckId ACC-001
-.\adsi.ps1 -CheckId ACC-001 -ServerName dc01.contoso.local -CompactOutput
-
-# CI/CD security gate
-.\adsi.ps1 -CheckId ACC-001 -Quiet -FailOnFindings
-# Exit code 0 = Pass, 3 = Findings detected
-
-# Pipeline processing
-.\adsi.ps1 -CheckId ACC-001 -PassThru | Export-Csv results.csv
-```
-
-**Use Cases:** Pentesting, targeted checks, CI/CD gates, debugging
-
-### Mode 2: Batch Scanner (`Invoke-ADSuiteScan.ps1`)
-Comprehensive risk assessments with Purple Knight-style scoring.
-
-```powershell
-# Curated production scan
-.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -OutputDirectory .\out\latest
-
-# Wide LDAP coverage (hundreds of checks)
-.\Invoke-ADSuiteScan.ps1 `
-    -ChecksJsonPath .\checks.generated.json `
-    -ChecksOverridesPath .\checks.overrides.phaseB-complete.json `
-    -OutputDirectory .\out\latest
-
-# Category-scoped scan
-.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -Category Kerberos_Security
-
-# Specific checks only
-.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -IncludeCheckId KRB-002,ACC-034
-```
-
-**Outputs:**
-- `scan-results.json` - Complete scan data with scores and findings
-- `findings.csv` - Flattened CSV for spreadsheet analysis
-- `report.html` - HTML summary with dashboard link
-
-**Use Cases:** Full audits, compliance reporting, scheduled scans, risk trending
-
-### Mode 3: UI Dashboard (`ui/dashboard.html`)
-Interactive visual analysis and scan planning.
-
-```powershell
-# 1. Run a scan
-.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -OutputDirectory .\out\latest
-
-# 2. Open dashboard
-start .\ui\dashboard.html
-
-# 3. In browser: Load out\latest\scan-results.json
-# 4. Optional: Load catalog-summary.json for scan planner
-```
-
-**Features:**
-- Global risk score (0-100) with risk band
-- Category breakdown and top 10 risks
-- Sortable, filterable checks table
-- Expandable finding details
-- Scan planner (generates commands)
-- 100% client-side (no data leaves browser)
-
-**Use Cases:** Executive reporting, interactive analysis, scan planning
-
-## 🤖 Automated Testing
-
-### Run Full Scenario Test
-```powershell
-.\Test-RealWorldScenario.ps1 -ServerName kingslanding.sevenkingdoms.local
-```
-
-### Batch Execution
-```powershell
-$checks = @('ACC-001', 'ACC-034', 'KRB-002', 'ACC-037')
-foreach ($check in $checks) {
-    .\adsi.ps1 -CheckId $check -ServerName dc01.domain.local -CompactOutput
-}
-```
-
-### CI/CD Security Gate
-```powershell
-$criticalChecks = @('KRB-002', 'ACC-034', 'ACC-037')
-foreach ($check in $criticalChecks) {
-    .\adsi.ps1 -CheckId $check -ServerName dc01.domain.local -Quiet -FailOnFindings
-    if ($LASTEXITCODE -eq 3) {
-        Write-Host "[FAIL] $check found security issues!"
-        exit 1
-    }
-}
-```
-
-## 📚 Documentation
-
-### Essential Documentation
-- **[PRODUCT_POSTURE_SUMMARY.txt](PRODUCT_POSTURE_SUMMARY.txt)** - Product posture: what is built, what runs, gaps, and ops guidance (plain text)
-- **[README.md](README.md)** - This file (main documentation)
-- **[COMPLETE_ARCHITECTURE.md](COMPLETE_ARCHITECTURE.md)** - Complete system architecture
-- **[EXECUTION_MODES_QUICK_REFERENCE.md](EXECUTION_MODES_QUICK_REFERENCE.md)** - Quick reference for all modes
-- **[QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)** - Complete command reference
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
-
-### Advanced Topics
-- **[docs/ENTERPRISE_DEPLOYMENT.md](docs/ENTERPRISE_DEPLOYMENT.md)** - Scan topology, scheduling, OIDC pointers, catalog CI
-- **[docs/HEALTH_SCORE_METHODOLOGY.md](docs/HEALTH_SCORE_METHODOLOGY.md)** - How the global score is computed (not CVSS)
-- **[docs/RISK_PACK.md](docs/RISK_PACK.md)** - Risk pack contract and engine types (field-level rules)
-- **[docs/COVERAGE.md](docs/COVERAGE.md)** - Rule pack coverage documentation
-- **[docs/LAB_VALIDATION.md](docs/LAB_VALIDATION.md)** - Lab validation procedures
-- **[docs/REVIEW_CHECKLIST.md](docs/REVIEW_CHECKLIST.md)** - Risk rule promotion checklist
-- **[ui/README.md](ui/README.md)** - UI dashboard documentation
-
-## 🎯 Use Cases
-
-1. **Penetration Testing** - Enumerate AD without ActiveDirectory module
-2. **Security Auditing** - Comprehensive AD security assessment with risk scoring
-3. **Compliance Checking** - Validate security configurations across categories
-4. **GOAD Lab Training** - Practice AD enumeration techniques
-5. **CI/CD Integration** - Automated security gates with exit codes
-6. **Incident Response** - Quick AD security posture assessment
-7. **Red Team Operations** - Identify attack paths (Kerberoasting, delegation, etc.)
-8. **Blue Team Defense** - Detect misconfigurations and vulnerabilities
-9. **Executive Reporting** - Visual dashboards with risk scores
-10. **Scheduled Audits** - Automated weekly/monthly assessments
-
-## 🔧 Requirements
-
-- **PowerShell:** 5.1 or higher
-- **Platform:** Windows
-- **Framework:** .NET Framework (built-in)
-- **Dependencies:** None (pure ADSI implementation)
-- **Permissions:** Domain user account (some checks require elevated privileges)
-- **Network:** LDAP access to Active Directory (typically domain-joined machine)
-
-**Note:** Node.js only needed for regenerating Phase B override JSON (`tools/Generate-PhaseB*.js`), not for day-to-day scanning.
-
-## 📊 How It Works
-
-### Catalog System (Source of Truth)
-
-1. **`checks.json`** — Curated risk pack with real `ldap`/`filesystem` rules for production scans
-2. **`checks.generated.json`** — Large legacy export (756 checks); by default all `engine: inventory` (skipped by scanner until promoted)
-3. **`checks.overrides.json`** — Optional patches by check `id` (severity, engine, filters, text)
-   - Auto-loaded by `Invoke-ADSuiteScan.ps1` and `adsi.ps1` if exists
-4. **`checks.overrides.phaseB-complete.json`** — Bulk promotion file (661 checks)
-   - Merges with `checks.generated.json` to run many checks as `ldap`
-   - Excludes Phase C/D categories (Certificate_Services, Azure_AD_Integration)
-
-### Workflow
-
-```
-1. Load catalog (checks.json or checks.generated.json)
-   ↓
-2. Apply defaults and overrides
-   ↓
-3. Validate structure (Test-ADSuiteCatalog.ps1)
-   ↓
-4. Filter checks (exclude engine=inventory for risk scans)
-   ↓
-5. Execute checks via ADSI/DirectorySearcher
-   ↓
-6. Calculate scores (severity-weighted)
-   ↓
-7. Generate outputs (JSON/CSV/HTML)
-```
-
-### Execution Modes
-
-- **Single check:** `adsi.ps1` — One CheckId, good for debugging
-- **Full scan:** `Invoke-ADSuiteScan.ps1` — All non-inventory checks, scoring, reports
-- **UI:** `ui/dashboard.html` — Load scan-results.json for interactive analysis
-
-### Engine Types
-
-- **`ldap` / `filesystem` / `registry`** — Scanner attempts them (registry may stub)
-- **`inventory`** — NOT part of risk scan; documentation/listing only
-
-## 🔍 Available Checks
-
-### View All Checks
-```powershell
-$config = Get-Content .\checks.generated.json | ConvertFrom-Json
-$config.checks | Select-Object id, name, category | Format-Table -AutoSize
-```
-
-### Search Checks
-```powershell
-# By keyword
-$config.checks | Where-Object { $_.name -like "*Kerberos*" }
-
-# By category
-$config.checks | Where-Object { $_.category -eq "Kerberos_Security" }
-```
-
-### Check Categories
-```powershell
-$config.checks | Group-Object category | Sort-Object Count -Descending
-```
-
-## 🎓 Examples
-
-### Example 1: Quick Security Assessment (Single Check Runner)
-```powershell
-# Top 5 critical checks
-$checks = @('ACC-001', 'ACC-034', 'KRB-002', 'ACC-037', 'ADCS-ESC1')
-foreach ($c in $checks) {
-    Write-Host "`n=== $c ===" -ForegroundColor Cyan
-    .\adsi.ps1 -CheckId $c -ServerName dc01.domain.local -CompactOutput
-}
-```
-
-### Example 2: Full Risk Assessment (Batch Scanner)
-```powershell
-# Complete AD security audit with risk scoring
-.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json -OutputDirectory .\out\latest
-
-# Open dashboard for analysis
-start .\ui\dashboard.html
-# Then load .\out\latest\scan-results.json in browser
-```
-
-### Example 3: Category-Scoped Audit (Batch Scanner)
-```powershell
-# Focus on Kerberos and Certificate Services
-.\Invoke-ADSuiteScan.ps1 `
-    -ChecksJsonPath .\checks.json `
-    -Category Kerberos_Security,Certificate_Services `
-    -OutputDirectory .\out\kerberos-adcs
-```
-
-### Example 4: CI/CD Security Gate (Single Check Runner)
-```powershell
-# Fail build if critical vulnerabilities found
-$criticalChecks = @('KRB-002', 'ACC-034', 'ACC-037', 'ADCS-ESC1')
-foreach ($check in $criticalChecks) {
-    .\adsi.ps1 -CheckId $check -Quiet -FailOnFindings
-    if ($LASTEXITCODE -eq 3) {
-        Write-Error "Critical security issue: $check"
-        exit 1
-    }
-}
-```
-
-### Example 5: Scheduled Weekly Audit (Batch Scanner)
-```powershell
-# Schedule this script to run weekly
-$timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$outputPath = "\\share\audits\$timestamp"
-
-.\Invoke-ADSuiteScan.ps1 `
-    -ChecksJsonPath .\checks.json `
-    -OutputDirectory $outputPath
-
-# Email the report.html to security team
-Send-MailMessage -To "security@company.com" `
-    -Subject "Weekly AD Security Audit - $timestamp" `
-    -Attachments "$outputPath\report.html" `
-    -Body "See attached report. Open dashboard for interactive analysis."
-```
-
-### Example 6: Interactive Exploration (Single Check Runner)
-```powershell
-# View in grid
-.\adsi.ps1 -CheckId ACC-001 -PassThru | Out-GridView
-
-# View specific properties
-.\adsi.ps1 -CheckId ACC-001 -PassThru | 
-    Select-Object name, samAccountName, distinguishedName | 
-    Format-Table -AutoSize
-```
-
-## 🔐 Security Considerations
-
-- **Credentials:** Script uses current user's credentials by default
-- **Permissions:** Some checks require domain admin or equivalent
-- **Logging:** All queries are logged in AD event logs
-- **Network:** LDAP traffic is unencrypted by default (use LDAPS for sensitive environments)
-- **Scope:** Queries can return large result sets; use appropriate filters
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Issue:** Output shows metadata instead of AD properties  
-**Solution:** Use `-CompactOutput` parameter
-```powershell
-.\adsi.ps1 -CheckId ACC-001 -CompactOutput
-```
-
-**Issue:** LDAP connection failed  
-**Solution:** Specify ServerName explicitly
-```powershell
-.\adsi.ps1 -CheckId ACC-001 -ServerName dc01.domain.local
-```
-
-**Issue:** Execution policy error  
-**Solution:** Set execution policy
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-```
-
-**Issue:** Batch scanner skips all checks  
-**Solution:** Use `checks.json` (not `checks.generated.json` alone, which has all `engine: inventory`)
-```powershell
-# Curated production scan
-.\Invoke-ADSuiteScan.ps1 -ChecksJsonPath .\checks.json
-
-# OR use generated + Phase B overrides for wide coverage
-.\Invoke-ADSuiteScan.ps1 `
-    -ChecksJsonPath .\checks.generated.json `
-    -ChecksOverridesPath .\checks.overrides.phaseB-complete.json
-```
-
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for complete troubleshooting guide.
-
-## 📈 Performance
-
-- **Single Check:** 200-700ms
-- **10 Checks:** 2-7 seconds
-- **100 Results:** ~500ms
-- **1,000 Results:** 1-2 seconds
-- **10,000 Results:** 5-10 seconds (with paging)
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Add your checks to `checks.json`
-4. Test thoroughly
-5. Submit a pull request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- GOAD (Game of Active Directory) project for the vulnerable lab environment
-- Active Directory security research community
-- PowerShell and .NET Framework teams
-
-## 📞 Support
-
-- **Issues:** [GitHub Issues](https://github.com/mudigolambharath256-max/AD_SUITE_TESTING/issues)
-- **Documentation:** See docs folder
-- **Examples:** See REAL_WORLD_SCENARIO_TEST.md
-
-## 🔗 Links
-
-- **Repository:** https://github.com/mudigolambharath256-max/AD_SUITE_TESTING
-- **Branch:** mod
-- **GOAD Lab:** https://github.com/Orange-Cyberdefense/GOAD
-
-## 📊 Statistics
-
-- **Total Checks:** 756 (in checks.generated.json)
-- **Curated Checks:** 7 (in checks.json, production-ready)
-- **Phase B Promoted:** 661 (in checks.overrides.phaseB-complete.json)
-- **Categories:** 26
-- **Code Lines:** 19,000+
-- **Module Functions:** 14 exported functions
-- **Documentation:** 9 comprehensive guides
-- **Execution Modes:** 3 (single check, batch scanner, UI dashboard)
-
-## 🔄 Current Status
-
-### Completed
-- ✅ Pure ADSI implementation (no ActiveDirectory module)
-- ✅ Three execution modes (single check, batch scanner, UI dashboard)
-- ✅ Purple Knight-style risk scoring (0-100)
-- ✅ 756 checks across 26 categories
-- ✅ Phase B metadata and bulk promotion (661 checks)
-- ✅ JSON/CSV/HTML output formats
-- ✅ Interactive browser dashboard
-- ✅ Catalog validation and override system
-- ✅ Comprehensive documentation
-
-### Phase Status
-- ✅ **Phase A:** Curated inventory rows (checks.json)
-- ✅ **Phase B:** Vulnerability-style metadata + bulk LDAP promotion (661 checks, excludes CERT/Azure)
-- ✅ **Phase C (partial):** `Certificate_Services` in `checks.json` — `ADCS-ESC1`…`ADCS-ESC8` plus promoted `CERT-*` LDAP checks (`tools\Build-CertificateServicesLdapChecks.ps1`); `checks.overrides.phaseB-complete.json` still excludes CERT/Azure for bulk generated scans
-- ⏳ **Phase D:** `Azure_AD_Integration` and any remaining bulk promotion work
+Default login (if authentication is enabled):
+- Username: `admin`
+- Password: Check backend configuration
 
 ---
 
-**Made with ❤️ for the AD security community**
+## 📋 Available Commands
 
-**⭐ Star this repo if you find it useful!**
+### Backend Commands
+
+```bash
+cd AD-Suite-Web/backend
+
+# Development mode (with hot reload)
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Run tests
+npm test
+
+# Lint code
+npm run lint
+```
+
+### Frontend Commands
+
+```bash
+cd AD-Suite-Web/frontend
+
+# Development mode (with hot reload)
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Lint code
+npm run lint
+```
+
+---
+
+## 🔧 Configuration
+
+### Backend Configuration (.env)
+
+Key environment variables to configure:
+
+```env
+# Server
+NODE_ENV=development
+PORT=3000
+HOST=0.0.0.0
+
+# JWT Authentication
+JWT_SECRET=your_secure_secret_key_at_least_32_characters_long
+JWT_EXPIRES_IN=7d
+
+# Frontend URL (for CORS)
+FRONTEND_URL=http://localhost:5173
+
+# Database (Optional - uses file-based storage by default)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=adsuite
+DB_USER=postgres
+DB_PASSWORD=your_password
+
+# PowerShell Scripts
+PS_SCRIPT_PATH=../../Invoke-ADSuiteScan.ps1
+PS_MODULE_PATH=../../Modules
+
+# WebSocket
+WS_PORT=3001
+```
+
+### Frontend Configuration (.env)
+
+```env
+# API URL (optional - uses Vite proxy by default)
+# VITE_API_URL=http://localhost:3000/api
+
+# WebSocket URL (optional)
+# VITE_WS_URL=ws://localhost:3001
+```
+
+---
+
+## 🐳 Docker Deployment (Optional)
+
+For production deployment using Docker:
+
+```bash
+# Navigate to the web directory
+cd AD-Suite-Web
+
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+Services will be available at:
+- **Frontend:** http://localhost:80
+- **Backend API:** http://localhost:3000
+- **PostgreSQL:** localhost:5432
+
+---
+
+## 🔍 Running Your First Scan
+
+1. **Access the Web UI:** http://localhost:5173
+2. **Navigate to:** New Scan page
+3. **Configure Scan:**
+   - Enter scan name
+   - Select security check categories
+   - Choose specific checks (optional)
+4. **Run Scan:** Click "Run Scan" button
+5. **View Results:** Results appear automatically after completion
+
+---
+
+## 📊 Key Features
+
+- **756 Security Checks** across multiple categories
+- **Real-time Scan Execution** with WebSocket updates
+- **Interactive Graph Visualization** for attack paths
+- **Comprehensive Dashboard** with metrics and charts
+- **Multiple Export Formats** (JSON, CSV, PDF, HTML)
+- **PowerShell Terminal** for advanced operations
+- **Automated Reporting** and compliance support
+
+---
+
+## 🗂️ Project Structure
+
+```
+AD_SUITE_TESTING/
+├── AD-Suite-Web/           # Web application
+│   ├── backend/            # Node.js + Express API
+│   │   ├── src/            # TypeScript source code
+│   │   ├── dist/           # Compiled JavaScript
+│   │   └── uploads/        # Scan results storage
+│   ├── frontend/           # React + TypeScript UI
+│   │   ├── src/            # Source code
+│   │   └── dist/           # Production build
+│   └── database/           # PostgreSQL schema
+├── Modules/                # PowerShell modules
+├── engines/                # Scan engines (ADSI, RSAT, C#)
+├── checks.json             # Security check catalog
+├── Invoke-ADSuiteScan.ps1  # Main scan script
+└── README.md               # This file
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+### Port Already in Use
+
+If ports 3000, 3001, or 5173 are already in use:
+
+**Windows:**
+```powershell
+# Find process using port 3000
+netstat -ano | findstr :3000
+
+# Kill the process (replace PID with actual process ID)
+taskkill /PID <PID> /F
+```
+
+### Backend Won't Start
+
+1. Check if Node.js 18+ is installed: `node --version`
+2. Verify `.env` file exists and is configured
+3. Ensure JWT_SECRET is at least 32 characters
+4. Check logs in `AD-Suite-Web/backend/logs/`
+
+### Frontend Won't Connect to Backend
+
+1. Verify backend is running on port 3000
+2. Check CORS settings in backend `.env` (FRONTEND_URL)
+3. Clear browser cache and reload
+4. Check browser console for errors
+
+### PowerShell Scan Errors
+
+1. Ensure PowerShell 5.1+ is installed
+2. Run PowerShell as Administrator
+3. Check Active Directory connectivity
+4. Verify `Invoke-ADSuiteScan.ps1` path in backend `.env`
+
+---
+
+## 📖 Documentation
+
+- **Project Overview:** [AD-Suite-Web/PROJECT_OVERVIEW.md](AD-Suite-Web/PROJECT_OVERVIEW.md)
+- **Quick Reference:** [AD-Suite-Web/QUICK_REFERENCE.md](AD-Suite-Web/QUICK_REFERENCE.md)
+- **Dashboard Guide:** [AD-Suite-Web/DASHBOARD_DOCUMENTATION.md](AD-Suite-Web/DASHBOARD_DOCUMENTATION.md)
+- **System Flow:** [COMPLETE_SYSTEM_FLOW_DOCUMENTATION.md](COMPLETE_SYSTEM_FLOW_DOCUMENTATION.md)
+
+---
+
+## 🔐 Security Considerations
+
+- **Change default JWT_SECRET** in production
+- **Use HTTPS** for production deployments
+- **Restrict network access** to backend API
+- **Enable authentication** for production use
+- **Regular security updates** for dependencies
+- **Secure credential storage** for AD access
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📝 License
+
+This project is proprietary software. All rights reserved.
+
+---
+
+## 📞 Support
+
+For issues, questions, or support:
+- **GitHub Issues:** https://github.com/mudigolambharath256-max/AD_SUITE_TESTING/issues
+- **Documentation:** See docs folder
+
+---
+
+## 🎯 Quick Command Reference
+
+### Start Everything (Development)
+
+**Terminal 1 - Backend:**
+```bash
+cd AD-Suite-Web/backend
+npm run dev
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd AD-Suite-Web/frontend
+npm run dev
+```
+
+**Access:** http://localhost:5173
+
+### Production Build
+
+```bash
+# Build backend
+cd AD-Suite-Web/backend
+npm run build
+npm start
+
+# Build frontend
+cd AD-Suite-Web/frontend
+npm run build
+npm run preview
+```
+
+---
+
+**Version:** 1.0.7  
+**Last Updated:** April 2026  
+**Status:** ✅ Production Ready
