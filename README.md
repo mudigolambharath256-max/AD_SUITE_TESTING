@@ -21,70 +21,139 @@ git clone https://github.com/mudigolambharath256-max/AD_SUITE_TESTING.git
 cd AD_SUITE_TESTING
 ```
 
-#### 2. Backend Setup
+#### 2. Install Dependencies
+
+**Option A: Install Both (Recommended for Development)**
+
+```bash
+# Navigate to AD-Suite-Web directory
+cd AD-Suite-Web
+
+# Install dependencies for both frontend and backend
+npm install
+
+# This installs:
+# - concurrently (to run both servers together)
+# - All backend dependencies
+# - All frontend dependencies
+```
+
+**Option B: Install Separately**
+
+```bash
+# Backend
+cd AD-Suite-Web/backend
+npm install
+
+# Frontend (in a new terminal)
+cd AD-Suite-Web/frontend
+npm install
+```
+
+#### 3. Configure Environment Variables
+
+**Backend Configuration:**
 
 ```bash
 # Navigate to backend directory
 cd AD-Suite-Web/backend
 
-# Install dependencies
-npm install
-
-# Copy environment file
+# Copy environment template
 copy .env.example .env
 
-# Edit .env file and configure:
-# - JWT_SECRET (use at least 32 characters)
-# - Database credentials (if using PostgreSQL)
-# - SMTP settings (if using email notifications)
-# - FRONTEND_URL (default: http://localhost:5173)
-
-# Build the backend
-npm run build
-
-# Start the backend server
-npm run dev
+# Edit .env file with your settings
+notepad .env
 ```
 
-The backend will start on:
-- **HTTP API:** http://localhost:3000
-- **WebSocket:** ws://localhost:3001
+**Required Configuration in `.env`:**
 
-#### 3. Frontend Setup
+```env
+# JWT Authentication (IMPORTANT: Change this!)
+JWT_SECRET=your_secure_secret_key_at_least_32_characters_long_change_this_in_production
 
-Open a **new terminal** and run:
+# Server Configuration
+NODE_ENV=development
+PORT=3000
+HOST=0.0.0.0
+
+# Frontend URL (for CORS)
+FRONTEND_URL=http://localhost:5173
+
+# WebSocket
+WS_PORT=3001
+
+# PowerShell Scripts (relative to backend directory)
+PS_SCRIPT_PATH=../../Invoke-ADSuiteScan.ps1
+PS_MODULE_PATH=../../Modules
+```
+
+**Frontend Configuration (Optional):**
 
 ```bash
-# Navigate to frontend directory
 cd AD-Suite-Web/frontend
-
-# Install dependencies
-npm install
-
-# Copy environment file (optional)
 copy .env.example .env
+```
 
-# Start the frontend development server
+The frontend uses Vite proxy by default, so no configuration is usually needed.
+
+#### 4. Start the Application
+
+**Option A: Run Both Together (Easiest)**
+
+```bash
+# From AD-Suite-Web directory
+cd AD-Suite-Web
 npm run dev
 ```
 
-The frontend will start on:
-- **Web UI:** http://localhost:5173
+This starts both backend and frontend simultaneously with colored output:
+- 🔵 **Backend (api):** http://localhost:3000 + ws://localhost:3001
+- 🟢 **Frontend (web):** http://localhost:5173
 
-#### 4. Access the Application
+**Option B: Run Separately**
+
+**Terminal 1 - Backend:**
+```bash
+cd AD-Suite-Web/backend
+npm run dev
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd AD-Suite-Web/frontend
+npm run dev
+```
+
+#### 5. Access the Application
 
 Open your browser and navigate to:
 ```
 http://localhost:5173
 ```
 
-Default login (if authentication is enabled):
-- Username: `admin`
-- Password: Check backend configuration
+**First Time Setup:**
+- The application will load the web interface
+- Navigate to "New Scan" to configure and run your first scan
+- Check "Settings" to configure scan preferences
+
+**Note:** Authentication is optional. Check backend configuration if login is required.
 
 ---
 
 ## 📋 Available Commands
+
+### Run Both Frontend & Backend Together
+
+```bash
+cd AD-Suite-Web
+
+# Development mode (runs both servers)
+npm run dev
+
+# This is equivalent to running:
+# - Backend: npm run dev --prefix backend
+# - Frontend: npm run dev --prefix frontend
+```
 
 ### Backend Commands
 
@@ -99,12 +168,6 @@ npm run build
 
 # Start production server
 npm start
-
-# Run tests
-npm test
-
-# Lint code
-npm run lint
 ```
 
 ### Frontend Commands
@@ -120,9 +183,6 @@ npm run build
 
 # Preview production build
 npm run preview
-
-# Lint code
-npm run lint
 ```
 
 ---
@@ -247,11 +307,27 @@ AD_SUITE_TESTING/
 
 ## 🛠️ Troubleshooting
 
+### "npm install" Fails
+
+**Issue:** Dependencies fail to install
+
+**Solution:**
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Delete node_modules and package-lock.json
+rm -rf node_modules package-lock.json
+
+# Reinstall
+npm install
+```
+
 ### Port Already in Use
 
-If ports 3000, 3001, or 5173 are already in use:
+**Issue:** Ports 3000, 3001, or 5173 are already in use
 
-**Windows:**
+**Solution (Windows):**
 ```powershell
 # Find process using port 3000
 netstat -ano | findstr :3000
@@ -260,35 +336,120 @@ netstat -ano | findstr :3000
 taskkill /PID <PID> /F
 ```
 
+**Solution (Linux/Mac):**
+```bash
+# Find and kill process on port 3000
+lsof -ti:3000 | xargs kill -9
+```
+
 ### Backend Won't Start
 
-1. Check if Node.js 18+ is installed: `node --version`
-2. Verify `.env` file exists and is configured
-3. Ensure JWT_SECRET is at least 32 characters
-4. Check logs in `AD-Suite-Web/backend/logs/`
+**Common Issues:**
+
+1. **Node.js version too old**
+   ```bash
+   node --version  # Should be 18.0.0 or higher
+   ```
+
+2. **Missing .env file**
+   ```bash
+   cd AD-Suite-Web/backend
+   copy .env.example .env
+   ```
+
+3. **JWT_SECRET not configured**
+   - Open `.env` file
+   - Set `JWT_SECRET` to at least 32 characters
+
+4. **Check logs**
+   ```bash
+   # Logs are created in AD-Suite-Web/backend/logs/
+   cat AD-Suite-Web/backend/logs/error.log
+   ```
 
 ### Frontend Won't Connect to Backend
 
-1. Verify backend is running on port 3000
-2. Check CORS settings in backend `.env` (FRONTEND_URL)
-3. Clear browser cache and reload
-4. Check browser console for errors
+**Common Issues:**
+
+1. **Backend not running**
+   - Verify backend is running: http://localhost:3000/api/health
+   - Check terminal for backend errors
+
+2. **CORS errors**
+   - Verify `FRONTEND_URL=http://localhost:5173` in backend `.env`
+   - Restart backend after changing `.env`
+
+3. **Browser cache**
+   ```
+   - Press Ctrl+Shift+R (hard refresh)
+   - Or clear browser cache
+   ```
+
+4. **Check browser console**
+   - Press F12 to open developer tools
+   - Look for errors in Console tab
 
 ### PowerShell Scan Errors
 
-1. Ensure PowerShell 5.1+ is installed
-2. Run PowerShell as Administrator
-3. Check Active Directory connectivity
-4. Verify `Invoke-ADSuiteScan.ps1` path in backend `.env`
+**Common Issues:**
+
+1. **PowerShell version**
+   ```powershell
+   $PSVersionTable.PSVersion  # Should be 5.1 or higher
+   ```
+
+2. **Execution policy**
+   ```powershell
+   # Run PowerShell as Administrator
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+3. **Active Directory module missing**
+   ```powershell
+   # Install RSAT tools (Windows 10/11)
+   Add-WindowsCapability -Online -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
+   ```
+
+4. **Script path incorrect**
+   - Verify `PS_SCRIPT_PATH` in backend `.env`
+   - Default: `../../Invoke-ADSuiteScan.ps1`
+
+### "concurrently" Command Not Found
+
+**Issue:** Running `npm run dev` from AD-Suite-Web fails
+
+**Solution:**
+```bash
+cd AD-Suite-Web
+npm install concurrently --save-dev
+```
+
+### Build Errors
+
+**Issue:** `npm run build` fails
+
+**Solution:**
+```bash
+# Backend
+cd AD-Suite-Web/backend
+rm -rf dist node_modules
+npm install
+npm run build
+
+# Frontend
+cd AD-Suite-Web/frontend
+rm -rf dist node_modules
+npm install
+npm run build
+```
 
 ---
 
 ## 📖 Documentation
 
-- **Project Overview:** [AD-Suite-Web/PROJECT_OVERVIEW.md](AD-Suite-Web/PROJECT_OVERVIEW.md)
-- **Quick Reference:** [AD-Suite-Web/QUICK_REFERENCE.md](AD-Suite-Web/QUICK_REFERENCE.md)
-- **Dashboard Guide:** [AD-Suite-Web/DASHBOARD_DOCUMENTATION.md](AD-Suite-Web/DASHBOARD_DOCUMENTATION.md)
-- **System Flow:** [COMPLETE_SYSTEM_FLOW_DOCUMENTATION.md](COMPLETE_SYSTEM_FLOW_DOCUMENTATION.md)
+- **Backend Documentation:** [AD-Suite-Web/BACKEND_DOCUMENTATION.md](AD-Suite-Web/BACKEND_DOCUMENTATION.md)
+- **Cleanup Summary:** [CLEANUP_SUMMARY.md](CLEANUP_SUMMARY.md)
+- **Technical Docs:** See `docs/` folder for detailed documentation
 
 ---
 
@@ -329,21 +490,39 @@ For issues, questions, or support:
 
 ## 🎯 Quick Command Reference
 
-### Start Everything (Development)
+### Complete Setup (First Time)
 
-**Terminal 1 - Backend:**
 ```bash
-cd AD-Suite-Web/backend
+# 1. Clone repository
+git clone https://github.com/mudigolambharath256-max/AD_SUITE_TESTING.git
+cd AD_SUITE_TESTING
+
+# 2. Install all dependencies
+cd AD-Suite-Web
+npm install
+
+# 3. Configure backend
+cd backend
+copy .env.example .env
+notepad .env  # Edit JWT_SECRET and other settings
+
+# 4. Start both servers
+cd ..
 npm run dev
+
+# 5. Open browser
+# Navigate to: http://localhost:5173
 ```
 
-**Terminal 2 - Frontend:**
-```bash
-cd AD-Suite-Web/frontend
-npm run dev
-```
+### Daily Development Workflow
 
-**Access:** http://localhost:5173
+```bash
+# Start both frontend and backend
+cd AD-Suite-Web
+npm run dev
+
+# Access application at: http://localhost:5173
+```
 
 ### Production Build
 
@@ -353,14 +532,52 @@ cd AD-Suite-Web/backend
 npm run build
 npm start
 
-# Build frontend
+# Build frontend (in new terminal)
 cd AD-Suite-Web/frontend
 npm run build
 npm run preview
 ```
 
+### Useful Commands
+
+```bash
+# Check if servers are running
+curl http://localhost:3000/api/health  # Backend health check
+curl http://localhost:5173             # Frontend
+
+# View backend logs
+cat AD-Suite-Web/backend/logs/combined.log
+
+# Clean and reinstall
+cd AD-Suite-Web/backend
+rm -rf node_modules package-lock.json
+npm install
+
+cd ../frontend
+rm -rf node_modules package-lock.json
+npm install
+```
+
 ---
 
-**Version:** 1.0.7  
-**Last Updated:** April 2026  
+## 📦 What Gets Installed
+
+After running `npm install`, you'll have:
+
+**AD-Suite-Web/backend/node_modules/** (~200MB)
+- Express, TypeScript, WebSocket libraries
+- PowerShell integration (node-pty)
+- Authentication and security packages
+
+**AD-Suite-Web/frontend/node_modules/** (~300MB)
+- React, TypeScript, Vite
+- UI libraries (Tailwind, Lucide icons)
+- Graph visualization (Cytoscape)
+
+**Note:** `node_modules` folders are NOT committed to git. They're generated locally when you run `npm install`.
+
+---
+
+**Version:** 1.0.8  
+**Last Updated:** May 6, 2026  
 **Status:** ✅ Production Ready
