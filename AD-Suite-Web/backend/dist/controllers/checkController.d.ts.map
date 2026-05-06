@@ -1,1 +1,0 @@
-{"version":3,"file":"checkController.d.ts","sourceRoot":"","sources":["../../src/controllers/checkController.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAK1D,qBAAa,eAAe;IACjB,SAAS,GAAU,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,6DA+DxE;IAEM,QAAQ,GAAU,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,6DA+BvE;CACJ"}

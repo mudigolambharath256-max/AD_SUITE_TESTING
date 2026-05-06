@@ -1,9 +1,0 @@
-{
-  "name": "Scan 1775024810648",
-  "scanId": 1775024810648,
-  "startedAt": "2026-04-01T06:26:11.099Z",
-  "categories": [],
-  "includeCheckIdsCount": 718,
-  "checksJsonPath": "C:\\users\\vagrant\\Pictures\\AD_SUITE_TESTING\\checks.unified.json",
-  "checksOverridesPath": "C:\\users\\vagrant\\Pictures\\AD_SUITE_TESTING\\checks.overrides.json"
-}
